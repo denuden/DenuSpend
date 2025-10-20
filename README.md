@@ -1,2 +1,2 @@
-# DenuBoilerplateCompose
-Boilerplate or starting code with package structure and some required dependencies
+# DenuSpend
+An application that tracks your spending habits and saves history of it. No more impulsive buying by tracking your spending
