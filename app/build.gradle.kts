@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.gmail.denuelle42.denuboilerplate"
+    namespace = "com.gmail.denuelle42.denuspend"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.gmail.denuelle42.denuboilerplate"
+        applicationId = "com.gmail.denuelle42.denuspend"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -148,4 +148,7 @@ dependencies {
 //    Paging 3
     implementation(libs.paging)
     implementation(libs.paging.compose)
+
+//    Palette
+    implementation(libs.palette)
 }

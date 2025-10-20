@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DenuBoilerplate"
+rootProject.name = "DenuSpend"
 include(":app")
  
