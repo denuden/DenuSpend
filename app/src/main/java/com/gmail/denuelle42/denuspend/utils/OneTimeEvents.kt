@@ -1,5 +1,6 @@
 package com.gmail.denuelle42.denuspend.utils
 
+import com.gmail.denuelle42.denuspend.data.remote.error.ErrorData
 import com.gmail.denuelle42.denuspend.navigation.NavigationScreens
 
 /**
@@ -10,4 +11,6 @@ sealed class OneTimeEvents {
     object OnPopBackStack : OneTimeEvents()
     data class ShowSnackbar(val snackbarEvent: SnackbarEvent)  : OneTimeEvents()
     data class ShowToast(val message : String)  : OneTimeEvents()
+    data class ShowInputError(val errors : ErrorData)  : OneTimeEvents()
+    data class ShowError(val msg : String)  : OneTimeEvents()
 }

@@ -8,7 +8,8 @@ data class ErrorModel(
     val type : String? = null,
     val messages : ErrorData? = null,
     val message : String? = null,
-    val error : String? = null
+    val error : String? = null,
+    val errors : ErrorData? = null,
 )
 
 @Keep

@@ -1,4 +1,4 @@
-package com.gmail.denuelle42.denuspend.utils
+package com.gmail.denuelle42.denuspend.utils.network
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*

@@ -13,9 +13,6 @@ fun LoginScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun LoginScreenContent(modifier: Modifier = Modifier) {
-    Box(
-        AsyncI
-    )
 }
 
 @Preview

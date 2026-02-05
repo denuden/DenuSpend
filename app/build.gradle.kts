@@ -126,10 +126,12 @@ dependencies {
 //    Encryption
     implementation(libs.bcrypt)
     implementation(libs.androidx.security)
+    implementation(libs.datastore)
 
 //    Retrofit
     implementation(libs.retrofit2)
-    implementation(libs.retrofit2.moshi)
+//    implementation(libs.retrofit2.moshi)
+    implementation(libs.retrofit2.gson)
 
 //    Ok HTTP
     implementation(libs.logging.interceptor)
