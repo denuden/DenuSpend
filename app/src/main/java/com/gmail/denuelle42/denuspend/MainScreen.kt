@@ -4,15 +4,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Wallet
+import androidx.compose.material.icons.outlined.AddCircle
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -26,6 +34,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -93,6 +102,29 @@ fun MainScreen(isLoggedIn: Boolean) {
             }
         }
     }
+
+    var selectedItem by remember { mutableIntStateOf(0) }
+    val items = listOf("Home", "Wallet", "Add", "Goals", "Savings")
+    val selectedIcons = listOf(Icons.Filled.Home, Icons.Filled.Wallet, Icons.Filled.AddCircle)
+    val unselectedIcons =
+        listOf(Icons.Outlined.Home, Icons.Outlined.Wallet, Icons.Outlined.AddCircle)
+
+    NavigationBar {
+        items.forEachIndexed { index, item ->
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        if (selectedItem == index) selectedIcons[index] else unselectedIcons[index],
+                        contentDescription = item,
+                    )
+                },
+                label = { Text(item) },
+                selected = selectedItem == index,
+                onClick = { selectedItem = index },
+            )
+        }
+    }
+
     ModalNavigationDrawer(
         gesturesEnabled = topBarState, //only enable gestures if topbar is visible
         drawerState = drawerState,
