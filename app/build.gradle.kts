@@ -5,16 +5,17 @@ plugins {
     alias(libs.plugins.com.google.devtools.ksp)
     alias(libs.plugins.kotlin.plugin.serialization)
     alias(libs.plugins.kotlin.plugin.parcelize)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
     namespace = "com.gmail.denuelle42.denuspend"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.gmail.denuelle42.denuspend"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -71,6 +72,14 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }  // Rename APK
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            // Example result: AIPrompter_1.0_release.apk
+            output?.outputFileName = "DenuSpend_${variant.versionName}_${variant.buildType.name}.apk"
+        }
     }
 }
 
@@ -116,6 +125,7 @@ dependencies {
 
 //    icons extended
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.material.icons.core)
 
 //    Room DB
     implementation(libs.room.runtime)

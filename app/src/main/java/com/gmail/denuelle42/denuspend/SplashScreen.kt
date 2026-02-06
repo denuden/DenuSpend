@@ -32,6 +32,7 @@ fun SplashScreen(
             is OneTimeEvents.OnNavigate -> {
                 //if success
 //                if(it.route == AuthScreens.SplashNavigation){
+                //TODO
 //                    onFinished(true)
 //                } else { //if unauthorized
 //                    onFinished(false)
@@ -47,6 +48,8 @@ fun SplashScreen(
         if (event == Lifecycle.Event.ON_START) {
             scope.launch {
                 delay(1000)
+                onFinished(false)
+
 //                viewModel.onEvent(AuthScreenEvents.OnRefreshToken)
             }
         }

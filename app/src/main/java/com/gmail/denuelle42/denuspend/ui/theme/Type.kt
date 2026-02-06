@@ -14,7 +14,7 @@ val provider = GoogleFont.Provider(
 )
 
 // BODY: IBM Plex Sans
-val bodyFont = GoogleFont("IBM Plex Sans")
+val bodyFont = GoogleFont("Jura")
 val bodyFontFamily = FontFamily(
     Font(bodyFont, provider, FontWeight.Normal),
     Font(bodyFont, provider, FontWeight.Medium),
@@ -23,7 +23,7 @@ val bodyFontFamily = FontFamily(
 )
 
 // DISPLAY: Poppins
-val displayFont = GoogleFont("Poppins")
+val displayFont = GoogleFont("Jura")
 val displayFontFamily = FontFamily(
     Font(displayFont, provider, FontWeight.Normal),
     Font(displayFont, provider, FontWeight.Medium),

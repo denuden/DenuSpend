@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">DenuSpend</string>
+
+
+    <string name="error_error">Error</string>
+    <string name="login_hint_email">Enter your email</string>
+    <string name="login_hint_password">Enter your password</string>
+    <string name="login_btn_sign_in">Sign In</string>
 </resources>

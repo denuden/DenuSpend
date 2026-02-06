@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 fun AppNavigation(navController: NavHostController, startDestination: RootGraphs) {
    NavHost(navController = navController, startDestination = startDestination){
       addSampleNavGraph(navController)
+      addAuthNavGraph(navController)
    }
 }
 

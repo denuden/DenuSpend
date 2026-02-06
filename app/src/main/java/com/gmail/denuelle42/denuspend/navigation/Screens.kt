@@ -72,3 +72,18 @@ sealed class SampleScreens : NavigationScreens {
     @Serializable
     data class SampleDetailsNavigation(val sampleModel: SampleModel) : SampleScreens()
 }
+
+sealed class AuthScreens : NavigationScreens {
+    @Serializable
+    data object AuthMainNavigation : AuthScreens()
+    @Serializable
+    data object LoginNavigation : AuthScreens()
+    @Serializable
+    data object RegisterNavigation : AuthScreens()
+
+    //Not part, just a holder to indicate that i am in splashscreen
+    //and tells compose ui whether i am logged in or not if routed here
+    //check SplashScreen.kt
+    @Serializable
+    data object SplashNavigation : AuthScreens()
+}

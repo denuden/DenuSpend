@@ -23,8 +23,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.gmail.denuelle42.denuboilerplate.R
 import com.gmail.denuelle42.denuboilerplate.ui.common.dialog.DialogSettings.standardDialogProperties
+import com.gmail.denuelle42.denuspend.R
 
 @Composable
 fun ErrorDialog(
