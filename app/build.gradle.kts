@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.gmail.denuelle42.denuspend"
+    namespace = "com.gmail.vondenuelle.denuspend"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.gmail.denuelle42.denuspend"
+        applicationId = "com.gmail.vondenuelle.denuspend"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
