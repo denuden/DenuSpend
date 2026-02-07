@@ -1,4 +1,4 @@
-package com.gmail.vondenuelle.denuspend.data.repositories.sample
+package com.gmail.vondenuelle.denuspend.data.remote.services
 
 import com.gmail.vondenuelle.denuspend.data.repositories.sample.request.GetRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.sample.response.GetResponse
@@ -12,7 +12,8 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.QueryMap
 
-interface SampleAPI {
+//Contracts
+interface SampleService {
 
     @GET("")
     suspend fun getRequest() : Response<GetResponse>
@@ -21,7 +22,7 @@ interface SampleAPI {
     suspend fun postRequest(@Body request : GetRequest) : Response<GetResponse>
 
     @GET("{id}")
-    suspend fun getUrlParamsRequest(@Path("id") id : Int) : Response<GetResponse>
+    suspend fun  getUrlParamsRequest(@Path("id") id : Int) : Response<GetResponse>
 
     @GET("")
     suspend fun getQueryParamsRequest(@QueryMap params : Map<String, String>): Response<GetResponse>

@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.data.repositories.sample
 
+import com.gmail.vondenuelle.denuspend.data.remote.services.SampleService
 import com.gmail.vondenuelle.denuspend.data.repositories.sample.request.GetRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.sample.response.GetResponse
 import com.gmail.vondenuelle.denuspend.utils.network.ALL_IMAGE_MIME_TYPE
@@ -12,14 +13,14 @@ import javax.inject.Inject
 
 @ViewModelScoped
 class SampleRepository @Inject constructor(
-    private val sampleAPI: SampleAPI
+    private val sampleService: SampleService
 ) {
     suspend fun getRequest(request : GetRequest) : GetResponse {
         val map = mapOf(
             "id" to request.id
         ).filterValues { it != null }.mapValues { it.value.toString() }
 
-        val response = sampleAPI.getRequest()
+        val response = sampleService.getRequest()
 
         if(response.code() != HttpURLConnection.HTTP_OK){
             throw HttpException(response)
@@ -29,7 +30,7 @@ class SampleRepository @Inject constructor(
     }
 
     suspend fun getMultiPartRequest(request : GetRequest) : GetResponse {
-        val response = sampleAPI.getMultiPartRequest(
+        val response = sampleService.getMultiPartRequest(
             MultipartBody.Part.createFormData(
                 "frontImagePart",
                 request.frontImageFile?.name,

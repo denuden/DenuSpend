@@ -1,19 +1,21 @@
 package com.gmail.vondenuelle.denuspend.di.modules
 
-import com.gmail.vondenuelle.denuspend.data.remote.services.SampleService
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import retrofit2.Retrofit
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object APIModule {
+object FirebaseModule {
+
     @Provides
     @Singleton
-    fun provideSampleAPI(retrofit: Retrofit): SampleService {
-        return retrofit.create(SampleService::class.java)
+    fun provideFirebaseAuth() : FirebaseAuth {
+        return Firebase.auth
     }
 }
