@@ -1,4 +1,4 @@
-package com.gmail.denuelle42.denuspend.ui.auth
+package com.gmail.denuelle42.denuspend.ui.auth.screen
 
 import android.graphics.BlurMaskFilter
 import android.graphics.RectF
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -55,17 +57,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gmail.denuelle42.denuspend.R
 import com.gmail.denuelle42.denuspend.navigation.NavigationScreens
+import com.gmail.denuelle42.denuspend.ui.auth.AuthScreenEvents
+import com.gmail.denuelle42.denuspend.ui.auth.AuthScreenState
+import com.gmail.denuelle42.denuspend.ui.auth.AuthViewmodel
 import com.gmail.denuelle42.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.denuelle42.denuspend.utils.ObserveAsEvents
+import com.gmail.denuelle42.denuspend.utils.OneTimeEvents
 
 @Composable
 fun LoginScreen(
     onNavigate: (NavigationScreens) -> Unit,
     onPopBackStack: () -> Unit,
+    viewModel : AuthViewmodel = hiltViewModel()
 ) {
+
+    ObserveAsEvents(viewModel.channel) { event ->
+        when(event){
+            is OneTimeEvents.OnNavigate ->  onNavigate(event.route)
+            else -> Unit
+        }
+    }
+
+    val state by viewModel.stateFlow.collectAsStateWithLifecycle()
+
     LoginScreenContent(
-        state = AuthUiState()
+        state = state,
+        onEvent = viewModel::onEvent
     )
 }
 
@@ -73,7 +94,7 @@ fun LoginScreen(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun LoginScreenContent(
     modifier: Modifier = Modifier,
-    state: AuthUiState,
+    state: AuthScreenState,
     onEvent: (AuthScreenEvents) -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
@@ -83,22 +104,22 @@ fun LoginScreenContent(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxHeight()
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.Center,
+                .padding(horizontal = 16.dp, vertical = 30.dp)
+                .verticalScroll(scrollState)
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Welcome Back",
-                style = MaterialTheme.typography.displayMedium,
+                text = stringResource(R.string.login_title),
+                style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Sign in and keep your spending habits at bay",
+                text = stringResource(R.string.login_subtitle),
                 textAlign = TextAlign.Center
             )
 
@@ -117,7 +138,7 @@ fun LoginScreenContent(
                 1.dp, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.error
             )
             // Username
-            Text("Email", modifier = Modifier.align(Alignment.Start))
+            Text(stringResource(R.string.login_lbl_email), modifier = Modifier.align(Alignment.Start))
             TextField(
                 value = state.email,
                 onValueChange = {
@@ -148,7 +169,7 @@ fun LoginScreenContent(
 
             // Password
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Password", modifier = Modifier.align(Alignment.Start))
+            Text(stringResource(R.string.login_lbl_password), modifier = Modifier.align(Alignment.Start))
             TextField(
                 value = state.password,
                 onValueChange = {
@@ -198,7 +219,7 @@ fun LoginScreenContent(
                         checked = state.shouldRememberMe,
                         onCheckedChange = { onEvent(AuthScreenEvents.OnChangeRememberMeCheckBox(it)) }
                     )
-                    Text("Remember me")
+                    Text(stringResource(R.string.lbl_remember_me))
                 }
 
                 TextButton(
@@ -206,7 +227,7 @@ fun LoginScreenContent(
 //                        TODO
                     }
                 ) {
-                    Text("Forgot password?")
+                    Text(stringResource(R.string.lbl_forgot_password))
                 }
             }
 
@@ -250,7 +271,7 @@ fun LoginScreenContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.extraLarge,
                     elevation = ButtonDefaults.buttonElevation(0.dp),
-                    contentPadding = PaddingValues(vertical = 24.dp),
+                    contentPadding = PaddingValues(vertical = 20.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
@@ -275,7 +296,7 @@ fun LoginScreenContent(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = "OR SIGN IN WITH",
+                    text = stringResource(R.string.lbl_other_signin_methods),
                     modifier = Modifier.padding(horizontal = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
@@ -311,7 +332,7 @@ fun LoginScreenContent(
                             tint = Color.Unspecified
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Google")
+                        Text(stringResource(R.string.lbl_google))
                     }
                 }
 
@@ -333,7 +354,7 @@ fun LoginScreenContent(
                             tint = Color.Unspecified
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Facebook")
+                        Text(stringResource(R.string.lbl_facebook))
                     }
                 }
 
@@ -358,7 +379,21 @@ fun LoginScreenContent(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Contact Number")
+                    Text(stringResource(R.string.lbl_contact_number))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.login_lbl_navigate_to_signup))
+                TextButton(
+                    onClick = {
+                        onEvent(AuthScreenEvents.OnNavigateToRegister)
+                    }
+                ) {
+                    Text(stringResource(R.string.lbl_sign_up), fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp))
                 }
             }
         }
@@ -370,7 +405,7 @@ fun LoginScreenContent(
 private fun LoginScreen() {
     DenuSpendTheme {
         LoginScreenContent(
-            state = AuthUiState()
+            state = AuthScreenState()
 
         )
     }

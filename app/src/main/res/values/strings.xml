@@ -1,9 +1,40 @@
 <resources>
     <string name="app_name">DenuSpend</string>
 
-
-    <string name="error_error">Error</string>
+<!--    LOGIN SCREEN-->
     <string name="login_hint_email">Enter your email</string>
     <string name="login_hint_password">Enter your password</string>
     <string name="login_btn_sign_in">Sign In</string>
+    <string name="login_title">Welcome Back</string>
+    <string name="login_subtitle">Sign in and keep your spending habits at bay</string>
+    <string name="login_lbl_email">Email</string>
+    <string name="login_lbl_password">Password</string>
+
+
+<!--    REGISTER SCREEN-->
+    <string name="register_title">Create an account</string>
+    <string name="register_subtitle">Sign up and create your first savings to track</string>
+    <string name="register_lbl_email">Email</string>
+    <string name="register_lbl_password">Password</string>
+    <string name="register_lbl_name">Name</string>
+    <string name="register_hint_name">Enter your name</string>
+    <string name="register_hint_password">Enter your password</string>
+
+<!--    ERROR-->
+    <string name="error_error">Error</string>
+
+<!--    GENERAL LABELS-->
+    <string name="lbl_google">Google</string>
+    <string name="lbl_facebook">Facebook</string>
+    <string name="lbl_contact_number">Contact Number</string>
+    <string name="lbl_remember_me">Remember me</string>
+    <string name="lbl_forgot_password">Forgot password?</string>
+    <string name="lbl_other_signin_methods">OR CONTINUE WITH</string>
+    <string name="register_btn_create">Create account</string>
+    <string name="login_lbl_navigate_to_signup">New to DenuSpend?</string>
+    <string name="lbl_sign_up">Sign Up</string>
+    <string name="register_navigate_to_login">Already have an account?</string>
+    <string name="lbl_sign_in">Sign In</string>
+
+
 </resources>
