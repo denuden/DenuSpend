@@ -1,4 +1,4 @@
-package com.gmail.vondenuelle.denuboilerplate.ui.common.dialog
+package com.gmail.vondenuelle.denuspend.ui.common.dialog
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface

@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.di.modules
 
+import com.gmail.vondenuelle.denuspend.di.qualifiers.DefaultDispatcher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

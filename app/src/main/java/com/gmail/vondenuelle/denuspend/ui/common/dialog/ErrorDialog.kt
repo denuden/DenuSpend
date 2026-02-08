@@ -1,4 +1,4 @@
-package com.gmail.vondenuelle.denuboilerplate.ui.common.dialog
+package com.gmail.vondenuelle.denuspend.ui.common.dialog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.gmail.vondenuelle.denuboilerplate.ui.common.dialog.DialogSettings.standardDialogProperties
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.DialogSettings.standardDialogProperties
 import com.gmail.vondenuelle.denuspend.R
 
 @Composable

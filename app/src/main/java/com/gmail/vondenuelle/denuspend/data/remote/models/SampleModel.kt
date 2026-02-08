@@ -5,6 +5,7 @@ import androidx.annotation.Keep
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
+//From remote like json, or unfiltered data
 @Keep
 @Serializable
 @Parcelize

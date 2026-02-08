@@ -62,3 +62,10 @@
 }
 
 -keep class com.gmail.vondenuelle.denuspend.data.remote.models.* { *; }
+
+-keep class com.gmail.vondenuelle.denuspend.data.repositories.auth.response.* { *; }
+-keep class com.gmail.vondenuelle.denuspend.data.repositories.auth.request.* { *; }
+
+# Firebase Auth
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }

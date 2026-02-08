@@ -1,6 +1,6 @@
 package com.gmail.vondenuelle.denuspend.domain.repositories.sample
 
-import com.gmail.vondenuelle.denuspend.di.modules.IoDispatcher
+import com.gmail.vondenuelle.denuspend.di.qualifiers.IoDispatcher
 import com.gmail.vondenuelle.denuspend.data.repositories.sample.SampleRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.sample.request.GetRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.sample.response.GetResponse
@@ -18,7 +18,7 @@ class SampleUseCase @Inject constructor(
 ) {
     fun getRequest(request: GetRequest) : Flow<GetResponse> {
         return flow {
-            val response = sampleRepository.getRequest(request)
+            val response = sampleRepository.login(request)
             emit(response)
         }.flowOn(ioDispatcher)
     }

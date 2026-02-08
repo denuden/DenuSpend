@@ -3,14 +3,19 @@ package com.gmail.vondenuelle.denuspend.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
+import com.gmail.vondenuelle.denuspend.domain.repositories.auth.AuthUseCase
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
+import com.gmail.vondenuelle.denuspend.utils.network.ResultState
+import com.gmail.vondenuelle.denuspend.utils.network.asResult
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -19,7 +24,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewmodel @Inject constructor(
-
+    private val authUseCase: AuthUseCase
 ) : ViewModel() {
     private val TAG = AuthViewmodel::class.java.simpleName
 
@@ -31,6 +36,25 @@ class AuthViewmodel @Inject constructor(
 
     fun onEvent(event: AuthScreenEvents) {
         when (event) {
+            is AuthScreenEvents.OnLogin -> {
+                viewModelScope.launch {
+                    authUseCase.login(event.request).asResult().onEach { res ->
+                        when(res){
+                            ResultState.Completed -> {
+                                _stateFlow.update { it.copy(isSigningIn = false) }
+                            }
+                            is ResultState.Error -> onError(res.exception)
+                            ResultState.Loading -> {
+                                _stateFlow.update { it.copy(isSigningIn = true) }
+                            }
+                            is ResultState.Success -> {
+                                _stateFlow.update { it.copy(userModel = res.data) }
+                                sendEvent(OneTimeEvents.ShowToast(message = res.data.email.orEmpty()))
+                            }
+                        }
+                    }.collect()
+                }
+            }
             is AuthScreenEvents.OnChangeEmailField ->
                 _stateFlow.update { it.copy(email = event.value) }
             is AuthScreenEvents.OnChangePasswordField ->
@@ -73,6 +97,9 @@ class AuthViewmodel @Inject constructor(
                 } else if (errorResponse?.message != null) {
                     sendEvent(OneTimeEvents.ShowError(errorResponse.message))
                 }
+            }
+            else -> {
+                sendEvent(OneTimeEvents.ShowError(e?.message.orEmpty()))
             }
         }
     }

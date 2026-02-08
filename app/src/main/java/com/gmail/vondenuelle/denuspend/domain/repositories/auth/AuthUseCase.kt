@@ -2,7 +2,8 @@ package com.gmail.vondenuelle.denuspend.domain.repositories.auth
 
 import com.gmail.vondenuelle.denuspend.data.repositories.auth.AuthRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.LoginRequest
-import com.gmail.vondenuelle.denuspend.di.modules.IoDispatcher
+import com.gmail.vondenuelle.denuspend.di.qualifiers.IoDispatcher
+import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +16,7 @@ class AuthUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
-    fun login(request : LoginRequest) : Flow<LoginResponse> {
+    fun login(request : LoginRequest) : Flow<UserModel> {
         return flow {
             val response = authRepository.login(request)
             emit(response)

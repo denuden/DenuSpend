@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.auth
 
+import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
@@ -18,9 +19,8 @@ class FirebaseAuthServiceImpl @Inject constructor(
         try {
             // await will suspend until the Firebase task completes
             val result = firebaseAuth.signInWithEmailAndPassword(request.email, request.password)
-                .await()  // <-- suspends until complete
+                .await()
 
-            // After await, the task is successful
             val user = result.user ?: throw Exception("User is null after login")
             return UserModel(
                 email = user.email,
@@ -28,11 +28,10 @@ class FirebaseAuthServiceImpl @Inject constructor(
             )
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
-            throw Exception()
-//            throw InvalidCredentialsException(e.message ?: "Invalid credentials")
+            throw InvalidCredentialsException(e.message ?: "Invalid credentials")
         } catch (e: Exception) {
             // Other errors
-            throw Exception()
+            throw Exception("Login failed: ${e.message}")
         }
     }
 

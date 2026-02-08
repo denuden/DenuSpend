@@ -1,6 +1,6 @@
 package com.gmail.vondenuelle.denuspend.di.modules
 
-import com.gmail.vondenuelle.denuspend.data.remote.services.SampleService
+import com.gmail.vondenuelle.denuspend.data.remote.services.sample.SampleAPI
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 object APIModule {
     @Provides
     @Singleton
-    fun provideSampleAPI(retrofit: Retrofit): SampleService {
-        return retrofit.create(SampleService::class.java)
+    fun provideSampleAPI(retrofit: Retrofit): SampleAPI {
+        return retrofit.create(SampleAPI::class.java)
     }
 }

@@ -1,4 +1,4 @@
-package com.gmail.vondenuelle.denuspend.di.modules
+package com.gmail.vondenuelle.denuspend.di.qualifiers
 
 import javax.inject.Qualifier
 

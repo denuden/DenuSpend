@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.ui.auth.screen
 
 import android.graphics.BlurMaskFilter
 import android.graphics.RectF
+import android.widget.Toast
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,10 +61,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenState
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewmodel
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
@@ -73,15 +77,23 @@ fun LoginScreen(
     onPopBackStack: () -> Unit,
     viewModel : AuthViewmodel = hiltViewModel()
 ) {
+    val context = LocalContext.current
 
     ObserveAsEvents(viewModel.channel) { event ->
         when(event){
-            is OneTimeEvents.OnNavigate ->  onNavigate(event.route)
+            is OneTimeEvents.OnNavigate -> onNavigate(event.route)
+            is OneTimeEvents.ShowError -> Toast.makeText(context, event.msg, Toast.LENGTH_SHORT).show()
+            is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
             else -> Unit
         }
     }
 
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
+
+    LoadingDialog(
+        text = "Signing you in...",
+        showDialog = state.isSigningIn
+    ) { }
 
     LoginScreenContent(
         state = state,
@@ -266,7 +278,14 @@ fun LoginScreenContent(
                     }
             ) {
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = {
+                        onEvent(AuthScreenEvents.OnLogin(
+                            LoginRequest(
+                                email = state.email,
+                                password = state.password,
+                            )
+                        ))
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.extraLarge,
                     elevation = ButtonDefaults.buttonElevation(0.dp),
