@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.AddCircle
+import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Savings
@@ -105,7 +106,7 @@ fun MainScreen(isLoggedIn: Boolean) {
     var selectedItem by remember { mutableIntStateOf(0) }
     val items = listOf("Home", "Wallet", "Add", "Goals", "Savings")
     val unselectedIcons =
-        listOf(Icons.Outlined.Home, Icons.Outlined.AccountBalanceWallet, Icons.Outlined.AddCircle, Icons.Outlined.Flag, Icons.Outlined.Savings)
+        listOf(Icons.Outlined.Home, Icons.Outlined.AccountBalanceWallet, Icons.Outlined.AddCircleOutline, Icons.Outlined.Flag, Icons.Outlined.Savings)
         val selectedIcons = listOf(Icons.Filled.Home, Icons.Filled.AccountBalanceWallet, Icons.Filled.AddCircle, Icons.Filled.Flag, Icons.Filled.Savings)
 
     Scaffold(
@@ -150,7 +151,7 @@ fun MainScreen(isLoggedIn: Boolean) {
         Box(modifier = Modifier.padding(padding)) {
             AppNavigation(
                 navController,
-                startDestination = if (isLoggedIn) RootGraphs.HomeGraph else RootGraphs.AuthGraph)
+                startDestination = if (isLoggedIn) RootGraphs.MainGraph else RootGraphs.AuthGraph)
         }
     }
 

@@ -4,12 +4,12 @@ import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.LoginReque
 import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 
-    interface AuthService {
-        suspend fun login(request: LoginRequest) : UserModel
-        suspend fun logout()
-        suspend fun register(request: RegisterRequest)
-        suspend fun hasUser()
-        suspend fun getCurrentUser()
-        suspend fun sendEmailVerification(email : String)
-        suspend fun sendPasswordReset(email : String)
-    }
+interface AuthService {
+    suspend fun login(request: LoginRequest) : UserModel
+    suspend fun logout()
+    suspend fun register(request: RegisterRequest) : UserModel
+    suspend fun hasUser() : Boolean
+    suspend fun getCurrentUser() : UserModel
+    suspend fun sendEmailVerification(email : String)
+    suspend fun sendPasswordReset(email : String)
+}

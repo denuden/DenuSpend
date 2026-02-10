@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
 
+//UseCase = what the app does with that data to satisfy business / UI logic
 @ViewModelScoped
 class AuthUseCase @Inject constructor(
     private val authRepository: AuthRepository,
@@ -19,7 +20,22 @@ class AuthUseCase @Inject constructor(
     fun login(request : LoginRequest) : Flow<UserModel> {
         return flow {
             val response = authRepository.login(request)
+
             emit(response)
+        }.flowOn(ioDispatcher)
+    }
+
+    fun getCurrentUser() : Flow<UserModel> {
+        return flow {
+            val response = authRepository.getCurrentUser()
+            emit(response)
+        }.flowOn(ioDispatcher)
+    }
+
+    fun logout() : Flow<Boolean> {
+        return flow {
+            authRepository.logout()
+            emit(true)
         }.flowOn(ioDispatcher)
     }
 }

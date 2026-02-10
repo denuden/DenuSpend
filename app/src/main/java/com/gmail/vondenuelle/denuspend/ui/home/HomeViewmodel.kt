@@ -1,10 +1,12 @@
-package com.gmail.vondenuelle.denuspend.ui.auth
+package com.gmail.vondenuelle.denuspend.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
+import com.gmail.vondenuelle.denuspend.di.modules.TokenProvider
 import com.gmail.vondenuelle.denuspend.domain.repositories.auth.AuthUseCase
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
+import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.network.ResultState
 import com.gmail.vondenuelle.denuspend.utils.network.asResult
@@ -23,50 +25,38 @@ import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
-class AuthViewmodel @Inject constructor(
+class HomeViewmodel @Inject constructor(
+    private val tokenProvider: TokenProvider,
     private val authUseCase: AuthUseCase
 ) : ViewModel() {
-    private val TAG = AuthViewmodel::class.java.simpleName
+    private val TAG = HomeViewmodel::class.java.simpleName
 
     private val _channel = Channel<OneTimeEvents>()
     val channel = _channel.receiveAsFlow()
 
-    private val _stateFlow = MutableStateFlow<AuthScreenState>(AuthScreenState())
+    private val _stateFlow = MutableStateFlow<HomeScreenState>(HomeScreenState())
     val stateFlow = _stateFlow.asStateFlow()
 
-    fun onEvent(event: AuthScreenEvents) {
+    fun onEvent(event: HomeScreenEvents) {
         when (event) {
-            is AuthScreenEvents.OnLogin -> {
+            is HomeScreenEvents.OnGetCurrentUser -> sendEvent(OneTimeEvents.ShowToast(message = tokenProvider.getName()))
+            is HomeScreenEvents.OnSignOut -> {
                 viewModelScope.launch {
-                    authUseCase.login(event.request).asResult().onEach { res ->
+                    authUseCase.logout().asResult().onEach { res ->
                         when(res){
                             ResultState.Completed -> {
-                                _stateFlow.update { it.copy(isSigningIn = false) }
                             }
                             is ResultState.Error -> onError(res.exception)
                             ResultState.Loading -> {
-                                _stateFlow.update { it.copy(isSigningIn = true) }
                             }
                             is ResultState.Success -> {
-                                _stateFlow.update { it.copy(userModel = res.data) }
-                                sendEvent(OneTimeEvents.ShowToast(message = res.data.email.orEmpty()))
+                                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.ClearAll))
                             }
                         }
                     }.collect()
                 }
             }
-            is AuthScreenEvents.OnChangeEmailField ->
-                _stateFlow.update { it.copy(email = event.value) }
-            is AuthScreenEvents.OnChangePasswordField ->
-                _stateFlow.update { it.copy(password = event.value) }
-            is AuthScreenEvents.OnChangeNameField ->
-                _stateFlow.update { it.copy(name = event.value) }
-            is AuthScreenEvents.OnChangeRememberMeCheckBox ->
-                _stateFlow.update { it.copy(shouldRememberMe = event.value) }
-            is AuthScreenEvents.OnNavigateToLogin ->
-                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation))
-            is AuthScreenEvents.OnNavigateToRegister ->
-                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.RegisterNavigation))
+            else -> Unit
         }
     }
 

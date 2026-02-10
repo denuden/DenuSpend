@@ -39,6 +39,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -60,12 +63,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.LoginRequest
+import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenState
-import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewmodel
+import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewModel
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
@@ -73,16 +79,32 @@ import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 
 @Composable
 fun LoginScreen(
-    onNavigate: (NavigationScreens) -> Unit,
+    onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
-    viewModel : AuthViewmodel = hiltViewModel()
+    viewModel : AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    var error by remember { mutableStateOf("") }
 
     ObserveAsEvents(viewModel.channel) { event ->
         when(event){
-            is OneTimeEvents.OnNavigate -> onNavigate(event.route)
-            is OneTimeEvents.ShowError -> Toast.makeText(context, event.msg, Toast.LENGTH_SHORT).show()
+            is OneTimeEvents.OnNavigate -> {
+                val options = NavOptions.Builder().apply {
+                    when (event.behavior) {
+                        NavBehavior.ClearAll -> {
+                            setPopUpTo(0, inclusive = true)
+                            setLaunchSingleTop(true)
+                        }
+                        is NavBehavior.PopUpTo -> {
+                            setPopUpTo(event.behavior.destination, inclusive = event.behavior.inclusive)
+                        }
+                        NavBehavior.None -> Unit
+                    }
+                }.build()
+
+                onNavigate(event.route, options)
+            }
+            is OneTimeEvents.ShowError -> error = event.msg
             is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
             else -> Unit
         }
@@ -94,6 +116,11 @@ fun LoginScreen(
         text = "Signing you in...",
         showDialog = state.isSigningIn
     ) { }
+
+    ErrorDialog(
+        text = error,
+        showDialog = error.isNotEmpty()
+    ) { error = "" }
 
     LoginScreenContent(
         state = state,
@@ -279,7 +306,7 @@ fun LoginScreenContent(
             ) {
                 Button(
                     onClick = {
-                        onEvent(AuthScreenEvents.OnLogin(
+                        onEvent(AuthScreenEvents.OnLoginWithEmailAndPassword(
                             LoginRequest(
                                 email = state.email,
                                 password = state.password,

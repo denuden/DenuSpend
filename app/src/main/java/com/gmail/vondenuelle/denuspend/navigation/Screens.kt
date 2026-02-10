@@ -57,7 +57,7 @@ sealed class RootGraphs {
     @Serializable
     data object AuthGraph : RootGraphs()
     @Serializable
-    data object HomeGraph : RootGraphs()
+    data object MainGraph : RootGraphs()
 }
 
 
@@ -87,3 +87,9 @@ sealed class AuthScreens : NavigationScreens {
     @Serializable
     data object SplashNavigation : AuthScreens()
 }
+
+sealed class MainScreens : NavigationScreens {
+    @Serializable
+    data object HomeNavigation : MainScreens()
+}
+

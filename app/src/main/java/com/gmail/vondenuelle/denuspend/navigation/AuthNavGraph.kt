@@ -13,11 +13,8 @@ fun NavGraphBuilder.addAuthNavGraph(
     navigation<RootGraphs.AuthGraph>(startDestination = AuthScreens.LoginNavigation) {
         composable<AuthScreens.LoginNavigation> {
             LoginScreen(
-                onNavigate = {
-                    navController.navigate(route = it, navOptions = NavOptions.Builder()
-                        .setPopUpTo<AuthScreens.LoginNavigation>(inclusive = true)
-                        .setLaunchSingleTop(true)
-                        .build())
+                onNavigate = {route, navOptions ->
+                    navController.navigate(route, navOptions = navOptions)
                 },
                 onPopBackStack = {
                     navController.popBackStack()
@@ -26,11 +23,8 @@ fun NavGraphBuilder.addAuthNavGraph(
         }
         composable<AuthScreens.RegisterNavigation> {
             RegisterScreen(
-                onNavigate = {
-                    navController.navigate(route = it, navOptions = NavOptions.Builder()
-                        .setPopUpTo<AuthScreens.RegisterNavigation>(inclusive = true)
-                        .setLaunchSingleTop(true)
-                        .build())
+                onNavigate = {route, navOptions ->
+                    navController.navigate(route, navOptions = navOptions)
                 },
                 onPopBackStack = {
                     navController.popBackStack()

@@ -1,6 +1,7 @@
-package com.gmail.vondenuelle.denuspend.utils.security
+package com.gmail.vondenuelle.denuspend.data.storage
 
 import androidx.datastore.core.Serializer
+import com.gmail.vondenuelle.denuspend.utils.security.Crypto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString

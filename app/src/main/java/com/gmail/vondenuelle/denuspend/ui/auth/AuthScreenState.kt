@@ -12,6 +12,7 @@ data class AuthScreenState(
 
     val shouldRememberMe : Boolean = false,
     val isSigningIn : Boolean = false,
+    val isSigningUp : Boolean = false,
     val userModel : UserModel? = null,
 
 )

@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.ui.auth.screen
 
 import android.graphics.BlurMaskFilter
 import android.graphics.RectF
+import android.widget.Toast
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -47,6 +51,7 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -60,30 +65,63 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenState
-import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewmodel
+import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewModel
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 
 @Composable
 fun RegisterScreen(
-    onNavigate: (NavigationScreens) -> Unit,
+    onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
-    viewModel : AuthViewmodel = hiltViewModel()
+    viewModel : AuthViewModel = hiltViewModel()
 ) {
-
+    var error by remember { mutableStateOf("") }
+    val context = LocalContext.current
     ObserveAsEvents(viewModel.channel) { event ->
         when(event){
-            is OneTimeEvents.OnNavigate ->  onNavigate(event.route)
+            is OneTimeEvents.OnNavigate -> {
+                val options = NavOptions.Builder().apply {
+                    when (event.behavior) {
+                        NavBehavior.ClearAll -> {
+                            setPopUpTo(0, inclusive = true)
+                            setLaunchSingleTop(true)
+                        }
+                        is NavBehavior.PopUpTo -> {
+                            setPopUpTo(event.behavior.destination, inclusive = event.behavior.inclusive)
+                        }
+                        NavBehavior.None -> Unit
+                    }
+                }.build()
+
+                onNavigate(event.route, options)
+            }
+            is OneTimeEvents.ShowError -> error = event.msg
+            is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
             else -> Unit
         }
     }
 
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
+
+    LoadingDialog(
+        text = "Signing you up...",
+        showDialog = state.isSigningUp
+    ) { }
+
+
+    ErrorDialog(
+        text = error,
+        showDialog = error.isNotEmpty()
+    ) { error = "" }
 
     RegisterScreenContent(
         state = state,

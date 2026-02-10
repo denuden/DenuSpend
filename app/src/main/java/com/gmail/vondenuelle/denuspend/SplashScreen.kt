@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,10 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
-import com.gmail.vondenuelle.denuspend.ui.sample.SampleViewModel
+import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
+import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
+import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewModel
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
@@ -24,19 +28,21 @@ import kotlinx.coroutines.launch
 @Composable
 fun SplashScreen(
     onFinished: (isLoggedIn: Boolean) -> Unit,
-    viewModel: SampleViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
 
+    val context = LocalContext.current
     ObserveAsEvents(viewModel.channel) {
         when (it) {
+            is OneTimeEvents.ShowError -> Toast.makeText(context, it.msg, Toast.LENGTH_SHORT).show()
+
             is OneTimeEvents.OnNavigate -> {
                 //if success
-//                if(it.route == AuthScreens.SplashNavigation){
-                //TODO
-//                    onFinished(true)
-//                } else { //if unauthorized
-//                    onFinished(false)
-//                }
+                if(it.route == AuthScreens.SplashNavigation){
+                    onFinished(true)
+                } else { //if unauthorized
+                    onFinished(false)
+                }
             }
 
             else -> Unit
@@ -48,9 +54,7 @@ fun SplashScreen(
         if (event == Lifecycle.Event.ON_START) {
             scope.launch {
                 delay(1000)
-                onFinished(false)
-
-//                viewModel.onEvent(AuthScreenEvents.OnRefreshToken)
+                viewModel.onEvent(AuthScreenEvents.OnGetCurrentUser)
             }
         }
     }
