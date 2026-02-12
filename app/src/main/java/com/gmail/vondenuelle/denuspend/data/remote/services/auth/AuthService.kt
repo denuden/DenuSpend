@@ -10,6 +10,5 @@ interface AuthService {
     suspend fun register(request: RegisterRequest) : UserModel
     suspend fun hasUser() : Boolean
     suspend fun getCurrentUser() : UserModel
-    suspend fun sendEmailVerification(email : String)
-    suspend fun sendPasswordReset(email : String)
+    suspend fun reAuthenticateUser(request : LoginRequest)
 }

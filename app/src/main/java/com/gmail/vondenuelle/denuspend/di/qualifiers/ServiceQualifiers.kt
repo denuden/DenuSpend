@@ -4,6 +4,10 @@ import javax.inject.Qualifier
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class FirebaseProfile
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class FirebaseAuth
 
 @Qualifier

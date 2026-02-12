@@ -2,11 +2,14 @@ package com.gmail.vondenuelle.denuspend.data.remote.services.auth
 
 import android.util.Log
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
+import com.gmail.vondenuelle.denuspend.data.remote.error.CannotSendEmailVerification
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
+import com.google.firebase.auth.ActionCodeSettings
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.firestore.auth.User
@@ -115,11 +118,24 @@ class FirebaseAuthServiceImpl @Inject constructor(
         }
     }
 
-    override suspend fun sendEmailVerification(email: String) {
-//        TODO("Not yet implemented")
-    }
+    override suspend fun reAuthenticateUser(request: LoginRequest) {
+        try {
+            val user = firebaseAuth.currentUser
 
-    override suspend fun sendPasswordReset(email: String) {
-//        TODO("Not yet implemented")
+            if (user != null){
+                val credential = EmailAuthProvider
+                    .getCredential(request.email, request.password)
+                // Prompt the user to re-provide their sign-in credentials
+                user.reauthenticate(credential)
+            } else {
+                throw NoUserException()
+            }
+        } catch (e: FirebaseAuthException) {
+            // Firebase-specific errors
+            throw InvalidCredentialsException(e.localizedMessage ?: "Invalid credentials")
+        } catch (e: Exception) {
+            // rethrow error for custom exceptions
+            throw e
+        }
     }
 }

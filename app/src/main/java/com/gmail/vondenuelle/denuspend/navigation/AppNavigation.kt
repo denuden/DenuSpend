@@ -10,6 +10,7 @@ fun AppNavigation(navController: NavHostController, startDestination: RootGraphs
       addSampleNavGraph(navController)
       addAuthNavGraph(navController)
       addMainNavGraph(navController)
+      addProfileGraph(navController)
    }
 }
 

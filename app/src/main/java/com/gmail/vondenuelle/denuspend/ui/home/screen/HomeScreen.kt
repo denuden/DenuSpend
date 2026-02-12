@@ -1,13 +1,16 @@
 package com.gmail.vondenuelle.denuspend.ui.home.screen
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -54,11 +57,11 @@ fun HomeScreen(
         }
     }
 
-    ComposableLifecycle { owner, event ->
-       if (event == Lifecycle.Event.ON_START){
-           viewModel.onEvent(HomeScreenEvents.OnGetCurrentUser)
-       }
-    }
+//    ComposableLifecycle { owner, event ->
+//       if (event == Lifecycle.Event.ON_START){
+//           viewModel.onEvent(HomeScreenEvents.OnGetCurrentUser)
+//       }
+//    }
 
     HomeScreenContent(
         onEvent = viewModel::onEvent
@@ -72,7 +75,9 @@ fun HomeScreenContent(
 ) {
     Surface {
         Box(
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize().background(Color.Blue)
+
         ){
             Button(
                 onClick ={

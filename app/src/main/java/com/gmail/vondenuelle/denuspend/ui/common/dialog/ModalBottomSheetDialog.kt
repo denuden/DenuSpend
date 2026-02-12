@@ -21,8 +21,8 @@ import androidx.compose.ui.unit.dp
 fun ModalBottomSheetDialog(
     showDialog: Boolean,
     onDismissRequest: () -> Unit,
-    rightSideContent : @Composable (Modifier) -> Unit = {} ,
-    leftSideContent : @Composable (Modifier) -> Unit = {},
+    rightSideHeaderContent : @Composable (Modifier) -> Unit = {} ,
+    leftSideHeaderContent : @Composable (Modifier) -> Unit = {},
     content: @Composable () -> Unit
 ) {
     if (showDialog) {
@@ -31,9 +31,9 @@ fun ModalBottomSheetDialog(
             properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true),
             dragHandle = {
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 16.dp)) {
-                    leftSideContent(Modifier.align(Alignment.CenterStart))
+                    leftSideHeaderContent(Modifier.align(Alignment.CenterStart))
                     BottomSheetDefaults.DragHandle(modifier = Modifier.align(Alignment.Center))
-                    rightSideContent(Modifier.align(Alignment.CenterEnd))
+                    rightSideHeaderContent(Modifier.align(Alignment.CenterEnd))
                 }
             },
         ) {

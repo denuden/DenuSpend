@@ -138,7 +138,7 @@ fun AsyncImageWithErrorHandler(
                     )
                 ),
                 modifier = Modifier
-                    .padding(4.dp)
+                    .padding(16.dp)
                     .align(Alignment.TopEnd)
             ) {
                 Icon(

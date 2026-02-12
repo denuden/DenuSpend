@@ -2,10 +2,13 @@ package com.gmail.vondenuelle.denuspend.di.modules
 
 import com.gmail.vondenuelle.denuspend.data.remote.services.auth.AuthService
 import com.gmail.vondenuelle.denuspend.data.remote.services.auth.FirebaseAuthServiceImpl
+import com.gmail.vondenuelle.denuspend.data.remote.services.profile.FirebaseProfileServiceImpl
+import com.gmail.vondenuelle.denuspend.data.remote.services.profile.ProfileService
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.FirebaseSampleServiceImpl
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.RetrofitSampleServiceImpl
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.SampleService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseAuth
+import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseProfile
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseSample
 import com.gmail.vondenuelle.denuspend.di.qualifiers.RetrofitSample
 import dagger.Binds
@@ -21,8 +24,14 @@ abstract class ServiceModule {
     //It’s essentially a mapping between an interface (contract) and its implementation.
 
     @Binds
+    @FirebaseProfile
+    abstract fun bindProfileService(firebaseProfileServiceImpl: FirebaseProfileServiceImpl): ProfileService
+
+    @Binds
     @FirebaseAuth
     abstract fun bindAuthService(firebaseAuthServiceImpl: FirebaseAuthServiceImpl): AuthService
+
+
 
 
     //select either retrofit impl or firebase impl

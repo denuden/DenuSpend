@@ -9,6 +9,13 @@ class CannotLogoutException(
     override val message: String = "Cannot logout user"
 ) : Exception(message)
 
+class CannotUpdateDetailsException(
+    override val message: String = "Cannot update user details"
+) : Exception(message)
+
+class CannotSendEmailVerification(
+    override val message: String = "Cannot update user details"
+) : Exception(message)
 
 class NoUserException(
     override val message: String = "No user is signed in"

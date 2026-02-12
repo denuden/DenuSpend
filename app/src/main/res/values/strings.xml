@@ -35,6 +35,9 @@
     <string name="lbl_sign_up">Sign Up</string>
     <string name="register_navigate_to_login">Already have an account?</string>
     <string name="lbl_sign_in">Sign In</string>
+    <string name="profile_lbl_name">Name</string>
+    <string name="profile_hint_name">Enter your display name</string>
+    <string name="profile_btn_save">Save Changes</string>
 
 
 </resources>

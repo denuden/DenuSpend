@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend
 
+import android.provider.ContactsContract.Profile
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -49,9 +50,12 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.gmail.vondenuelle.denuspend.navigation.AppNavigation
 import com.gmail.vondenuelle.denuspend.navigation.MainScreens
+import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
+import com.gmail.vondenuelle.denuspend.navigation.ProfileScreens
 import com.gmail.vondenuelle.denuspend.navigation.RootGraphs
 import com.gmail.vondenuelle.denuspend.navigation.getTopBarTitle
+import com.gmail.vondenuelle.denuspend.ui.profile.screen.ProfileScreen
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
@@ -189,7 +193,9 @@ fun TopAppBarContent(
         actions = {
             IconButton(
                 onClick = {
-                    onNavigate(MainScreens.ProfileNavigation, null)
+                    onNavigate(ProfileScreens.ProfileNavigation, NavOptions.Builder().apply {
+                        setLaunchSingleTop(true)
+                    }.build())
                 }
             ) { Icon(imageVector = Icons.Filled.AccountCircle, contentDescription = null) }
         },
