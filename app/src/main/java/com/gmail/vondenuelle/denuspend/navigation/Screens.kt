@@ -1,6 +1,6 @@
 package com.gmail.vondenuelle.denuspend.navigation
 
-import com.gmail.vondenuelle.denuspend.data.remote.models.SampleModel
+import com.gmail.vondenuelle.denuspend.domain.models.SampleModel
 import kotlinx.serialization.Serializable
 
 /**
@@ -91,5 +91,7 @@ sealed class AuthScreens : NavigationScreens {
 sealed class MainScreens : NavigationScreens {
     @Serializable
     data object HomeNavigation : MainScreens()
+    @Serializable
+    data object ProfileNavigation : MainScreens()
 }
 

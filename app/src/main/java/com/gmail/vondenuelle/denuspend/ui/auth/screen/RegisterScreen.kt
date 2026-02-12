@@ -67,6 +67,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
@@ -182,7 +183,7 @@ fun RegisterScreenContent(
             // Username
             Text(stringResource(R.string.register_lbl_name), modifier = Modifier.align(Alignment.Start))
             TextField(
-                value = state.email,
+                value = state.name,
                 onValueChange = {
                     onEvent(AuthScreenEvents.OnChangeNameField(it))
                 },
@@ -260,7 +261,10 @@ fun RegisterScreenContent(
                 },
                 keyboardActions = KeyboardActions(
                     onDone = {
-//                        TODO
+                        onEvent(AuthScreenEvents.OnRegisterWithEmailAndPassword(RegisterRequest(
+                            email = state.email,
+                            password = state.password
+                        )))
                     }
                 ),
                 visualTransformation = PasswordVisualTransformation(),
@@ -341,7 +345,12 @@ fun RegisterScreenContent(
                     }
             ) {
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = {
+                        onEvent(AuthScreenEvents.OnRegisterWithEmailAndPassword(RegisterRequest(
+                            email = state.email,
+                            password = state.password
+                        )))
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.extraLarge,
                     elevation = ButtonDefaults.buttonElevation(0.dp),

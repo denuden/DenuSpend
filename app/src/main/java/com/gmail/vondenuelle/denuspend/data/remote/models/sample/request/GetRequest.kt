@@ -1,4 +1,4 @@
-package com.gmail.vondenuelle.denuspend.data.repositories.sample.request
+package com.gmail.vondenuelle.denuspend.data.remote.models.sample.request
 
 import androidx.annotation.Keep
 import java.io.File

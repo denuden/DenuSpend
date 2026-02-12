@@ -62,9 +62,13 @@
 }
 
 -keep class com.gmail.vondenuelle.denuspend.data.remote.models.* { *; }
+-keep class com.gmail.vondenuelle.denuspend.data.remote.error.* { *; }
 
--keep class com.gmail.vondenuelle.denuspend.data.repositories.auth.response.* { *; }
--keep class com.gmail.vondenuelle.denuspend.data.repositories.auth.request.* { *; }
+-keep class com.gmail.vondenuelle.denuspend.data.remote.models.auth.response.* { *; }
+-keep class com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.* { *; }
+
+-keep class com.gmail.vondenuelle.denuspend.data.remote.models.sample.response.* { *; }
+-keep class com.gmail.vondenuelle.denuspend.data.remote.models.sample.request.* { *; }
 
 # Firebase Auth
 -keep class com.google.firebase.** { *; }

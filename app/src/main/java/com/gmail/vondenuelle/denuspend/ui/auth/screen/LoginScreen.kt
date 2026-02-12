@@ -65,7 +65,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
-import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.LoginRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
@@ -224,7 +224,12 @@ fun LoginScreenContent(
                 },
                 keyboardActions = KeyboardActions(
                     onDone = {
-//                        TODO
+                        onEvent(AuthScreenEvents.OnLoginWithEmailAndPassword(
+                            LoginRequest(
+                                email = state.email,
+                                password = state.password,
+                            )
+                        ))
                     }
                 ),
                 visualTransformation = PasswordVisualTransformation(),

@@ -3,21 +3,17 @@ package com.gmail.vondenuelle.denuspend.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
+import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
 import com.gmail.vondenuelle.denuspend.di.modules.TokenProvider
-import com.gmail.vondenuelle.denuspend.domain.repositories.auth.AuthUseCase
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
-import com.gmail.vondenuelle.denuspend.utils.network.ResultState
-import com.gmail.vondenuelle.denuspend.utils.network.asResult
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -27,7 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewmodel @Inject constructor(
     private val tokenProvider: TokenProvider,
-    private val authUseCase: AuthUseCase
+    private val repository: AuthRepository
 ) : ViewModel() {
     private val TAG = HomeViewmodel::class.java.simpleName
 
@@ -42,18 +38,12 @@ class HomeViewmodel @Inject constructor(
             is HomeScreenEvents.OnGetCurrentUser -> sendEvent(OneTimeEvents.ShowToast(message = tokenProvider.getName()))
             is HomeScreenEvents.OnSignOut -> {
                 viewModelScope.launch {
-                    authUseCase.logout().asResult().onEach { res ->
-                        when(res){
-                            ResultState.Completed -> {
-                            }
-                            is ResultState.Error -> onError(res.exception)
-                            ResultState.Loading -> {
-                            }
-                            is ResultState.Success -> {
-                                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.ClearAll))
-                            }
-                        }
-                    }.collect()
+                    try {
+                        repository.logout()
+                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.ClearAll))
+                    } catch (e : Exception){
+                        onError(e)
+                    }
                 }
             }
             else -> Unit

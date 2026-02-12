@@ -1,7 +1,7 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.auth
 
-import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.LoginRequest
-import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.RegisterRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 
 interface AuthService {

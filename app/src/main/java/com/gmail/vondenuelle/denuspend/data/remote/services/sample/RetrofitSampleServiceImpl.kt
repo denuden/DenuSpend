@@ -1,7 +1,7 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.sample
 
-import com.gmail.vondenuelle.denuspend.data.repositories.sample.request.GetRequest
-import com.gmail.vondenuelle.denuspend.data.repositories.sample.response.GetResponse
+import com.gmail.vondenuelle.denuspend.data.remote.models.sample.request.GetRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.sample.response.GetResponse
 import com.gmail.vondenuelle.denuspend.utils.network.ALL_IMAGE_MIME_TYPE
 import com.gmail.vondenuelle.denuspend.utils.network.asNetWorkRequestBody
 import okhttp3.MultipartBody

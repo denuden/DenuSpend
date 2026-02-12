@@ -1,7 +1,7 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.sample
 
-import com.gmail.vondenuelle.denuspend.data.repositories.sample.request.GetRequest
-import com.gmail.vondenuelle.denuspend.data.repositories.sample.response.GetResponse
+import com.gmail.vondenuelle.denuspend.data.remote.models.sample.request.GetRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.sample.response.GetResponse
 import javax.inject.Inject
 import javax.inject.Singleton
 

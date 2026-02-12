@@ -1,9 +1,10 @@
-package com.gmail.vondenuelle.denuspend.data.remote.models
+package com.gmail.vondenuelle.denuspend.domain.models
 
 import android.os.Parcelable
 import androidx.annotation.Keep
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+
 
 //From remote like json, or unfiltered data
 @Keep

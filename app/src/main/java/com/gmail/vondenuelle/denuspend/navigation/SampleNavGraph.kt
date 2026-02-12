@@ -5,7 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
-import com.gmail.vondenuelle.denuspend.data.remote.models.SampleModel
+import com.gmail.vondenuelle.denuspend.domain.models.SampleModel
 import com.gmail.vondenuelle.denuspend.utils.parcelableType
 import kotlin.reflect.typeOf
 

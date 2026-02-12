@@ -4,8 +4,8 @@ import android.util.Log
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
-import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.LoginRequest
-import com.gmail.vondenuelle.denuspend.data.repositories.auth.request.RegisterRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException

@@ -27,8 +27,7 @@ fun getTopBarTitle(currentRoute : String) : String{
 
    //check route with specific route under items in sealed class NavigationScreens (not RootGraphs)
    return when(cleaned){
-      "PeopleNavigation" -> "Search People"
-      "PeopleDetailsNavigation" -> "Details"
-      else -> "DenuAnime"
+      "ProfileNavigation" -> "Profile"
+      else -> "DenuSpend"
    }
 }

@@ -1,8 +1,8 @@
-package com.gmail.vondenuelle.denuspend.data.repositories.sample
+package com.gmail.vondenuelle.denuspend.data.repositories
 
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.SampleService
-import com.gmail.vondenuelle.denuspend.data.repositories.sample.request.GetRequest
-import com.gmail.vondenuelle.denuspend.data.repositories.sample.response.GetResponse
+import com.gmail.vondenuelle.denuspend.data.remote.models.sample.request.GetRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.sample.response.GetResponse
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseSample
 import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject

@@ -1,4 +1,4 @@
-package com.gmail.vondenuelle.denuspend.data.repositories.auth.request
+package com.gmail.vondenuelle.denuspend.data.remote.models.auth.request
 
 data class RegisterRequest(
     val email : String,

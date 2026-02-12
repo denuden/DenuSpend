@@ -1,27 +1,22 @@
 package com.gmail.vondenuelle.denuspend.ui.auth
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
-import com.gmail.vondenuelle.denuspend.domain.repositories.auth.AuthUseCase
+import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.MainScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
-import com.gmail.vondenuelle.denuspend.utils.network.ResultState
-import com.gmail.vondenuelle.denuspend.utils.network.asResult
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -31,7 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authUseCase: AuthUseCase
+    private val repository: AuthRepository,
 ) : ViewModel() {
     private val TAG = AuthViewModel::class.java.simpleName
 
@@ -45,47 +40,60 @@ class AuthViewModel @Inject constructor(
         when (event) {
             is AuthScreenEvents.OnLoginWithEmailAndPassword -> {
                 viewModelScope.launch {
-                    authUseCase.login(event.request).asResult().onEach { res ->
-                        when(res){
-                            ResultState.Completed -> {
-                                _stateFlow.update { it.copy(isSigningIn = false) }
-                            }
-                            is ResultState.Error -> onError(res.exception)
-                            ResultState.Loading -> {
-                                _stateFlow.update { it.copy(isSigningIn = true) }
-                            }
-                            is ResultState.Success -> {
-                                if(res.data.email != null) {
-                                    _stateFlow.update { it.copy(userModel = res.data) }
-                                    sendEvent(OneTimeEvents.ShowToast(message = res.data.email))
-                                    sendEvent(OneTimeEvents.OnNavigate(MainScreens.HomeNavigation,  behavior = NavBehavior.ClearAll))
-                                }else{
-                                    sendEvent(OneTimeEvents.ShowError("User is not existing"))
-                                }
-                            }
+                    _stateFlow.update { it.copy(isSigningIn = true) }
+
+                    try {
+                        val user = repository.login(event.request)
+                        if(user.email != null) {
+                            _stateFlow.update { it.copy(userModel = user) }
+                            sendEvent(OneTimeEvents.ShowToast(message = user.email))
+                            sendEvent(OneTimeEvents.OnNavigate(MainScreens.HomeNavigation,  behavior = NavBehavior.ClearAll))
+                        }else{
+                            sendEvent(OneTimeEvents.ShowError("User is not existing"))
                         }
-                    }.collect()
+                        _stateFlow.update { it.copy(isSigningIn = false) }
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy( isSigningIn = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is AuthScreenEvents.OnRegisterWithEmailAndPassword -> {
+                viewModelScope.launch {
+                    _stateFlow.update { it.copy(isSigningUp = true) }
+
+                    try {
+                        val user = repository.register(event.request)
+                        if(user.email != null) {
+                            _stateFlow.update { it.copy(userModel = user) }
+                            sendEvent(OneTimeEvents.ShowToast(message = user.email))
+                            sendEvent(OneTimeEvents.OnNavigate(MainScreens.HomeNavigation,  behavior = NavBehavior.ClearAll))
+                        }else{
+                            sendEvent(OneTimeEvents.ShowError("User is not existing"))
+                        }
+                        _stateFlow.update { it.copy(isSigningUp = false) }
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy( isSigningUp = false) }
+                        onError(e)
+                    }
                 }
             }
             is AuthScreenEvents.OnGetCurrentUser -> {
                 viewModelScope.launch {
-                    authUseCase.getCurrentUser().asResult().onEach { res ->
-                        when(res){
-                            ResultState.Completed -> {
-                                _stateFlow.update { it.copy(isSigningIn = false) }
-                            }
-                            is ResultState.Error -> onError(res.exception)
-                            ResultState.Loading -> {
-                                _stateFlow.update { it.copy(isSigningIn = true) }
-                            }
-                            is ResultState.Success -> {
-                                _stateFlow.update { it.copy(userModel = res.data) }
-                                //if user is existing, just send SplashNavigation for placeholder
-                                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.SplashNavigation))
-                            }
-                        }
-                    }.collect()
+                    _stateFlow.update { it.copy(isSigningIn = true) }
+
+                    try {
+                        val user = repository.getCurrentUser()
+                        _stateFlow.update { it.copy(userModel = user, isSigningIn = false) }
+                        //if user is existing, just send SplashNavigation for placeholder
+                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.SplashNavigation))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy( isSigningIn = false) }
+                        onError(e)
+                    }
                 }
+
             }
             is AuthScreenEvents.OnChangeEmailField ->
                 _stateFlow.update { it.copy(email = event.value) }
