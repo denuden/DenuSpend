@@ -9,18 +9,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 @Composable
-fun FullScreenDialog(showDialog: Boolean, onDismissRequest: () -> Unit, content: @Composable () -> Unit) {
+fun FullScreenDialog(showDialog: Boolean, color: Color = Color.Gray, onDismissRequest: () -> Unit, content: @Composable () -> Unit) {
     if (showDialog) {
         Dialog(
             onDismissRequest = onDismissRequest,
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = Color.LightGray
-            ) {
+
                 content()
-            }
         }
     }
 }

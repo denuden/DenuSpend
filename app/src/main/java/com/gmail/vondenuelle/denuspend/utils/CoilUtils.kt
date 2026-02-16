@@ -3,6 +3,7 @@ package com.gmail.vondenuelle.denuspend.utils
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.OpenInFull
@@ -115,6 +116,7 @@ fun AsyncImageWithErrorHandler(
     contentScale: ContentScale = ContentScale.Crop,
     contentDescription: String? = "Image",
     shouldShowEnlargeButton: Boolean = true,
+    enlargeImageIcon : ImageVector = Icons.Default.OpenInFull,
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -142,7 +144,7 @@ fun AsyncImageWithErrorHandler(
                     .align(Alignment.TopEnd)
             ) {
                 Icon(
-                    imageVector = Icons.Default.OpenInFull,
+                    imageVector = enlargeImageIcon,
                     contentDescription = "Enlarge Image",
                     tint = Color.White,
                 )

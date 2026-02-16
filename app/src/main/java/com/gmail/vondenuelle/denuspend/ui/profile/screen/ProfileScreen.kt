@@ -42,17 +42,25 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
+import com.gmail.vondenuelle.denuspend.utils.media.MediaPickerViewModel
+import com.gmail.vondenuelle.denuspend.utils.media.OptionDialogPicker
+import com.gmail.vondenuelle.denuspend.utils.media.SelectedOption
+import com.gmail.vondenuelle.denuspend.utils.media.rememberMediaPickerHelper
 
 @Composable
 fun ProfileScreen(
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    mediaPickerViewModel: MediaPickerViewModel = hiltViewModel()
 ) {
+
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     var error by remember { mutableStateOf("") }
+
+    var showMediaOptionDialog by remember { mutableStateOf(false) }
 
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
@@ -90,6 +98,19 @@ fun ProfileScreen(
         }
     }
 
+    //Media Picker
+    ObserveAsEvents(mediaPickerViewModel.uriStateFlow) {
+        it.singleFile?.let { uri ->
+            //save to gallery after initial temporary save
+            mediaPickerViewModel.saveToGallery(uri)
+        }
+        it.savedToGalleryUri?.let { uri ->
+            viewModel.onEvent(ProfileScreenEvents.OnChangePhoto(uri.toString()))
+        }
+    }
+
+    val mediaPickerHelper = rememberMediaPickerHelper(mediaPickerViewModel)
+
     ComposableLifecycle { _, event ->
         if (event == Lifecycle.Event.ON_START) {
             viewModel.onEvent(ProfileScreenEvents.OnGetUserProfile)
@@ -100,9 +121,25 @@ fun ProfileScreen(
         showDialog = error.isNotEmpty()
     ) { error = "" }
 
+    OptionDialogPicker(
+        showDialog = showMediaOptionDialog,
+        onDismiss = {
+            showMediaOptionDialog = false
+        },
+        openCamera = {
+            mediaPickerHelper.checkPermissionsAndOpenCamera()
+        },
+        openPhotoPicker = {
+            mediaPickerHelper.checkPermissionsAndOpenPhotoPicker()
+        }
+    )
 
     ProfileScreenContent(
         state = state,
+        onSelectPhoto = {
+            mediaPickerViewModel.setSelectedOption(SelectedOption.SELECTED_SINGLE_FILE)
+            showMediaOptionDialog = true
+        },
         onEvent = viewModel::onEvent
     )
 }
@@ -111,6 +148,7 @@ fun ProfileScreen(
 fun ProfileScreenContent(
     modifier: Modifier = Modifier,
     state: ProfileScreenState,
+    onSelectPhoto: () -> Unit,
     onEvent: (ProfileScreenEvents) -> Unit
 ) {
 
@@ -130,9 +168,7 @@ fun ProfileScreenContent(
             photo = state.photo,
             photoError = state.photoError,
             onChangePhoto = {
-                //TODO add picker dialog for photo or gallery
-                //then call onevent to change and trigger state
-//                onEvent(ProfileScreenEvents.OnChangePhoto(it))
+                onSelectPhoto()
             },
             onSave = {
                 onEvent(ProfileScreenEvents.OnSaveChanges)
@@ -142,10 +178,11 @@ fun ProfileScreenContent(
 
 
     androidx.compose.material3.Surface(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) {
         Column {
             ProfileHeader(
+                photo = state.profile?.photo.orEmpty(),
                 onEdit = { editDialog = true },
                 onPopBackStack = {
                     onEvent(ProfileScreenEvents.OnPopBackStack)
@@ -202,7 +239,7 @@ fun ProfileScreenContent(
 private fun ProfileScreenPreview() {
     DenuSpendTheme {
         androidx.compose.material3.Surface {
-            ProfileScreenContent(state = ProfileScreenState()) {}
+            ProfileScreenContent(state = ProfileScreenState(), onSelectPhoto = {}) {}
         }
     }
 }

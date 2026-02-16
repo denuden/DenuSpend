@@ -13,6 +13,7 @@ import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.userProfileChangeRequest
+import com.google.firebase.firestore.FirebaseFirestore
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,7 +29,8 @@ class FirebaseProfileServiceImpl @Inject constructor(
                     uid = user.uid,
                     name = user.displayName,
                     email = user.email,
-                    isEmailVerified = user.isEmailVerified
+                    isEmailVerified = user.isEmailVerified,
+                    photo = user.photoUrl.toString()
                 )
             } else {
                 throw NoUserException()

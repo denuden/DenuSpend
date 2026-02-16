@@ -2,17 +2,14 @@ package com.gmail.vondenuelle.denuspend.data.remote.services.auth
 
 import android.util.Log
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
-import com.gmail.vondenuelle.denuspend.data.remote.error.CannotSendEmailVerification
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
-import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
-import com.google.firebase.firestore.auth.User
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,7 +30,8 @@ class FirebaseAuthServiceImpl @Inject constructor(
                 uid = user.uid,
                 name = user.displayName,
                 email = user.email,
-                isEmailVerified = user.isEmailVerified
+                isEmailVerified = user.isEmailVerified,
+                photo = user.photoUrl.toString(),
             )
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
@@ -59,7 +57,9 @@ class FirebaseAuthServiceImpl @Inject constructor(
                 uid = user.uid,
                 name = user.displayName,
                 email = user.email,
-                isEmailVerified = user.isEmailVerified
+                isEmailVerified = user.isEmailVerified,
+                photo = user.photoUrl.toString(),
+
             )
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
@@ -104,7 +104,8 @@ class FirebaseAuthServiceImpl @Inject constructor(
                     uid = user.uid,
                     name = user.displayName,
                     email = user.email,
-                    isEmailVerified = user.isEmailVerified
+                    isEmailVerified = user.isEmailVerified,
+                    photo = user.photoUrl.toString(),
                 )
             } else {
                 throw NoUserException()

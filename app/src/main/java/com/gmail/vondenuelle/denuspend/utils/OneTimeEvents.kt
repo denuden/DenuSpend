@@ -10,6 +10,7 @@ import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 sealed class OneTimeEvents {
     data class OnNavigate(val route : NavigationScreens,  val behavior: NavBehavior = NavBehavior.None) : OneTimeEvents()
     object OnPopBackStack : OneTimeEvents()
+    object OnCloseDialog : OneTimeEvents()
     data class ShowSnackbar(val snackbarEvent: SnackbarEvent)  : OneTimeEvents()
     data class ShowToast(val message : String)  : OneTimeEvents()
     data class ShowInputError(val errors : ErrorData)  : OneTimeEvents()

@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.gmail.vondenuelle.denuspend"
-        minSdk = 26
+        minSdk = 29
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -171,4 +171,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.analytics)
 //    implementation(libs.firebase.pnv)
+
+//    Appcompat
+    implementation(libs.appcompat)
 }

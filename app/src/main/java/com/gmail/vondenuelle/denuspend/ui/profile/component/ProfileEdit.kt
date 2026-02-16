@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.AsyncImageWithErrorHandler
@@ -66,15 +67,16 @@ fun ProfileEdit(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
+                .clip(CircleShape)
                 .padding(12.dp)
                 .clickableDelayed {
                     onChangePhoto()
                 }
         ) {
             AsyncImageWithErrorHandler(
-                model = photo,
+                model = photo.toUri(),
                 modifier = Modifier
-                    .size(150.dp)
+                    .size(200.dp)
                     .clip(CircleShape)
                     .background(color = MaterialTheme.colorScheme.surfaceDim),
 
@@ -134,10 +136,9 @@ fun ProfileEdit(
         Spacer(modifier = Modifier.height(16.dp))
         FilledTonalButton(onClick = {
             onSave()
-        }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+        }, modifier = Modifier.align(Alignment.CenterHorizontally).fillMaxWidth()) {
             Text(stringResource(R.string.profile_btn_save))
         }
-
     }
 }
 

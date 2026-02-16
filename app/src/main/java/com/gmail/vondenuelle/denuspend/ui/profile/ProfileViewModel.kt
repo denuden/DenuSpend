@@ -1,8 +1,10 @@
 package com.gmail.vondenuelle.denuspend.ui.profile
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
+import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.google.gson.Gson
@@ -37,7 +39,7 @@ class ProfileViewModel @Inject constructor(
 
                     try {
                         val user = profileRepository.getUserProfile()
-                        _stateFlow.update { it.copy(isLoading = false, profile = user) }
+                        _stateFlow.update { it.copy(isLoading = false, profile = user, name = user.name.orEmpty(), photo = user.photo.orEmpty()) }
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy(isLoading = false) }
                         onError(e)
@@ -55,10 +57,20 @@ class ProfileViewModel @Inject constructor(
                 sendEvent(OneTimeEvents.OnPopBackStack)
 
             ProfileScreenEvents.OnSaveChanges -> {
-                try {
-
-                } catch (e : Exception) {
-                    onError(e)
+                viewModelScope.launch {
+                    _stateFlow.update { it.copy(isLoading = true) }
+                    try {
+                        profileRepository.updateUserProfile(request = UpdateProfileRequest(
+                            name = _stateFlow.value.name,
+                            photoUri = _stateFlow.value.photo
+                        ))
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        sendEvent(OneTimeEvents.ShowToast("Profile updated successfully"))
+                        sendEvent(OneTimeEvents.OnCloseDialog)
+                    } catch (e : Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
                 }
             }
         }

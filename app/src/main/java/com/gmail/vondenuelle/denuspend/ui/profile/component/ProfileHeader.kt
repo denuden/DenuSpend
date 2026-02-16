@@ -24,29 +24,37 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.FullScreenDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
-import com.gmail.vondenuelle.denuspend.utils.AsyncImageWithBackgroundPalette
 import com.gmail.vondenuelle.denuspend.utils.AsyncImageWithErrorHandler
+import com.gmail.vondenuelle.denuspend.utils.clickableDelayed
 
 @Composable
-fun ProfileHeader(modifier: Modifier = Modifier, onPopBackStack: () -> Unit, onEdit : () -> Unit) {
+fun ProfileHeader(
+    modifier: Modifier = Modifier,
+    photo: String,
+    onPopBackStack: () -> Unit,
+    onEdit: () -> Unit
+) {
 
     var shouldShowFullScreenImage by remember { mutableStateOf(false) }
 
 
     FullScreenDialog(
+        color = Color.Transparent,
         showDialog = shouldShowFullScreenImage,
         onDismissRequest = { shouldShowFullScreenImage = false }) {
-        AsyncImageWithBackgroundPalette(
-            model = "wgwgw",
+        AsyncImageWithErrorHandler(
+            model = photo,
             onEnlargeImage = {
                 shouldShowFullScreenImage = false
             }, //since this is from fullscreen, make it a close button instead of enlarge
             enlargeImageIcon = Icons.Default.Close,
-            onPaletteBuilderSuccess = { }
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxSize()
         )
     }
 
@@ -56,17 +64,19 @@ fun ProfileHeader(modifier: Modifier = Modifier, onPopBackStack: () -> Unit, onE
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(350.dp)
         ) {
             // Image
             AsyncImageWithErrorHandler(
                 modifier = Modifier
-                    .height(300.dp)
-                    .fillMaxWidth(),
-                model = "fewgw",
+                    .height(350.dp)
+                    .fillMaxWidth()
+                    .clickableDelayed() {
+                        shouldShowFullScreenImage = true
+                    },
+                model = photo,
                 shouldShowEnlargeButton = false,
                 onEnlargeImage = {
-
                 }
             )
 
@@ -76,11 +86,11 @@ fun ProfileHeader(modifier: Modifier = Modifier, onPopBackStack: () -> Unit, onE
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.background
-                            ),
-                            startY = 60f // controls fade start
+                            colorStops = arrayOf(
+                                0.0f to Color.Transparent,
+                                0.6f to Color.Transparent,
+                                1.0f to MaterialTheme.colorScheme.background
+                            )
                         )
                     )
             )
@@ -98,7 +108,7 @@ fun ProfileHeader(modifier: Modifier = Modifier, onPopBackStack: () -> Unit, onE
             ) {
                 Icon(imageVector = Icons.Filled.ArrowBackIosNew, contentDescription = null)
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
 
             IconButton(
@@ -119,7 +129,7 @@ fun ProfileHeader(modifier: Modifier = Modifier, onPopBackStack: () -> Unit, onE
 private fun ProfileHeaderPreview() {
     DenuSpendTheme {
         androidx.compose.material3.Surface {
-            ProfileHeader(onPopBackStack = {}) {
+            ProfileHeader(onPopBackStack = {}, photo = "") {
 
             }
         }

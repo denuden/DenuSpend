@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- This path name matches the directory you use in createCameraUri.kt -->
+    <external-files-path
+        name="camera_pictures"
+        path="camera_pictures/" />
+</paths>
