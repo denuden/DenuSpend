@@ -9,6 +9,8 @@ sealed class AuthScreenEvents {
     data class OnChangeNameField(val value: String) : AuthScreenEvents()
     data class OnChangeRememberMeCheckBox(val value: Boolean) : AuthScreenEvents()
 
+    data class OnChangePasswordVisibility(val value: Boolean) : AuthScreenEvents()
+
     data class OnLoginWithEmailAndPassword(val request : LoginRequest) : AuthScreenEvents()
     data class OnRegisterWithEmailAndPassword(val request : RegisterRequest) : AuthScreenEvents()
     object OnGetCurrentUser : AuthScreenEvents()

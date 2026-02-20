@@ -39,7 +39,15 @@ class ProfileViewModel @Inject constructor(
 
                     try {
                         val user = profileRepository.getUserProfile()
-                        _stateFlow.update { it.copy(isLoading = false, profile = user, name = user.name.orEmpty(), photo = user.photo.orEmpty()) }
+                        Log.d("Getuser", user.toString())
+                        _stateFlow.update {
+                            it.copy(
+                                isLoading = false,
+                                profile = user,
+                                name = user.name.orEmpty(),
+                                photo = user.photo.orEmpty()
+                            )
+                        }
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy(isLoading = false) }
                         onError(e)
@@ -60,19 +68,35 @@ class ProfileViewModel @Inject constructor(
                 viewModelScope.launch {
                     _stateFlow.update { it.copy(isLoading = true) }
                     try {
-                        profileRepository.updateUserProfile(request = UpdateProfileRequest(
-                            name = _stateFlow.value.name,
-                            photoUri = _stateFlow.value.photo
-                        ))
+                        profileRepository.updateUserProfile(
+                            request = UpdateProfileRequest(
+                                name = _stateFlow.value.name,
+                                photoUri = _stateFlow.value.photo
+                            )
+                        )
                         _stateFlow.update { it.copy(isLoading = false) }
                         sendEvent(OneTimeEvents.ShowToast("Profile updated successfully"))
                         sendEvent(OneTimeEvents.OnCloseDialog)
-                    } catch (e : Exception) {
+                        onEvent(ProfileScreenEvents.OnGetUserProfile)
+                    } catch (e: Exception) {
                         _stateFlow.update { it.copy(isLoading = false) }
                         onError(e)
                     }
                 }
             }
+
+            ProfileScreenEvents.OnSendEmailVerification ->
+                viewModelScope.launch {
+                    try {
+                        _stateFlow.update { it.copy(isLoading = true) }
+                        profileRepository.sendEmailVerification()
+                        sendEvent(OneTimeEvents.ShowToast("Email verification sent"))
+                        _stateFlow.update { it.copy(isLoading = false) }
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
         }
     }
 

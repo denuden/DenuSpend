@@ -37,8 +37,7 @@ fun LoadingDialog(
             Card(
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .padding(16.dp),
+                    .height(200.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Column(
@@ -46,6 +45,7 @@ fun LoadingDialog(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(16.dp)
                 ) {
                     ContainedLoadingIndicator()
                     Text(

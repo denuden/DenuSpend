@@ -7,6 +7,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
+import com.gmail.vondenuelle.denuspend.domain.usecase.auth.RegisterUseCase
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.MainScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
@@ -27,6 +28,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
+    private val registerUseCase: RegisterUseCase,
 ) : ViewModel() {
     private val TAG = AuthViewModel::class.java.simpleName
 
@@ -64,7 +66,7 @@ class AuthViewModel @Inject constructor(
                     _stateFlow.update { it.copy(isSigningUp = true) }
 
                     try {
-                        val user = repository.register(event.request)
+                        val user = registerUseCase.invoke(event.request)
                         if(user.email != null) {
                             _stateFlow.update { it.copy(userModel = user) }
                             sendEvent(OneTimeEvents.ShowToast(message = user.email))
@@ -85,6 +87,7 @@ class AuthViewModel @Inject constructor(
 
                     try {
                         val user = repository.getCurrentUser()
+
                         _stateFlow.update { it.copy(userModel = user, isSigningIn = false) }
                         //if user is existing, just send SplashNavigation for placeholder
                         sendEvent(OneTimeEvents.OnNavigate(AuthScreens.SplashNavigation))
@@ -103,6 +106,8 @@ class AuthViewModel @Inject constructor(
                 _stateFlow.update { it.copy(name = event.value) }
             is AuthScreenEvents.OnChangeRememberMeCheckBox ->
                 _stateFlow.update { it.copy(shouldRememberMe = event.value) }
+            is AuthScreenEvents.OnChangePasswordVisibility ->
+                _stateFlow.update { it.copy(showPassword = event.value) }
             is AuthScreenEvents.OnNavigateToLogin ->
                 sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.PopUpTo(AuthScreens.RegisterNavigation, inclusive =  true)))
             is AuthScreenEvents.OnNavigateToRegister ->
@@ -111,6 +116,15 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    private fun logout(){
+        viewModelScope.launch {
+            try {
+                repository.logout()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
+    }
     private fun onError(e: Throwable?) {
         when (e) {
             //Top level exceptions (e.g retrofit)
@@ -150,7 +164,9 @@ class AuthViewModel @Inject constructor(
             // User defined custom Exceptions
             is NoUserException -> {
                 //send to login
-                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation))
+                //remove stored creds
+                logout()
+                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation, behavior = NavBehavior.ClearAll))
             }
             is InvalidCredentialsException -> {
                 sendEvent(OneTimeEvents.ShowError(e.message.orEmpty()))

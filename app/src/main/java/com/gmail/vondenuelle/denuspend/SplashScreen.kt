@@ -48,7 +48,6 @@ fun SplashScreen(
             else -> Unit
         }
     }
-
     val scope = rememberCoroutineScope()
     ComposableLifecycle { source, event ->
         if (event == Lifecycle.Event.ON_START) {

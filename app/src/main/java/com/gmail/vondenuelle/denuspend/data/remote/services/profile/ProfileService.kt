@@ -10,6 +10,6 @@ interface ProfileService {
     suspend fun updateUserProfile(request: UpdateProfileRequest)
     suspend fun updateEmail(request : UpdateEmailRequest)
     suspend fun updatePassword(request : UpdatePasswordRequest)
-    suspend fun sendEmailVerification(request : UpdateEmailRequest)
+    suspend fun sendEmailVerification()
     suspend fun sendPasswordReset(request : UpdateEmailRequest)
 }

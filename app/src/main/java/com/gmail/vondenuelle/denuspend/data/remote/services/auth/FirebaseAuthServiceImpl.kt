@@ -10,6 +10,7 @@ import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -98,8 +99,11 @@ class FirebaseAuthServiceImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): UserModel {
         try {
-            val user = firebaseAuth.currentUser
-            if (user != null) {
+            if (firebaseAuth.currentUser != null) {
+                firebaseAuth.currentUser!!.reload().await()
+                val user = firebaseAuth.currentUser!!
+                user.getIdToken(true).await()
+
                 return UserModel(
                     uid = user.uid,
                     name = user.displayName,
@@ -110,7 +114,11 @@ class FirebaseAuthServiceImpl @Inject constructor(
             } else {
                 throw NoUserException()
             }
-        } catch (e: FirebaseAuthException) {
+        } catch (e: FirebaseAuthInvalidUserException) {
+            // Firebase no user found
+            throw NoUserException(e.localizedMessage ?: "No user is signed in")
+        }
+        catch (e: FirebaseAuthException) {
             // Firebase-specific errors
             throw InvalidCredentialsException(e.localizedMessage ?: "Cannot get current user")
         } catch (e: Exception) {
@@ -127,7 +135,7 @@ class FirebaseAuthServiceImpl @Inject constructor(
                 val credential = EmailAuthProvider
                     .getCredential(request.email, request.password)
                 // Prompt the user to re-provide their sign-in credentials
-                user.reauthenticate(credential)
+                user.reauthenticate(credential).await()
             } else {
                 throw NoUserException()
             }

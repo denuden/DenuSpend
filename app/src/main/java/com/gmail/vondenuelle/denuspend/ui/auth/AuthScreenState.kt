@@ -10,6 +10,8 @@ data class AuthScreenState(
     val password : String = "",
     val passwordError : String = "",
 
+    val showPassword : Boolean = false,
+
     val shouldRememberMe : Boolean = false,
     val isSigningIn : Boolean = false,
     val isSigningUp : Boolean = false,

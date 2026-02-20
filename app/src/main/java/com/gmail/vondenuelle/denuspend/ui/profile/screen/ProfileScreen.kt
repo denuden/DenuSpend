@@ -32,6 +32,7 @@ import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ModalBottomSheetDialog
 import com.gmail.vondenuelle.denuspend.ui.profile.ProfileScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.profile.ProfileScreenState
@@ -42,6 +43,7 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
+import com.gmail.vondenuelle.denuspend.utils.clickableDelayed
 import com.gmail.vondenuelle.denuspend.utils.media.MediaPickerViewModel
 import com.gmail.vondenuelle.denuspend.utils.media.OptionDialogPicker
 import com.gmail.vondenuelle.denuspend.utils.media.SelectedOption
@@ -61,6 +63,7 @@ fun ProfileScreen(
     var error by remember { mutableStateOf("") }
 
     var showMediaOptionDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
 
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
@@ -93,6 +96,9 @@ fun ProfileScreen(
             is OneTimeEvents.ShowError -> error = event.msg
             is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT)
                 .show()
+            is OneTimeEvents.OnCloseDialog -> {
+                showEditDialog = false
+            }
 
             else -> Unit
         }
@@ -116,6 +122,11 @@ fun ProfileScreen(
             viewModel.onEvent(ProfileScreenEvents.OnGetUserProfile)
         }
     }
+
+    LoadingDialog(
+        showDialog = state.isLoading,
+        text = "Loading...",
+    ) { }
     ErrorDialog(
         text = error,
         showDialog = error.isNotEmpty()
@@ -134,11 +145,34 @@ fun ProfileScreen(
         }
     )
 
+
+    ModalBottomSheetDialog(
+        showDialog = showEditDialog,
+        onDismissRequest = { showEditDialog = false }
+    ) {
+        ProfileEdit(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
+            name = state.name,
+            nameError = state.nameError,
+            onChangeName = {
+                viewModel.onEvent(ProfileScreenEvents.OnChangeName(it))
+            },
+            photo = state.photo,
+            photoError = state.photoError,
+            onChangePhoto = {
+                mediaPickerViewModel.setSelectedOption(SelectedOption.SELECTED_SINGLE_FILE)
+                showMediaOptionDialog = true
+            },
+            onSave = {
+                viewModel.onEvent(ProfileScreenEvents.OnSaveChanges)
+            }
+        )
+    }
+
     ProfileScreenContent(
         state = state,
-        onSelectPhoto = {
-            mediaPickerViewModel.setSelectedOption(SelectedOption.SELECTED_SINGLE_FILE)
-            showMediaOptionDialog = true
+        onShowEditDialog = {
+            showEditDialog = true
         },
         onEvent = viewModel::onEvent
     )
@@ -148,34 +182,9 @@ fun ProfileScreen(
 fun ProfileScreenContent(
     modifier: Modifier = Modifier,
     state: ProfileScreenState,
-    onSelectPhoto: () -> Unit,
+    onShowEditDialog : () -> Unit,
     onEvent: (ProfileScreenEvents) -> Unit
 ) {
-
-    var editDialog by remember { mutableStateOf(false) }
-
-    ModalBottomSheetDialog(
-        showDialog = editDialog,
-        onDismissRequest = { editDialog = false }
-    ) {
-        ProfileEdit(
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
-            name = state.name,
-            nameError = state.nameError,
-            onChangeName = {
-                onEvent(ProfileScreenEvents.OnChangeName(it))
-            },
-            photo = state.photo,
-            photoError = state.photoError,
-            onChangePhoto = {
-                onSelectPhoto()
-            },
-            onSave = {
-                onEvent(ProfileScreenEvents.OnSaveChanges)
-            }
-        )
-    }
-
 
     androidx.compose.material3.Surface(
         modifier = modifier.fillMaxSize()
@@ -183,7 +192,7 @@ fun ProfileScreenContent(
         Column {
             ProfileHeader(
                 photo = state.profile?.photo.orEmpty(),
-                onEdit = { editDialog = true },
+                onEdit = { onShowEditDialog()},
                 onPopBackStack = {
                     onEvent(ProfileScreenEvents.OnPopBackStack)
                 }
@@ -219,6 +228,11 @@ fun ProfileScreenContent(
                     text = if (isEmailVerified) "Email Verified" else "Not yet verified",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White,
+                    modifier = Modifier.clickableDelayed {
+                        if (!isEmailVerified) {
+                            onEvent(ProfileScreenEvents.OnSendEmailVerification)
+                        }
+                    }
                 )
                 if (isEmailVerified) {
                     Icon(
@@ -239,7 +253,7 @@ fun ProfileScreenContent(
 private fun ProfileScreenPreview() {
     DenuSpendTheme {
         androidx.compose.material3.Surface {
-            ProfileScreenContent(state = ProfileScreenState(), onSelectPhoto = {}) {}
+            ProfileScreenContent(state = ProfileScreenState(), onShowEditDialog = {}) {}
         }
     }
 }

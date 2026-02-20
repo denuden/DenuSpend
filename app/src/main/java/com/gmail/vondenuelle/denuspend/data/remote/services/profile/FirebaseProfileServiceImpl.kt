@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.profile
 
+import android.util.Log
 import androidx.core.net.toUri
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotSendEmailVerification
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotUpdateDetailsException
@@ -13,7 +14,7 @@ import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.userProfileChangeRequest
-import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,8 +24,10 @@ class FirebaseProfileServiceImpl @Inject constructor(
 ) : ProfileService {
     override suspend fun getUserProfile(): UserModel {
         try {
-            val user = firebaseAuth.currentUser
-            if (user != null) {
+
+            if (firebaseAuth.currentUser != null) {
+                firebaseAuth.currentUser!!.reload().await()
+                val user = firebaseAuth.currentUser!!
                 return UserModel(
                     uid = user.uid,
                     name = user.displayName,
@@ -53,7 +56,7 @@ class FirebaseProfileServiceImpl @Inject constructor(
                 photoUri = request.photoUri.orEmpty().toUri()
             }
             if (user != null){
-                user.updateProfile(profileUpdates)
+                user.updateProfile(profileUpdates).await()
             } else {
                 throw NoUserException()
             }
@@ -72,7 +75,7 @@ class FirebaseProfileServiceImpl @Inject constructor(
             if (user != null){
                 user.verifyBeforeUpdateEmail(request.email, ActionCodeSettings.newBuilder().apply {
                     handleCodeInApp = true
-                }.build())
+                }.build()).await()
             } else {
                 throw NoUserException()
             }
@@ -90,7 +93,7 @@ class FirebaseProfileServiceImpl @Inject constructor(
             val user = firebaseAuth.currentUser
 
             if (user != null){
-                user.updatePassword(request.newPassword)
+                user.updatePassword(request.newPassword).await()
             } else {
                 throw NoUserException()
             }
@@ -103,14 +106,13 @@ class FirebaseProfileServiceImpl @Inject constructor(
         }
     }
 
-    override suspend fun sendEmailVerification(request: UpdateEmailRequest) {
+    override suspend fun sendEmailVerification() {
         try {
             val user = firebaseAuth.currentUser
 
+
             if (user != null){
-                user.sendEmailVerification(ActionCodeSettings.newBuilder().apply {
-                    handleCodeInApp = true
-                }.build())
+                user.sendEmailVerification().await()
             } else {
                 throw NoUserException()
             }
@@ -130,7 +132,7 @@ class FirebaseProfileServiceImpl @Inject constructor(
             if (user != null){
                 firebaseAuth.sendPasswordResetEmail(request.email, ActionCodeSettings.newBuilder().apply {
                     handleCodeInApp = true
-                }.build())
+                }.build()).await()
             } else {
                 throw NoUserException()
             }

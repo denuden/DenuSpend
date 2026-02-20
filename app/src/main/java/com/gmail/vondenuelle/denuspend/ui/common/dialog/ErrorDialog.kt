@@ -38,15 +38,25 @@ fun ErrorDialog(
             Card(
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .padding(16.dp),
+                    .height(200.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFE5CAC6))
             ) {
-                Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
-                    Icon(imageVector = Icons.Default.Error, contentDescription = stringResource(R.string.error_error), tint = Color(
-                        0xFFB71C1C
-                    ), modifier = Modifier.size(40.dp))
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = stringResource(R.string.error_error),
+                        tint = Color(
+                            0xFFB71C1C
+                        ),
+                        modifier = Modifier.size(40.dp)
+                    )
                     Spacer(Modifier.padding(vertical = 6.dp))
                     Text(
                         text = text,

@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -32,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -58,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -144,7 +148,7 @@ fun RegisterScreenContent(
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 30.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(state = scrollState )
                 .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -152,11 +156,11 @@ fun RegisterScreenContent(
             Text(
                 text = stringResource(R.string.register_title),
                 style = MaterialTheme.typography.displaySmall,
+                fontSize = 24.sp,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                modifier = Modifier.padding(top = 16.dp)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -259,15 +263,23 @@ fun RegisterScreenContent(
                         contentDescription = stringResource(R.string.register_hint_password)
                     )
                 },
+                trailingIcon = {
+                    IconButton(onClick = {
+                        onEvent(AuthScreenEvents.OnChangePasswordVisibility(!state.showPassword))
+                    }) {
+                        Icon(imageVector = if(state.showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, contentDescription = null)
+                    }
+                },
                 keyboardActions = KeyboardActions(
                     onDone = {
                         onEvent(AuthScreenEvents.OnRegisterWithEmailAndPassword(RegisterRequest(
+                            name = state.name,
                             email = state.email,
                             password = state.password
                         )))
                     }
                 ),
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if(state.showPassword)  VisualTransformation.None   else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Done,
                     autoCorrectEnabled = false,
@@ -347,6 +359,7 @@ fun RegisterScreenContent(
                 Button(
                     onClick = {
                         onEvent(AuthScreenEvents.OnRegisterWithEmailAndPassword(RegisterRequest(
+                            name = state.name,
                             email = state.email,
                             password = state.password
                         )))
@@ -354,14 +367,13 @@ fun RegisterScreenContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.extraLarge,
                     elevation = ButtonDefaults.buttonElevation(0.dp),
-                    contentPadding = PaddingValues(vertical = 20.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text(
                         stringResource(R.string.register_btn_create).uppercase(),
-                        fontSize = 16.sp
                     )
                 }
             }
