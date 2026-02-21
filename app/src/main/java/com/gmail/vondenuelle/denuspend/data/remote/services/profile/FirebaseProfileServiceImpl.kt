@@ -110,9 +110,17 @@ class FirebaseProfileServiceImpl @Inject constructor(
         try {
             val user = firebaseAuth.currentUser
 
+            val actionCodeSettings = ActionCodeSettings.newBuilder()
+                .setUrl("https://denu-spend.firebaseapp.com")
+                .setHandleCodeInApp(true)
+                .setAndroidPackageName(
+                    "com.gmail.vondenuelle.denuspend.debug",
+                    true,
+                    null )
+                .build()
 
             if (user != null){
-                user.sendEmailVerification().await()
+                user.sendEmailVerification(actionCodeSettings).await()
             } else {
                 throw NoUserException()
             }

@@ -42,15 +42,14 @@
 
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data
-                    android:host="denu-spend.web.app"
-                    android:pathPrefix="/finishSignup"
-                    android:scheme="https" />
+                    android:scheme="https"
+                    android:host="denu-spend.firebaseapp.com"
+                    android:pathPrefix="/__/auth/links" />
             </intent-filter>
+
         </activity>
 
         <provider
