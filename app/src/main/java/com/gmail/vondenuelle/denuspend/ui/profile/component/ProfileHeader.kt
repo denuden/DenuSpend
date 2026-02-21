@@ -64,12 +64,12 @@ fun ProfileHeader(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(350.dp)
+                .height(270.dp)
         ) {
             // Image
             AsyncImageWithErrorHandler(
                 modifier = Modifier
-                    .height(350.dp)
+                    .height(270.dp)
                     .fillMaxWidth()
                     .clickableDelayed() {
                         shouldShowFullScreenImage = true

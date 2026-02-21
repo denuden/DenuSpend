@@ -36,16 +36,7 @@ class HomeViewmodel @Inject constructor(
     fun onEvent(event: HomeScreenEvents) {
         when (event) {
             is HomeScreenEvents.OnGetCurrentUser -> sendEvent(OneTimeEvents.ShowToast(message = tokenProvider.getName()))
-            is HomeScreenEvents.OnSignOut -> {
-                viewModelScope.launch {
-                    try {
-                        repository.logout()
-                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.ClearAll))
-                    } catch (e : Exception){
-                        onError(e)
-                    }
-                }
-            }
+
             else -> Unit
         }
     }

@@ -2,11 +2,14 @@ package com.gmail.vondenuelle.denuspend.data.remote.services.auth
 
 import android.util.Log
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
+import com.gmail.vondenuelle.denuspend.data.remote.error.CannotSendEmailVerification
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.EmailRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
+import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
@@ -61,7 +64,7 @@ class FirebaseAuthServiceImpl @Inject constructor(
                 isEmailVerified = user.isEmailVerified,
                 photo = user.photoUrl.toString(),
 
-            )
+                )
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
             throw InvalidCredentialsException(e.localizedMessage ?: "Invalid credentials")
@@ -99,11 +102,10 @@ class FirebaseAuthServiceImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): UserModel {
         try {
-            if (firebaseAuth.currentUser != null) {
-                firebaseAuth.currentUser!!.reload().await()
-                val user = firebaseAuth.currentUser!!
-                user.getIdToken(true).await()
-
+            val user = firebaseAuth.currentUser
+            if (user != null) {
+                user.getIdToken(false).await()
+                
                 return UserModel(
                     uid = user.uid,
                     name = user.displayName,
@@ -117,8 +119,7 @@ class FirebaseAuthServiceImpl @Inject constructor(
         } catch (e: FirebaseAuthInvalidUserException) {
             // Firebase no user found
             throw NoUserException(e.localizedMessage ?: "No user is signed in")
-        }
-        catch (e: FirebaseAuthException) {
+        } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
             throw InvalidCredentialsException(e.localizedMessage ?: "Cannot get current user")
         } catch (e: Exception) {
@@ -131,7 +132,7 @@ class FirebaseAuthServiceImpl @Inject constructor(
         try {
             val user = firebaseAuth.currentUser
 
-            if (user != null){
+            if (user != null) {
                 val credential = EmailAuthProvider
                     .getCredential(request.email, request.password)
                 // Prompt the user to re-provide their sign-in credentials
@@ -142,6 +143,32 @@ class FirebaseAuthServiceImpl @Inject constructor(
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
             throw InvalidCredentialsException(e.localizedMessage ?: "Invalid credentials")
+        } catch (e: Exception) {
+            // rethrow error for custom exceptions
+            throw e
+        }
+    }
+
+    override suspend fun sendPasswordReset(request: EmailRequest) {
+        try {
+            val user = firebaseAuth.currentUser
+
+            val actionCodeSettings = ActionCodeSettings.newBuilder()
+                .setUrl("https://denu-spend.firebaseapp.com")
+                .setHandleCodeInApp(true)
+                .setAndroidPackageName(
+                    "com.gmail.vondenuelle.denuspend.debug",
+                    true,
+                    null )
+                .build()
+            if (user != null){
+                firebaseAuth.sendPasswordResetEmail(request.email, actionCodeSettings).await()
+            } else {
+                throw NoUserException()
+            }
+        } catch (e: FirebaseAuthException) {
+            // Firebase-specific errors
+            throw CannotSendEmailVerification(e.localizedMessage ?: "Send email verification failed")
         } catch (e: Exception) {
             // rethrow error for custom exceptions
             throw e

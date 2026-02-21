@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.ui.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
@@ -46,6 +47,7 @@ class AuthViewModel @Inject constructor(
 
                     try {
                         val user = repository.login(event.request)
+                        Log.e("inigewgt", user.toString())
                         if(user.email != null) {
                             _stateFlow.update { it.copy(userModel = user) }
                             sendEvent(OneTimeEvents.ShowToast(message = user.email))
@@ -96,7 +98,6 @@ class AuthViewModel @Inject constructor(
                         onError(e)
                     }
                 }
-
             }
             is AuthScreenEvents.OnChangeEmailField ->
                 _stateFlow.update { it.copy(email = event.value) }
@@ -113,6 +114,20 @@ class AuthViewModel @Inject constructor(
             is AuthScreenEvents.OnNavigateToRegister ->
                 sendEvent(OneTimeEvents.OnNavigate(AuthScreens.RegisterNavigation,  behavior = NavBehavior.PopUpTo(AuthScreens.LoginNavigation, inclusive =  true)))
 
+            is AuthScreenEvents.OnSendPasswordReset -> {
+                viewModelScope.launch {
+                    _stateFlow.update { it.copy(isLoading = true) }
+
+                    try {
+                        repository.sendPasswordReset(event.value)
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        sendEvent(OneTimeEvents.ShowToast("Password reset has been sent"))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy( isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
         }
     }
 

@@ -28,6 +28,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -43,7 +44,6 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         intent?.data?.let { uri ->
             handleActionCode(uri.toString())
-            Log.d("gwgw", "Received link: $uri")
         }
     }
 
@@ -64,17 +64,25 @@ class MainActivity : ComponentActivity() {
                                     dataStore.updateData {
                                         it.copy(isEmailVerified = true)
                                     }
+                                    //Reload current user in cache to update email verified
+                                    firebaseAuth.currentUser!!.reload().await()
                                 }
                             }
                             Toast.makeText(this@MainActivity, "Email is verified", Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(this@MainActivity, "Email cannot be verified", Toast.LENGTH_SHORT).show()
-
                         }
                     }
             }
             ActionCodeResult.PASSWORD_RESET -> {
-                // Prompt user to enter new password, then confirm with oobCode
+                firebaseAuth.applyActionCode(oobCode.orEmpty())
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            Toast.makeText(this@MainActivity, "Password reset has been sent to your email", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@MainActivity, "Password reset not sent", Toast.LENGTH_SHORT).show()
+                        }
+                    }
             }
             else -> {
                 Log.w("Auth", "Unhandled mode: $mode")

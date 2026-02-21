@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
+import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
+import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
+import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -21,7 +24,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val TAG = ProfileViewModel::class.java.simpleName
 
@@ -35,21 +39,16 @@ class ProfileViewModel @Inject constructor(
         when (event) {
             ProfileScreenEvents.OnGetUserProfile -> {
                 viewModelScope.launch {
-                    _stateFlow.update { it.copy(isLoading = true) }
-
                     try {
                         val user = profileRepository.getUserProfile()
-                        Log.d("Getuser", user.toString())
                         _stateFlow.update {
                             it.copy(
-                                isLoading = false,
                                 profile = user,
                                 name = user.name.orEmpty(),
                                 photo = user.photo.orEmpty()
                             )
                         }
                     } catch (e: Exception) {
-                        _stateFlow.update { it.copy(isLoading = false) }
                         onError(e)
                     }
                 }
@@ -97,6 +96,17 @@ class ProfileViewModel @Inject constructor(
                         onError(e)
                     }
                 }
+
+            is ProfileScreenEvents.OnSignOut -> {
+                viewModelScope.launch {
+                    try {
+                        authRepository.logout()
+                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.ClearAll))
+                    } catch (e : Exception){
+                        onError(e)
+                    }
+                }
+            }
         }
     }
 

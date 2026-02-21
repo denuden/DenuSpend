@@ -30,6 +30,7 @@ class TokenProvider @Inject constructor(
     @Volatile private var uid: String? = null
     @Volatile private var name: String? = null
     @Volatile private var email: String? = null
+    @Volatile private var photo: String? = null
     @Volatile private var isEmailVerified: Boolean? = false
 
     init {
@@ -49,6 +50,7 @@ class TokenProvider @Inject constructor(
                 uid = prefs.uid
                 name = prefs.name
                 email = prefs.email
+                photo = prefs.photo
                 isEmailVerified = prefs.isEmailVerified
             }
         }
@@ -59,5 +61,6 @@ class TokenProvider @Inject constructor(
      * - Reading a single variable is safe
      * - @Volatile guarantees the latest value is returned
      */
-    fun getName(): String = "Welcome back, ${name.orEmpty().ifEmpty { "User" } }"
+    fun getName(): String = "${name.orEmpty().ifEmpty { "User" } }"
+    fun getPhoto(): String = photo ?: ""
 }

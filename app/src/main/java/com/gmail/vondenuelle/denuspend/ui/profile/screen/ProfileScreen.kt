@@ -4,12 +4,14 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +39,7 @@ import com.gmail.vondenuelle.denuspend.ui.common.dialog.ModalBottomSheetDialog
 import com.gmail.vondenuelle.denuspend.ui.profile.ProfileScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.profile.ProfileScreenState
 import com.gmail.vondenuelle.denuspend.ui.profile.ProfileViewModel
+import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileButtons
 import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileEdit
 import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileHeader
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
@@ -186,7 +189,7 @@ fun ProfileScreenContent(
     onEvent: (ProfileScreenEvents) -> Unit
 ) {
 
-    androidx.compose.material3.Surface(
+    Surface(
         modifier = modifier.fillMaxSize()
     ) {
         Column {
@@ -244,6 +247,15 @@ fun ProfileScreenContent(
                 }
             }
 
+            ProfileButtons(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(top = 16.dp),
+                onUpdatePassword = {  },
+                onUpdateEmail = {  },
+                onResetPassword = {  },
+                onSignOut = { onEvent(ProfileScreenEvents.OnSignOut) }
+            )
         }
     }
 }
@@ -252,7 +264,7 @@ fun ProfileScreenContent(
 @Composable
 private fun ProfileScreenPreview() {
     DenuSpendTheme {
-        androidx.compose.material3.Surface {
+        Surface {
             ProfileScreenContent(state = ProfileScreenState(), onShowEditDialog = {}) {}
         }
     }

@@ -1,6 +1,5 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.profile
 
-import android.util.Log
 import androidx.core.net.toUri
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotSendEmailVerification
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotUpdateDetailsException
@@ -24,10 +23,8 @@ class FirebaseProfileServiceImpl @Inject constructor(
 ) : ProfileService {
     override suspend fun getUserProfile(): UserModel {
         try {
-
-            if (firebaseAuth.currentUser != null) {
-                firebaseAuth.currentUser!!.reload().await()
-                val user = firebaseAuth.currentUser!!
+            val user = firebaseAuth.currentUser
+            if (user != null) {
                 return UserModel(
                     uid = user.uid,
                     name = user.displayName,
@@ -121,26 +118,6 @@ class FirebaseProfileServiceImpl @Inject constructor(
 
             if (user != null){
                 user.sendEmailVerification(actionCodeSettings).await()
-            } else {
-                throw NoUserException()
-            }
-        } catch (e: FirebaseAuthException) {
-            // Firebase-specific errors
-            throw CannotSendEmailVerification(e.localizedMessage ?: "Send email verification failed")
-        } catch (e: Exception) {
-            // rethrow error for custom exceptions
-            throw e
-        }
-    }
-
-    override suspend fun sendPasswordReset(request: UpdateEmailRequest) {
-        try {
-            val user = firebaseAuth.currentUser
-
-            if (user != null){
-                firebaseAuth.sendPasswordResetEmail(request.email, ActionCodeSettings.newBuilder().apply {
-                    handleCodeInApp = true
-                }.build()).await()
             } else {
                 throw NoUserException()
             }

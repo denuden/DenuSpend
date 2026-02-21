@@ -22,6 +22,7 @@ class ProfileRepository @Inject constructor(
                 uid = user.uid,
                 name = user.name,
                 email = user.email,
+                photo = user.photo,
                 isEmailVerified = user.isEmailVerified
             )
         }

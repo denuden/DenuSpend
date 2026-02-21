@@ -1,6 +1,7 @@
 package com.gmail.vondenuelle.denuspend.data.repositories
 
 import androidx.datastore.core.DataStore
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.EmailRequest
 import com.gmail.vondenuelle.denuspend.data.remote.services.auth.AuthService
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
@@ -21,12 +22,13 @@ class AuthRepository @Inject constructor(
     private val dataStore: DataStore<UserPreferences>,
 ) {
      suspend fun login(request: LoginRequest) : UserModel{
-        val user = authService.login(request)
+        val user = authService.login(request.copy(email = request.email.trim(), password = request.password.trim()))
          dataStore.updateData {
              UserPreferences(
                  uid = user.uid,
                  name = user.name,
                  email = user.email,
+                 photo = user.photo,
                  isEmailVerified = user.isEmailVerified
              )
          }
@@ -34,12 +36,13 @@ class AuthRepository @Inject constructor(
     }
 
      suspend fun register(request: RegisterRequest) : UserModel{
-        val user = authService.register(request)
+        val user = authService.register(request.copy(email = request.email.trim(), password = request.password.trim()))
          dataStore.updateData {
              UserPreferences(
                  uid = user.uid,
                  name = user.name,
                  email = user.email,
+                 photo = user.photo,
                  isEmailVerified = user.isEmailVerified
              )
          }
@@ -53,6 +56,7 @@ class AuthRepository @Inject constructor(
                  uid = user.uid,
                  name = user.name,
                  email = user.email,
+                 photo = user.photo,
                  isEmailVerified = user.isEmailVerified
              )
          }
@@ -64,5 +68,9 @@ class AuthRepository @Inject constructor(
          dataStore.updateData {
              UserPreferences()
          }
+    }
+
+     suspend fun sendPasswordReset(request : EmailRequest) {
+        authService.sendPasswordReset(request)
     }
 }

@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.ui.auth
 
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.EmailRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 
@@ -14,6 +15,7 @@ sealed class AuthScreenEvents {
     data class OnLoginWithEmailAndPassword(val request : LoginRequest) : AuthScreenEvents()
     data class OnRegisterWithEmailAndPassword(val request : RegisterRequest) : AuthScreenEvents()
     object OnGetCurrentUser : AuthScreenEvents()
+    data class OnSendPasswordReset(val value : EmailRequest) : AuthScreenEvents()
     //    Navigation
     object OnNavigateToRegister : AuthScreenEvents()
     object OnNavigateToLogin : AuthScreenEvents()

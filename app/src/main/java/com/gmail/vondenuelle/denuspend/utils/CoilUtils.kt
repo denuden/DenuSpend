@@ -117,6 +117,7 @@ fun AsyncImageWithErrorHandler(
     contentDescription: String? = "Image",
     shouldShowEnlargeButton: Boolean = true,
     enlargeImageIcon : ImageVector = Icons.Default.OpenInFull,
+    onError : () -> Unit = {}
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -128,6 +129,9 @@ fun AsyncImageWithErrorHandler(
             contentDescription = contentDescription,
             contentScale = contentScale,
             error = painterResource(R.drawable.baseline_image_not_supported_24),
+            onError = {
+                onError()
+            },
             modifier = Modifier.matchParentSize()
         )
 

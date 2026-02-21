@@ -1,8 +1,10 @@
 package com.gmail.vondenuelle.denuspend
 
-import android.provider.ContactsContract.Profile
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -12,7 +14,6 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Home
@@ -42,28 +43,33 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavController
+import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import coil3.compose.AsyncImage
 import com.gmail.vondenuelle.denuspend.navigation.AppNavigation
-import com.gmail.vondenuelle.denuspend.navigation.MainScreens
-import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.navigation.ProfileScreens
 import com.gmail.vondenuelle.denuspend.navigation.RootGraphs
-import com.gmail.vondenuelle.denuspend.navigation.getTopBarTitle
-import com.gmail.vondenuelle.denuspend.ui.profile.screen.ProfileScreen
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.utils.AsyncImageWithErrorHandler
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(isLoggedIn: Boolean) {
+fun MainScreen(
+    isLoggedIn: Boolean,
+    viewModel: MainViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
 
     val context = LocalContext.current
@@ -72,7 +78,7 @@ fun MainScreen(isLoggedIn: Boolean) {
     // Checks current type to determine which component should be shown or not from the scaffold
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val screenType =  "MainScreens"
+    val screenType = "MainScreens"
 
     // holds state if topborcontent should be shown
     var topBarState by rememberSaveable { (mutableStateOf(false)) }
@@ -88,10 +94,10 @@ fun MainScreen(isLoggedIn: Boolean) {
     //detects current route changes, then set topbarstate
     //if visible depending on route
 //    LaunchedEffect(currentRoute) {
-        //will show topbarcontent if route is from mainscreens (E.G. Home)
-        topBarState = currentRoute?.contains(screenType) == true
-        bottomBarState = currentRoute?.contains(screenType) == true
-        topBarTitle = getTopBarTitle(currentRoute.toString())
+    //will show topbarcontent if route is from mainscreens (E.G. Home)
+    topBarState = currentRoute?.contains(screenType) == true
+    bottomBarState = currentRoute?.contains(screenType) == true
+    topBarTitle = viewModel.getTopBarTitle(currentRoute.toString())
 //    }
 
     //stating snackbar anywhere so it can be called from any screen
@@ -115,11 +121,27 @@ fun MainScreen(isLoggedIn: Boolean) {
         }
     }
 
+    LaunchedEffect(true) {
+        viewModel.getPhoto()
+    }
+
     var selectedItem by remember { mutableIntStateOf(0) }
     val items = listOf("Home", "Wallet", "Add", "Goals", "Savings")
     val unselectedIcons =
-        listOf(Icons.Outlined.Home, Icons.Outlined.AccountBalanceWallet, Icons.Outlined.AddCircleOutline, Icons.Outlined.Flag, Icons.Outlined.Savings)
-        val selectedIcons = listOf(Icons.Filled.Home, Icons.Filled.AccountBalanceWallet, Icons.Filled.AddCircle, Icons.Filled.Flag, Icons.Filled.Savings)
+        listOf(
+            Icons.Outlined.Home,
+            Icons.Outlined.AccountBalanceWallet,
+            Icons.Outlined.AddCircleOutline,
+            Icons.Outlined.Flag,
+            Icons.Outlined.Savings
+        )
+    val selectedIcons = listOf(
+        Icons.Filled.Home,
+        Icons.Filled.AccountBalanceWallet,
+        Icons.Filled.AddCircle,
+        Icons.Filled.Flag,
+        Icons.Filled.Savings
+    )
 
     Scaffold(
         snackbarHost = {
@@ -128,22 +150,23 @@ fun MainScreen(isLoggedIn: Boolean) {
             )
         },
         topBar = {
-            if(topBarState) {
+            if (topBarState) {
                 TopAppBarContent(
                     title = topBarTitle,
                     canNavigateBack = canNavigateBack,
+                    photo = viewModel.photoState.value,
+                    onErrorPhoto = { viewModel.resetPhoto() },
                     onPopBackStack = {
                         navController.popBackStack()
                     },
-                    onNavigate = {
-                            route, navOptions ->
+                    onNavigate = { route, navOptions ->
                         navController.navigate(route, navOptions = navOptions)
                     }
                 )
             }
         },
         bottomBar = {
-            if(bottomBarState){
+            if (bottomBarState) {
                 NavigationBar(
                 ) {
                     items.forEachIndexed { index, item ->
@@ -167,7 +190,8 @@ fun MainScreen(isLoggedIn: Boolean) {
         Box(modifier = Modifier.padding(padding)) {
             AppNavigation(
                 navController,
-                startDestination = if (isLoggedIn) RootGraphs.MainGraph else RootGraphs.AuthGraph)
+                startDestination = if (isLoggedIn) RootGraphs.MainGraph else RootGraphs.AuthGraph
+            )
         }
     }
 
@@ -178,6 +202,8 @@ fun MainScreen(isLoggedIn: Boolean) {
 fun TopAppBarContent(
     modifier: Modifier = Modifier,
     title: String,
+    photo: String,
+    onErrorPhoto: () -> Unit,
     canNavigateBack: Boolean,
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
@@ -197,7 +223,23 @@ fun TopAppBarContent(
                         setLaunchSingleTop(true)
                     }.build())
                 }
-            ) { Icon(imageVector = Icons.Filled.AccountCircle, contentDescription = null) }
+            ) {
+                if (photo.isNotEmpty()) {
+                    AsyncImageWithErrorHandler(
+                        model = photo.toUri(),
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape),
+                        shouldShowEnlargeButton = false,
+                        onError = {
+                            onErrorPhoto()
+                        }
+                    )
+                } else {
+                    Icon(imageVector = Icons.Filled.AccountCircle, contentDescription = null)
+
+                }
+            }
         },
         navigationIcon = {
             if (canNavigateBack) {
@@ -218,11 +260,17 @@ fun TopAppBarContent(
 @Preview
 @Composable
 private fun MainScreenPreview() {
-    DenuSpendTheme  {
+    DenuSpendTheme {
         Surface(
             color = MaterialTheme.colorScheme.surface,
         ) {
-            TopAppBarContent(onPopBackStack = {}, title = "", canNavigateBack = true, onNavigate = { _, _ -> })
+            TopAppBarContent(
+                onPopBackStack = {},
+                title = "",
+                onErrorPhoto = {},
+                photo = "",
+                canNavigateBack = true,
+                onNavigate = { _, _ -> })
         }
     }
 }

@@ -7,6 +7,7 @@ sealed class ProfileScreenEvents {
    data class OnChangePhoto(val value : String) : ProfileScreenEvents()
 
    object OnSendEmailVerification : ProfileScreenEvents()
+   object OnSignOut : ProfileScreenEvents()
    object OnSaveChanges : ProfileScreenEvents()
    object OnPopBackStack : ProfileScreenEvents()
 }
