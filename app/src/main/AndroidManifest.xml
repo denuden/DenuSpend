@@ -36,20 +36,29 @@
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="https"
-                    android:host="denu-spend.firebaseapp.com"
-                    android:pathPrefix="/__/auth/links" />
-            </intent-filter>
 
+                <data
+                    android:host="denu-spend.firebaseapp.com"
+                    android:pathPrefix="/__/auth/links"
+                    android:scheme="https" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".EmailActionActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.DenuSpend"
+            android:windowSoftInputMode="adjustResize">
         </activity>
 
         <provider
@@ -61,8 +70,5 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-
     </application>
-
 </manifest>

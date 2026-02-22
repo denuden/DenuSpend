@@ -39,5 +39,11 @@
     <string name="profile_hint_name">Enter your display name</string>
     <string name="profile_btn_save">Save Changes</string>
 
+    <string name="btn_send_password_reset">Send password reset</string>
+    <string name="lbl_password_reset_instructions">We will send you an email for resetting your password if the account exists</string>
+    <string name="hint_password_reset">Enter your new password</string>
+    <string name="lbl_new_password">Enter a new password in order to reset. Make sure to remember it for future logins</string>
+    <string name="btn_reset_password">Reset Password</string>
+
 
 </resources>

@@ -4,12 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
+import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
+import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.*
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -74,9 +76,10 @@ class ProfileViewModel @Inject constructor(
                             )
                         )
                         _stateFlow.update { it.copy(isLoading = false) }
-                        sendEvent(OneTimeEvents.ShowToast("Profile updated successfully"))
-                        sendEvent(OneTimeEvents.OnCloseDialog)
+                        sendEvent(ShowToast("Profile updated successfully"))
+                        _stateFlow.update { it.copy(showEditDialog = false) }
                         onEvent(ProfileScreenEvents.OnGetUserProfile)
+
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy(isLoading = false) }
                         onError(e)
@@ -89,7 +92,7 @@ class ProfileViewModel @Inject constructor(
                     try {
                         _stateFlow.update { it.copy(isLoading = true) }
                         profileRepository.sendEmailVerification()
-                        sendEvent(OneTimeEvents.ShowToast("Email verification sent"))
+                        sendEvent(ShowToast("Email verification sent"))
                         _stateFlow.update { it.copy(isLoading = false) }
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy(isLoading = false) }
@@ -101,11 +104,24 @@ class ProfileViewModel @Inject constructor(
                 viewModelScope.launch {
                     try {
                         authRepository.logout()
-                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.ClearAll))
+                        sendEvent(OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.ClearAll))
                     } catch (e : Exception){
                         onError(e)
                     }
                 }
+            }
+
+            is ProfileScreenEvents.OnShowEditDialog -> _stateFlow.update { it.copy(showEditDialog = event.value) }
+            is ProfileScreenEvents.OnShowMediaOptionDialog -> _stateFlow.update { it.copy(showMediaOptionDialog = event.value) }
+        }
+    }
+
+    private fun logout(){
+        viewModelScope.launch {
+            try {
+                authRepository.logout()
+            } catch (e: Exception) {
+                onError(e)
             }
         }
     }
@@ -138,7 +154,13 @@ class ProfileViewModel @Inject constructor(
                     sendEvent(OneTimeEvents.ShowError(errorResponse.message))
                 }
             }
-
+            is NoUserException -> {
+                //send to login
+                //remove stored creds
+                sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
+                logout()
+                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation, behavior = NavBehavior.ClearAll))
+            }
             else -> {
                 sendEvent(OneTimeEvents.ShowError(e?.message.orEmpty()))
             }

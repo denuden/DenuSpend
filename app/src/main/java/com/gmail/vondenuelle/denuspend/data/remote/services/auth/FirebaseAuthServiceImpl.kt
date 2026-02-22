@@ -151,8 +151,6 @@ class FirebaseAuthServiceImpl @Inject constructor(
 
     override suspend fun sendPasswordReset(request: EmailRequest) {
         try {
-            val user = firebaseAuth.currentUser
-
             val actionCodeSettings = ActionCodeSettings.newBuilder()
                 .setUrl("https://denu-spend.firebaseapp.com")
                 .setHandleCodeInApp(true)
@@ -161,11 +159,8 @@ class FirebaseAuthServiceImpl @Inject constructor(
                     true,
                     null )
                 .build()
-            if (user != null){
-                firebaseAuth.sendPasswordResetEmail(request.email, actionCodeSettings).await()
-            } else {
-                throw NoUserException()
-            }
+
+            firebaseAuth.sendPasswordResetEmail(request.email, actionCodeSettings).await()
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
             throw CannotSendEmailVerification(e.localizedMessage ?: "Send email verification failed")

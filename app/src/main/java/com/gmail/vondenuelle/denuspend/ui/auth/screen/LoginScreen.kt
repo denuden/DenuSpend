@@ -76,8 +76,10 @@ import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenState
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewModel
+import com.gmail.vondenuelle.denuspend.ui.auth.components.ForgotPasswordContent
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.ModalBottomSheetDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
@@ -86,13 +88,13 @@ import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 fun LoginScreen(
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
-    viewModel : AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     var error by remember { mutableStateOf("") }
 
     ObserveAsEvents(viewModel.channel) { event ->
-        when(event){
+        when (event) {
             is OneTimeEvents.OnNavigate -> {
                 val options = NavOptions.Builder().apply {
                     when (event.behavior) {
@@ -100,17 +102,25 @@ fun LoginScreen(
                             setPopUpTo(0, inclusive = true)
                             setLaunchSingleTop(true)
                         }
+
                         is NavBehavior.PopUpTo -> {
-                            setPopUpTo(event.behavior.destination, inclusive = event.behavior.inclusive)
+                            setPopUpTo(
+                                event.behavior.destination,
+                                inclusive = event.behavior.inclusive
+                            )
                         }
+
                         NavBehavior.None -> Unit
                     }
                 }.build()
 
                 onNavigate(event.route, options)
             }
+
             is OneTimeEvents.ShowError -> error = event.msg
-            is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT)
+                .show()
+
             else -> Unit
         }
     }
@@ -122,6 +132,11 @@ fun LoginScreen(
         showDialog = state.isSigningIn
     ) { }
 
+    LoadingDialog(
+        text = "Loading...",
+        showDialog = state.isLoading
+    ) { }
+
     ErrorDialog(
         text = error,
         showDialog = error.isNotEmpty()
@@ -131,6 +146,21 @@ fun LoginScreen(
         state = state,
         onEvent = viewModel::onEvent
     )
+
+    ModalBottomSheetDialog(
+        showDialog = state.showForgotPasswordDialog,
+        onDismissRequest = {
+            viewModel.onEvent(AuthScreenEvents.OnOpenForgotPassDialog(false))
+        },
+    ) {
+        ForgotPasswordContent(
+            modifier = Modifier.padding(24.dp),
+            email = state.forgotPassEmail,
+            emailError = state.forgotPassEmailError,
+            onChangeEmail = { viewModel.onEvent(AuthScreenEvents.OnChangeForgotPassEmailField(it)) },
+            onSend = { viewModel.onEvent(AuthScreenEvents.OnSendPasswordReset(EmailRequest(state.forgotPassEmail))) }
+        )
+    }
 }
 
 @Composable
@@ -182,7 +212,10 @@ fun LoginScreenContent(
                 1.dp, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.error
             )
             // Username
-            Text(stringResource(R.string.login_lbl_email), modifier = Modifier.align(Alignment.Start))
+            Text(
+                stringResource(R.string.login_lbl_email),
+                modifier = Modifier.align(Alignment.Start)
+            )
             TextField(
                 value = state.email,
                 onValueChange = {
@@ -213,7 +246,10 @@ fun LoginScreenContent(
 
             // Password
             Spacer(modifier = Modifier.height(16.dp))
-            Text(stringResource(R.string.login_lbl_password), modifier = Modifier.align(Alignment.Start))
+            Text(
+                stringResource(R.string.login_lbl_password),
+                modifier = Modifier.align(Alignment.Start)
+            )
             TextField(
                 value = state.password,
                 onValueChange = {
@@ -232,20 +268,25 @@ fun LoginScreenContent(
                     IconButton(onClick = {
                         onEvent(AuthScreenEvents.OnChangePasswordVisibility(!state.showPassword))
                     }) {
-                        Icon(imageVector = if(state.showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, contentDescription = null)
+                        Icon(
+                            imageVector = if (state.showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            contentDescription = null
+                        )
                     }
                 },
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        onEvent(AuthScreenEvents.OnLoginWithEmailAndPassword(
-                            LoginRequest(
-                                email = state.email,
-                                password = state.password,
+                        onEvent(
+                            AuthScreenEvents.OnLoginWithEmailAndPassword(
+                                LoginRequest(
+                                    email = state.email,
+                                    password = state.password,
+                                )
                             )
-                        ))
+                        )
                     }
                 ),
-                visualTransformation = if(state.showPassword)  VisualTransformation.None   else PasswordVisualTransformation(),
+                visualTransformation = if (state.showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Done,
                     autoCorrectEnabled = false,
@@ -268,20 +309,21 @@ fun LoginScreenContent(
                     .padding(top = 12.dp)
                     .fillMaxWidth()
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = state.shouldRememberMe,
-                        onCheckedChange = { onEvent(AuthScreenEvents.OnChangeRememberMeCheckBox(it)) }
-                    )
-                    Text(stringResource(R.string.lbl_remember_me))
-                }
-
+//                Row(
+//                    verticalAlignment = Alignment.CenterVertically,
+//                ) {
+//                    Checkbox(
+//                        checked = state.shouldRememberMe,
+//                        onCheckedChange = { onEvent(AuthScreenEvents.OnChangeRememberMeCheckBox(it)) }
+//                    )
+//                    Text(stringResource(R.string.lbl_remember_me))
+//                }
+                Spacer( modifier =  Modifier.weight(1f))
                 TextButton(
                     onClick = {
-                        //TODO
-                    }
+                        onEvent(AuthScreenEvents.OnOpenForgotPassDialog(true))
+                    },
+
                 ) {
                     Text(stringResource(R.string.lbl_forgot_password))
                 }
@@ -324,12 +366,14 @@ fun LoginScreenContent(
             ) {
                 Button(
                     onClick = {
-                        onEvent(AuthScreenEvents.OnLoginWithEmailAndPassword(
-                            LoginRequest(
-                                email = state.email,
-                                password = state.password,
+                        onEvent(
+                            AuthScreenEvents.OnLoginWithEmailAndPassword(
+                                LoginRequest(
+                                    email = state.email,
+                                    password = state.password,
+                                )
                             )
-                        ))
+                        )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.extraLarge,
@@ -455,7 +499,11 @@ fun LoginScreenContent(
                         onEvent(AuthScreenEvents.OnNavigateToRegister)
                     }
                 ) {
-                    Text(stringResource(R.string.lbl_sign_up), fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp))
+                    Text(
+                        stringResource(R.string.lbl_sign_up),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
                 }
             }
         }

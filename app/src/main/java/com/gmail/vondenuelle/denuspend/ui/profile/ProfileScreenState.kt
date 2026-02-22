@@ -4,6 +4,10 @@ import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 
 data class ProfileScreenState(
     val isLoading: Boolean = false,
+
+    val showMediaOptionDialog: Boolean = false,
+    val showEditDialog: Boolean = false,
+
     val profile: UserModel? = null,
 
     //for fields

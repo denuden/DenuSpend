@@ -43,57 +43,15 @@ class MainActivity : ComponentActivity() {
     }
     private fun handleIntent(intent: Intent?) {
         intent?.data?.let { uri ->
-            handleActionCode(uri.toString())
-        }
-    }
-
-    private fun handleActionCode(link: String) {
-        val actionCodeUrl = ActionCodeUrl.parseLink(link)
-        val mode = actionCodeUrl?.operation
-        val oobCode = actionCodeUrl?.code
-
-//        https://denu-spend.firebaseapp.com/__/auth/links?link=https://denu-spend.firebaseapp.com/__/auth/action?apiKey%3DAIzaSyAGoM0A1jfMqsTE9-m5UlQFZF4bQJDbTmY%26mode%3DverifyEmail%26oobCode%3D98bvY3pHYSDFiy77JeJSwiNH2_6-uZ3IcvpmzlbBtkkAAAGce6FsRA%26continueUrl%3Dhttps://denu-spend.firebaseapp.com%26lang%3Den
-        when (mode) {
-            ActionCodeResult.VERIFY_EMAIL -> {
-                firebaseAuth.applyActionCode(oobCode.orEmpty())
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            // Email verified!
-                            lifecycleScope.launch {
-                                repeatOnLifecycle(Lifecycle.State.STARTED){
-                                    dataStore.updateData {
-                                        it.copy(isEmailVerified = true)
-                                    }
-                                    //Reload current user in cache to update email verified
-                                    firebaseAuth.currentUser!!.reload().await()
-                                }
-                            }
-                            Toast.makeText(this@MainActivity, "Email is verified", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this@MainActivity, "Email cannot be verified", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-            }
-            ActionCodeResult.PASSWORD_RESET -> {
-                firebaseAuth.applyActionCode(oobCode.orEmpty())
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            Toast.makeText(this@MainActivity, "Password reset has been sent to your email", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this@MainActivity, "Password reset not sent", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-            }
-            else -> {
-                Log.w("Auth", "Unhandled mode: $mode")
-            }
+            Log.d("handleintent", uri.toString())
+            val intent = EmailActionActivity.newIntent(this@MainActivity, uri.toString())
+            startActivity(intent)
         }
     }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         handleIntent(intent)
         setContent {
             DenuSpendTheme {

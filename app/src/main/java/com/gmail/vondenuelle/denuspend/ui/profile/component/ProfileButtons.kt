@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockReset
@@ -149,16 +150,16 @@ fun ProfileButtons(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .clickableDelayed { onResetPassword() }
+                        .clickableDelayed { onUpdateEmail() }
                         .padding(horizontal = 4.dp, vertical = 16.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.LockReset,
+                        imageVector = Icons.Filled.DeleteForever,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        "Reset your password",
+                        "Delete your account",
                         modifier = Modifier
                             .weight(1f)
                             .padding(start = 8.dp)

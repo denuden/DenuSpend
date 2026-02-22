@@ -65,9 +65,6 @@ fun ProfileScreen(
     val context = LocalContext.current
     var error by remember { mutableStateOf("") }
 
-    var showMediaOptionDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
             is OneTimeEvents.OnPopBackStack -> {
@@ -99,9 +96,6 @@ fun ProfileScreen(
             is OneTimeEvents.ShowError -> error = event.msg
             is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT)
                 .show()
-            is OneTimeEvents.OnCloseDialog -> {
-                showEditDialog = false
-            }
 
             else -> Unit
         }
@@ -136,9 +130,9 @@ fun ProfileScreen(
     ) { error = "" }
 
     OptionDialogPicker(
-        showDialog = showMediaOptionDialog,
+        showDialog = state.showMediaOptionDialog,
         onDismiss = {
-            showMediaOptionDialog = false
+            viewModel.onEvent(ProfileScreenEvents.OnShowMediaOptionDialog(false))
         },
         openCamera = {
             mediaPickerHelper.checkPermissionsAndOpenCamera()
@@ -150,8 +144,10 @@ fun ProfileScreen(
 
 
     ModalBottomSheetDialog(
-        showDialog = showEditDialog,
-        onDismissRequest = { showEditDialog = false }
+        showDialog = state.showEditDialog,
+        onDismissRequest = {
+            viewModel.onEvent(ProfileScreenEvents.OnShowEditDialog(false))
+        }
     ) {
         ProfileEdit(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
@@ -164,7 +160,7 @@ fun ProfileScreen(
             photoError = state.photoError,
             onChangePhoto = {
                 mediaPickerViewModel.setSelectedOption(SelectedOption.SELECTED_SINGLE_FILE)
-                showMediaOptionDialog = true
+                viewModel.onEvent(ProfileScreenEvents.OnShowMediaOptionDialog(true))
             },
             onSave = {
                 viewModel.onEvent(ProfileScreenEvents.OnSaveChanges)
@@ -174,9 +170,6 @@ fun ProfileScreen(
 
     ProfileScreenContent(
         state = state,
-        onShowEditDialog = {
-            showEditDialog = true
-        },
         onEvent = viewModel::onEvent
     )
 }
@@ -185,7 +178,6 @@ fun ProfileScreen(
 fun ProfileScreenContent(
     modifier: Modifier = Modifier,
     state: ProfileScreenState,
-    onShowEditDialog : () -> Unit,
     onEvent: (ProfileScreenEvents) -> Unit
 ) {
 
@@ -195,7 +187,9 @@ fun ProfileScreenContent(
         Column {
             ProfileHeader(
                 photo = state.profile?.photo.orEmpty(),
-                onEdit = { onShowEditDialog()},
+                onEdit = {
+                    onEvent(ProfileScreenEvents.OnShowEditDialog(true))
+                },
                 onPopBackStack = {
                     onEvent(ProfileScreenEvents.OnPopBackStack)
                 }
@@ -251,9 +245,9 @@ fun ProfileScreenContent(
                 modifier = Modifier
                     .fillMaxHeight()
                     .padding(top = 16.dp),
-                onUpdatePassword = {  },
-                onUpdateEmail = {  },
-                onResetPassword = {  },
+                onUpdatePassword = { },
+                onUpdateEmail = { },
+                onResetPassword = { },
                 onSignOut = { onEvent(ProfileScreenEvents.OnSignOut) }
             )
         }
@@ -265,7 +259,7 @@ fun ProfileScreenContent(
 private fun ProfileScreenPreview() {
     DenuSpendTheme {
         Surface {
-            ProfileScreenContent(state = ProfileScreenState(), onShowEditDialog = {}) {}
+            ProfileScreenContent(state = ProfileScreenState()) {}
         }
     }
 }

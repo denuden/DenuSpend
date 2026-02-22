@@ -16,6 +16,8 @@ sealed class AuthScreenEvents {
     data class OnRegisterWithEmailAndPassword(val request : RegisterRequest) : AuthScreenEvents()
     object OnGetCurrentUser : AuthScreenEvents()
     data class OnSendPasswordReset(val value : EmailRequest) : AuthScreenEvents()
+    data class OnOpenForgotPassDialog(val value : Boolean) : AuthScreenEvents()
+    data class OnChangeForgotPassEmailField(val value: String) : AuthScreenEvents()
     //    Navigation
     object OnNavigateToRegister : AuthScreenEvents()
     object OnNavigateToLogin : AuthScreenEvents()

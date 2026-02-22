@@ -13,6 +13,10 @@ data class AuthScreenState(
     val showPassword : Boolean = false,
 
     val isLoading : Boolean = false,
+    val showForgotPasswordDialog : Boolean = false,
+
+    val forgotPassEmail : String = "",
+    val forgotPassEmailError : String = "",
 
     val shouldRememberMe : Boolean = false,
     val isSigningIn : Boolean = false,

@@ -120,13 +120,20 @@ class AuthViewModel @Inject constructor(
 
                     try {
                         repository.sendPasswordReset(event.value)
-                        _stateFlow.update { it.copy(isLoading = false) }
+                        _stateFlow.update { it.copy(isLoading = false, showForgotPasswordDialog = false) }
                         sendEvent(OneTimeEvents.ShowToast("Password reset has been sent"))
                     } catch (e: Exception) {
+                        Log.e("gewgwe", e.toString())
                         _stateFlow.update { it.copy( isLoading = false) }
                         onError(e)
                     }
                 }
+            }
+            is AuthScreenEvents.OnOpenForgotPassDialog -> {
+                _stateFlow.update { it.copy(showForgotPasswordDialog = event.value) }
+            }
+            is AuthScreenEvents.OnChangeForgotPassEmailField -> {
+                _stateFlow.update { it.copy(forgotPassEmail = event.value) }
             }
         }
     }
@@ -180,6 +187,7 @@ class AuthViewModel @Inject constructor(
             is NoUserException -> {
                 //send to login
                 //remove stored creds
+                sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
                 logout()
                 sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation, behavior = NavBehavior.ClearAll))
             }
