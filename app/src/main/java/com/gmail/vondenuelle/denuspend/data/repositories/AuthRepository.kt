@@ -21,56 +21,59 @@ class AuthRepository @Inject constructor(
     @FirebaseAuth private val authService: AuthService,
     private val dataStore: DataStore<UserPreferences>,
 ) {
-     suspend fun login(request: LoginRequest) : UserModel{
-        val user = authService.login(request.copy(email = request.email.trim(), password = request.password.trim()))
-         dataStore.updateData {
-             UserPreferences(
-                 uid = user.uid,
-                 name = user.name,
-                 email = user.email,
-                 photo = user.photo,
-                 isEmailVerified = user.isEmailVerified
-             )
-         }
+    suspend fun login(request: LoginRequest): UserModel {
+        val user = authService.login(
+            request.copy(
+                email = request.email.trim(),
+                password = request.password.trim()
+            )
+        )
+        dataStore.updateData {
+            UserPreferences(
+                uid = user.uid,
+                name = user.name,
+                email = user.email,
+                photo = user.photo,
+                isEmailVerified = user.isEmailVerified
+            )
+        }
         return user
     }
 
-     suspend fun register(request: RegisterRequest) : UserModel{
-        val user = authService.register(request.copy(email = request.email.trim(), password = request.password.trim()))
-         dataStore.updateData {
-             UserPreferences(
-                 uid = user.uid,
-                 name = user.name,
-                 email = user.email,
-                 photo = user.photo,
-                 isEmailVerified = user.isEmailVerified
-             )
-         }
+    suspend fun register(request: RegisterRequest): UserModel {
+        val user = authService.register(
+            request.copy(
+                email = request.email.trim(),
+                password = request.password.trim()
+            )
+        )
+        dataStore.updateData {
+            UserPreferences(
+                uid = user.uid,
+                name = user.name,
+                email = user.email,
+                photo = user.photo,
+                isEmailVerified = user.isEmailVerified
+            )
+        }
         return user
     }
 
-     suspend fun getCurrentUser() : UserModel {
+    suspend fun getCurrentUser(): UserModel {
         val user = authService.getCurrentUser()
-         dataStore.updateData {
-             UserPreferences(
-                 uid = user.uid,
-                 name = user.name,
-                 email = user.email,
-                 photo = user.photo,
-                 isEmailVerified = user.isEmailVerified
-             )
-         }
+        dataStore.updateData {
+            UserPreferences(
+                uid = user.uid,
+                name = user.name,
+                email = user.email,
+                photo = user.photo,
+                isEmailVerified = user.isEmailVerified
+            )
+        }
         return user
-     }
-
-     suspend fun logout() {
-        authService.logout()
-         dataStore.updateData {
-             UserPreferences()
-         }
     }
 
-     suspend fun sendPasswordReset(request : EmailRequest) {
+    suspend fun sendPasswordReset(request: EmailRequest) {
         authService.sendPasswordReset(request)
     }
 }

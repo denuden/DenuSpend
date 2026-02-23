@@ -7,7 +7,6 @@ import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 
 interface AuthService {
     suspend fun login(request: LoginRequest) : UserModel
-    suspend fun logout()
     suspend fun register(request: RegisterRequest) : UserModel
     suspend fun hasUser() : Boolean
     suspend fun getCurrentUser() : UserModel

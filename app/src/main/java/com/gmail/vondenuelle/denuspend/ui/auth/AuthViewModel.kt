@@ -8,6 +8,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
+import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.domain.usecase.auth.RegisterUseCase
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.MainScreens
@@ -29,6 +30,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
+    private val profileRepository: ProfileRepository,
     private val registerUseCase: RegisterUseCase,
 ) : ViewModel() {
     private val TAG = AuthViewModel::class.java.simpleName
@@ -141,7 +143,7 @@ class AuthViewModel @Inject constructor(
     private fun logout(){
         viewModelScope.launch {
             try {
-                repository.logout()
+                profileRepository.logout()
             } catch (e: Exception) {
                 onError(e)
             }

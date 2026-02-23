@@ -152,10 +152,35 @@ fun AuthActionScreen(
                 Text("Verifying your email…")
             }
 
+            ActionCodeResult.VERIFY_BEFORE_CHANGE_EMAIL -> {
+                LaunchedEffect(Unit) {
+                    firebaseAuth.applyActionCode(oobCode.orEmpty())
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                scope.launch {
+                                    dataStore.updateData {
+                                        it.copy(isEmailVerified = true)
+                                    }
+                                    //Reload current user in cache to update email verified
+                                    firebaseAuth.currentUser!!.reload().await()
+                                }
+
+                                Toast.makeText(context, "Email verified!", Toast.LENGTH_SHORT)
+                                    .show()
+                            } else {
+                                Toast.makeText(context, "Verification failed", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                            onComplete()
+                        }
+                }
+                Text("Verifying your email…")
+            }
+
             ActionCodeResult.PASSWORD_RESET -> {
                 var newPassword by remember { mutableStateOf("") }
                 var showPassword by remember { mutableStateOf(false) }
-                var emailError by remember { mutableStateOf("") }
+                var passwordError by remember { mutableStateOf("") }
 
                 Column {
                     Box(
@@ -230,6 +255,7 @@ fun AuthActionScreen(
                                                     "Password reset successful",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
+                                                onComplete()
                                             } else {
                                                 Toast.makeText(
                                                     context,
@@ -237,7 +263,6 @@ fun AuthActionScreen(
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             }
-                                            onComplete()
                                         }
                                 }
                             ),
@@ -252,7 +277,7 @@ fun AuthActionScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .then(
-                                    if (emailError.isNotEmpty()) fieldBorder else Modifier
+                                    if (passwordError.isNotEmpty()) fieldBorder else Modifier
                                 )
                         )
 
@@ -267,14 +292,14 @@ fun AuthActionScreen(
                                                 "Password reset successful",
                                                 Toast.LENGTH_SHORT
                                             ).show()
+                                            onComplete()
                                         } else {
                                             Toast.makeText(
                                                 context,
-                                                "Password reset failed",
+                                                "Password reset failed: ${task.exception?.localizedMessage}",
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         }
-                                        onComplete()
                                     }
                             },
                             modifier = Modifier.fillMaxWidth(),

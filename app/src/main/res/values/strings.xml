@@ -44,6 +44,9 @@
     <string name="hint_password_reset">Enter your new password</string>
     <string name="lbl_new_password">Enter a new password in order to reset. Make sure to remember it for future logins</string>
     <string name="btn_reset_password">Reset Password</string>
+    <string name="lbl_re_enter_new_password">Re-enter new password</string>
+    <string name="hint_password">Password</string>
+    <string name="lbl_enter_your_new_password">Enter your new password</string>
 
 
 </resources>

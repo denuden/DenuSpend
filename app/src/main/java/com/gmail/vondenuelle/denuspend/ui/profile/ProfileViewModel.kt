@@ -5,13 +5,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.remote.error.ReAuthenticateException
+import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdatePasswordRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
-import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
-import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.*
+import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
+import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnPopBackStack
+import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.ShowToast
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +31,6 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val TAG = ProfileViewModel::class.java.simpleName
 
@@ -63,9 +66,9 @@ class ProfileViewModel @Inject constructor(
                 _stateFlow.update { it.copy(photo = event.value) }
 
             ProfileScreenEvents.OnPopBackStack ->
-                sendEvent(OneTimeEvents.OnPopBackStack)
+                sendEvent(OnPopBackStack)
 
-            ProfileScreenEvents.OnSaveChanges -> {
+            ProfileScreenEvents.OnSaveProfileChanges -> {
                 viewModelScope.launch {
                     _stateFlow.update { it.copy(isLoading = true) }
                     try {
@@ -103,23 +106,153 @@ class ProfileViewModel @Inject constructor(
             is ProfileScreenEvents.OnSignOut -> {
                 viewModelScope.launch {
                     try {
-                        authRepository.logout()
-                        sendEvent(OnNavigate(AuthScreens.LoginNavigation,  behavior = NavBehavior.ClearAll))
-                    } catch (e : Exception){
+                        profileRepository.logout()
+                        sendEvent(
+                            OnNavigate(
+                                AuthScreens.LoginNavigation,
+                                behavior = NavBehavior.ClearAll
+                            )
+                        )
+                    } catch (e: Exception) {
                         onError(e)
                     }
                 }
             }
 
             is ProfileScreenEvents.OnShowEditDialog -> _stateFlow.update { it.copy(showEditDialog = event.value) }
-            is ProfileScreenEvents.OnShowMediaOptionDialog -> _stateFlow.update { it.copy(showMediaOptionDialog = event.value) }
+            is ProfileScreenEvents.OnShowMediaOptionDialog -> _stateFlow.update {
+                it.copy(
+                    showMediaOptionDialog = event.value
+                )
+            }
+
+            is ProfileScreenEvents.OnShowDeleteAccountDialog -> _stateFlow.update {
+                it.copy(
+                    showDeleteAccountDialog = event.value,
+                    typeOfEvent = DELETE
+                )
+            }
+
+            is ProfileScreenEvents.OnDeleteAccount -> {
+                viewModelScope.launch {
+                    try {
+                        _stateFlow.update { it.copy(isLoading = true) }
+                        profileRepository.deleteAccount()
+                        sendEvent(
+                            OnNavigate(
+                                AuthScreens.LoginNavigation,
+                                behavior = NavBehavior.ClearAll
+                            )
+                        )
+                        _stateFlow.update {
+                            it.copy(
+                                isLoading = false,
+                                showDeleteAccountDialog = false,
+                                typeOfEvent = "",
+                                email = "",
+                                password = ""
+                            )
+                        }
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false, showCredentialsDialog = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is ProfileScreenEvents.OnChangeReEnterPassword -> {
+                _stateFlow.update { it.copy(reEnterPassword = event.value) }
+            }
+
+            is ProfileScreenEvents.OnChangeNewPassword -> {
+                _stateFlow.update { it.copy(newPassword = event.value) }
+            }
+
+            ProfileScreenEvents.OnSavePasswordChanges -> {
+                viewModelScope.launch {
+                    try {
+                        _stateFlow.update { it.copy(isLoading = true) }
+                        profileRepository.updatePassword(
+                            UpdatePasswordRequest(
+                                newPassword = _stateFlow.value.newPassword,
+                                reEnterPassword = _stateFlow.value.reEnterPassword,
+                            )
+                        )
+                        sendEvent(ShowToast("Password has been updated"))
+                        _stateFlow.update {
+                            it.copy(
+                                isLoading = false,
+                                showUpdatePasswordDialog = false,
+                                typeOfEvent = "",
+                                email = "",
+                                password = "",
+                                reEnterPassword = "",
+                                newPassword = ""
+                            )
+                        }
+                    } catch (_ : ReAuthenticateException) {
+                        _stateFlow.update {
+                            it.copy(
+                                showCredentialsDialog = true,
+                            )
+                        }
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is ProfileScreenEvents.OnShowUpdatePasswordDialog -> _stateFlow.update {
+                it.copy(
+                    showUpdatePasswordDialog = event.value,
+                    typeOfEvent = UPDATE_PASSWORD
+                )
+            }
+
+            is ProfileScreenEvents.OnChangeEmail -> _stateFlow.update { it.copy(email = event.value) }
+            is ProfileScreenEvents.OnChangePassword -> _stateFlow.update { it.copy(password = event.value) }
+            is ProfileScreenEvents.OnShowCredentialsDialog -> _stateFlow.update {
+                it.copy(
+                    showCredentialsDialog = event.value
+                )
+            }
+
+            is ProfileScreenEvents.OnValidateCredentials -> {
+                viewModelScope.launch {
+                    try {
+                        _stateFlow.update { it.copy(isLoading = true) }
+
+                        profileRepository.reauthenticateUser(
+                            LoginRequest(
+                                email = _stateFlow.value.email,
+                                password = _stateFlow.value.password
+                            )
+                        )
+                        _stateFlow.update {
+                            it.copy(
+                                showCredentialsDialog = false,
+                            )
+                        }
+
+                        when(_stateFlow.value.typeOfEvent) {
+                            UPDATE_PASSWORD -> {
+                                onEvent(ProfileScreenEvents.OnSavePasswordChanges)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
         }
     }
 
-    private fun logout(){
+    private fun logout() {
         viewModelScope.launch {
             try {
-                authRepository.logout()
+                profileRepository.logout()
             } catch (e: Exception) {
                 onError(e)
             }
@@ -154,13 +287,20 @@ class ProfileViewModel @Inject constructor(
                     sendEvent(OneTimeEvents.ShowError(errorResponse.message))
                 }
             }
+
             is NoUserException -> {
                 //send to login
                 //remove stored creds
                 sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
                 logout()
-                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation, behavior = NavBehavior.ClearAll))
+                sendEvent(
+                    OneTimeEvents.OnNavigate(
+                        AuthScreens.LoginNavigation,
+                        behavior = NavBehavior.ClearAll
+                    )
+                )
             }
+
             else -> {
                 sendEvent(OneTimeEvents.ShowError(e?.message.orEmpty()))
             }
@@ -171,5 +311,11 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _channel.send(event)
         }
+    }
+
+    companion object {
+        const val UPDATE_PASSWORD = "UPDATE_PASSWORD"
+        const val UPDATE_EMAIL = "UPDATE_EMAIL"
+        const val DELETE = "DELETE"
     }
 }

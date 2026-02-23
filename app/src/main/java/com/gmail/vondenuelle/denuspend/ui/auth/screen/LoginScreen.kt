@@ -297,7 +297,7 @@ fun LoginScreenContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(
-                        if (state.emailError.isNotEmpty()) fieldBorder else Modifier
+                        if (state.passwordError.isNotEmpty()) fieldBorder else Modifier
                     )
             )
 

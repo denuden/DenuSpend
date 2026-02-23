@@ -74,19 +74,6 @@ class FirebaseAuthServiceImpl @Inject constructor(
         }
     }
 
-
-    override suspend fun logout() {
-        try {
-            firebaseAuth.signOut()
-        } catch (e: FirebaseAuthException) {
-            // Firebase-specific errors
-            throw CannotLogoutException(e.localizedMessage.orEmpty())
-        } catch (e: Exception) {
-            // rethrow error for custom exceptions
-            throw e
-        }
-    }
-
     override suspend fun hasUser(): Boolean {
         return try {
             val user = firebaseAuth.currentUser

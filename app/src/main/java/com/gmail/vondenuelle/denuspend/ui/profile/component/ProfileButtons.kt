@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
@@ -29,11 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
@@ -54,7 +50,7 @@ private fun ProfileButtonsPreview() {
             ProfileButtons(
                 onUpdatePassword = {  },
                 onUpdateEmail = {  },
-                onResetPassword = {  },
+                onDeleteAccount = {  },
                 onSignOut = {  }
             )
         }
@@ -66,7 +62,7 @@ fun ProfileButtons(
     modifier: Modifier = Modifier,
     onUpdatePassword: () -> Unit,
     onUpdateEmail: () -> Unit,
-    onResetPassword: () -> Unit,
+    onDeleteAccount: () -> Unit,
     onSignOut: () -> Unit,
 ) {
     ElevatedCard(
@@ -150,7 +146,7 @@ fun ProfileButtons(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .clickableDelayed { onUpdateEmail() }
+                        .clickableDelayed { onDeleteAccount() }
                         .padding(horizontal = 4.dp, vertical = 16.dp)
                 ) {
                     Icon(
