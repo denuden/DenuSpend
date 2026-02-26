@@ -106,6 +106,10 @@ class FirebaseProfileServiceImpl @Inject constructor(
             } else {
                 throw NoUserException()
             }
+        } catch (e: FirebaseAuthRecentLoginRequiredException) {
+            throw ReAuthenticateException(
+                e.localizedMessage ?: "Credentials required to do certain actions"
+            )
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
             throw CannotUpdateDetailsException(e.localizedMessage ?: "Cannot update user details")
@@ -124,12 +128,11 @@ class FirebaseProfileServiceImpl @Inject constructor(
             } else {
                 throw NoUserException()
             }
-        } catch (e : FirebaseAuthRecentLoginRequiredException){
+        } catch (e: FirebaseAuthRecentLoginRequiredException) {
             throw ReAuthenticateException(
                 e.localizedMessage ?: "Credentials required to do certain actions"
             )
-        }
-        catch (e: FirebaseAuthException) {
+        } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
             throw CannotUpdateDetailsException(e.localizedMessage ?: "Cannot update user details")
         } catch (e: FirebaseException) {

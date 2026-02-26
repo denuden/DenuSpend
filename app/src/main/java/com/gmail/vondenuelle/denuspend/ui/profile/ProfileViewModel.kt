@@ -7,6 +7,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.error.ReAuthenticateException
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateEmailRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdatePasswordRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
@@ -154,7 +155,12 @@ class ProfileViewModel @Inject constructor(
                             )
                         }
                     } catch (e: Exception) {
-                        _stateFlow.update { it.copy(isLoading = false, showCredentialsDialog = false) }
+                        _stateFlow.update {
+                            it.copy(
+                                isLoading = false,
+                                showCredentialsDialog = false
+                            )
+                        }
                         onError(e)
                     }
                 }
@@ -190,7 +196,7 @@ class ProfileViewModel @Inject constructor(
                                 newPassword = ""
                             )
                         }
-                    } catch (_ : ReAuthenticateException) {
+                    } catch (_: ReAuthenticateException) {
                         _stateFlow.update {
                             it.copy(
                                 showCredentialsDialog = true,
@@ -210,13 +216,22 @@ class ProfileViewModel @Inject constructor(
                 )
             }
 
-            is ProfileScreenEvents.OnChangeEmail -> _stateFlow.update { it.copy(email = event.value) }
-            is ProfileScreenEvents.OnChangePassword -> _stateFlow.update { it.copy(password = event.value) }
+            is ProfileScreenEvents.OnShowUpdateEmailDialog -> _stateFlow.update {
+                it.copy(
+                    showUpdateEmailDialog = event.value,
+                    typeOfEvent = UPDATE_EMAIL
+                )
+            }
+
             is ProfileScreenEvents.OnShowCredentialsDialog -> _stateFlow.update {
                 it.copy(
                     showCredentialsDialog = event.value
                 )
             }
+
+            is ProfileScreenEvents.OnChangeEmail -> _stateFlow.update { it.copy(email = event.value) }
+            is ProfileScreenEvents.OnChangeNewEmail -> _stateFlow.update { it.copy(newEmail = event.value) }
+            is ProfileScreenEvents.OnChangePassword -> _stateFlow.update { it.copy(password = event.value) }
 
             is ProfileScreenEvents.OnValidateCredentials -> {
                 viewModelScope.launch {
@@ -235,10 +250,48 @@ class ProfileViewModel @Inject constructor(
                             )
                         }
 
-                        when(_stateFlow.value.typeOfEvent) {
+                        when (_stateFlow.value.typeOfEvent) {
                             UPDATE_PASSWORD -> {
                                 onEvent(ProfileScreenEvents.OnSavePasswordChanges)
                             }
+
+                            UPDATE_EMAIL -> {
+                                onEvent(ProfileScreenEvents.OnSaveEmailChanges)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is ProfileScreenEvents.OnSaveEmailChanges -> {
+                viewModelScope.launch {
+                    try {
+                        _stateFlow.update { it.copy(isLoading = true) }
+
+                        profileRepository.updateEmail(
+                            UpdateEmailRequest(
+                                email = _stateFlow.value.newEmail,
+                            )
+                        )
+                        sendEvent(ShowToast("Check your email ${_stateFlow.value.newEmail} to verify and complete your update."))
+                        _stateFlow.update {
+                            it.copy(
+                                isLoading = false,
+                                showUpdateEmailDialog = false,
+                                typeOfEvent = "",
+                                email = "",
+                                newEmail = "",
+                                password = "",
+                            )
+                        }
+                    } catch (_: ReAuthenticateException) {
+                        _stateFlow.update {
+                            it.copy(
+                                showCredentialsDialog = true,
+                            )
                         }
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy(isLoading = false) }

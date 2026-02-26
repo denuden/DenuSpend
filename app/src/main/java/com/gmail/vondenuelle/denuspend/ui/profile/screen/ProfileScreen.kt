@@ -50,6 +50,7 @@ import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileButtons
 import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileEdit
 import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileHeader
 import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileReauthenticateUser
+import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileUpdateEmail
 import com.gmail.vondenuelle.denuspend.ui.profile.component.ProfileUpdatePassword
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
@@ -235,6 +236,25 @@ fun ProfileScreen(
     }
 
 
+    ModalBottomSheetDialog(
+        showDialog = state.showUpdateEmailDialog,
+        onDismissRequest = {
+            viewModel.onEvent(ProfileScreenEvents.OnShowUpdateEmailDialog(false))
+        }
+    ) {
+        ProfileUpdateEmail (
+            email = state.newEmail,
+            emailError = state.emailError,
+            onEmailChange = {
+                viewModel.onEvent(ProfileScreenEvents.OnChangeNewEmail(it))
+            },
+            onSaveChanges = {
+                viewModel.onEvent(ProfileScreenEvents.OnSaveEmailChanges)
+            }
+        )
+    }
+
+
     ProfileScreenContent(
         state = state,
         onEvent = viewModel::onEvent
@@ -313,7 +333,7 @@ fun ProfileScreenContent(
                     .fillMaxHeight()
                     .padding(top = 16.dp),
                 onUpdatePassword = { onEvent(ProfileScreenEvents.OnShowUpdatePasswordDialog(true)) },
-                onUpdateEmail = { },
+                onUpdateEmail = { onEvent(ProfileScreenEvents.OnShowUpdateEmailDialog(true)) },
                 onDeleteAccount = { onEvent(ProfileScreenEvents.OnShowDeleteAccountDialog(true)) },
                 onSignOut = { onEvent(ProfileScreenEvents.OnSignOut) }
             )

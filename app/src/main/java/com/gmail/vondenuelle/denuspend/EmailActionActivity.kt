@@ -2,7 +2,9 @@ package com.gmail.vondenuelle.denuspend
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +28,8 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,6 +67,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 
 @AndroidEntryPoint
@@ -75,13 +80,21 @@ class EmailActionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val uri = intent?.getStringExtra(URI)
+        Log.d("gwgw", uri.toString())
 
         setContent {
             DenuSpendTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     if (uri != null && uri.isNotBlank()) {
+                        val outerUri = uri.toUri()
+                        val encodedInnerLink = outerUri.getQueryParameter("link")
+                        val decodedInnerLink = encodedInnerLink?.let {
+                            Uri.decode(it)
+                        }
+                        val actionUri = decodedInnerLink?.toUri()
+
                         AuthActionScreen(
-                            uri,
+                            actionUri,
                             firebaseAuth,
                             dataStore
                         ) {
@@ -108,26 +121,27 @@ class EmailActionActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AuthActionScreen(
-    link: String,
+    actionUri: Uri?,
     firebaseAuth: FirebaseAuth,
     dataStore: DataStore<UserPreferences>,
     onComplete: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val actionCodeUrl = remember { ActionCodeUrl.parseLink(link) }
-    val mode = actionCodeUrl?.operation
-    val oobCode = actionCodeUrl?.code
+
+
+    val mode = actionUri?.getQueryParameter("mode")
+    val oobCode = actionUri?.getQueryParameter("oobCode")
+
 
     Column(
         modifier = Modifier.safeContentPadding()
-
-
     ) {
         when (mode) {
-            ActionCodeResult.VERIFY_EMAIL -> {
+            "verifyEmail" -> {
                 LaunchedEffect(Unit) {
                     firebaseAuth.applyActionCode(oobCode.orEmpty())
                         .addOnCompleteListener { task ->
@@ -149,10 +163,18 @@ fun AuthActionScreen(
                             onComplete()
                         }
                 }
-                Text("Verifying your email…")
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                ) {
+                    ContainedLoadingIndicator()
+                    Spacer(modifier = Modifier.padding(6.dp))
+                    Text("Verifying your email…")
+                }
             }
 
-            ActionCodeResult.VERIFY_BEFORE_CHANGE_EMAIL -> {
+            "verifyAndChangeEmail" -> {
                 LaunchedEffect(Unit) {
                     firebaseAuth.applyActionCode(oobCode.orEmpty())
                         .addOnCompleteListener { task ->
@@ -167,17 +189,25 @@ fun AuthActionScreen(
 
                                 Toast.makeText(context, "Email verified!", Toast.LENGTH_SHORT)
                                     .show()
+                                onComplete()
                             } else {
                                 Toast.makeText(context, "Verification failed", Toast.LENGTH_SHORT)
                                     .show()
                             }
-                            onComplete()
                         }
                 }
-                Text("Verifying your email…")
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                ) {
+                    ContainedLoadingIndicator()
+                    Spacer(modifier = Modifier.padding(6.dp))
+                    Text("Verifying your email…")
+                }
             }
 
-            ActionCodeResult.PASSWORD_RESET -> {
+            "resetPassword" -> {
                 var newPassword by remember { mutableStateOf("") }
                 var showPassword by remember { mutableStateOf(false) }
                 var passwordError by remember { mutableStateOf("") }
