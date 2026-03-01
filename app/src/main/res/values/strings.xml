@@ -47,6 +47,7 @@
     <string name="lbl_re_enter_new_password">Re-enter new password</string>
     <string name="hint_password">Password</string>
     <string name="lbl_enter_your_new_password">Enter your new password</string>
+    <string name="home_lbl_total_spent_this_month">Total spent this month</string>
 
 
 </resources>

@@ -1,27 +1,31 @@
 package com.gmail.vondenuelle.denuspend.ui.home.screen
 
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.home.HomeScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.home.HomeViewmodel
+import com.gmail.vondenuelle.denuspend.ui.home.components.section.MonthlySpendingSection
+import com.gmail.vondenuelle.denuspend.ui.home.components.section.QuickTabSection
+import com.gmail.vondenuelle.denuspend.ui.home.components.section.SavingsSection
+import com.gmail.vondenuelle.denuspend.ui.home.components.tab.RecentTab
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
-import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 
@@ -73,19 +77,24 @@ fun HomeScreenContent(
     modifier: Modifier = Modifier,
     onEvent : (HomeScreenEvents) -> Unit
 ) {
-    Surface {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize().background(Color.Blue)
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        modifier = modifier
 
-        ){
-            Button(
-                onClick ={
-                    onEvent(HomeScreenEvents.OnSignOut)
-                }
+    ) {
+
+        Column {
+            MonthlySpendingSection(
+                modifier = Modifier.padding(16.dp)
+            )
+            Spacer(modifier = Modifier.padding(vertical = 8.dp))
+            SavingsSection()
+            QuickTabSection(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Sign out")
+                //todo
             }
+
         }
     }
 }
@@ -95,7 +104,9 @@ fun HomeScreenContent(
 private fun HomeScreenPreview() {
     DenuSpendTheme {
         Surface {
-            HomeScreenContent(){}
+            HomeScreenContent(
+                modifier = Modifier.fillMaxSize()
+            ){}
         }
     }
 }
