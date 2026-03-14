@@ -30,6 +30,7 @@ class MainViewModel @Inject constructor(
         //check route with specific route under items in sealed class NavigationScreens (not RootGraphs)
         return when(cleaned){
             "ProfileNavigation" -> "Profile"
+            "AddNavigation" -> "Add Transaction"
             "HomeNavigation" ->  "Welcome back, ${tokenProvider.getName().split(" ")[0]}"
             else -> "DenuSpend"
         }
