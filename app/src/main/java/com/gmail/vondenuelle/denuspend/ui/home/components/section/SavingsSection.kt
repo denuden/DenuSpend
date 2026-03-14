@@ -41,7 +41,7 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 fun SavingsSection(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.large.copy(
+        shape = MaterialTheme.shapes.extraLarge.copy(
             bottomStart = CornerSize(0.dp),
             bottomEnd = CornerSize(0.dp)
         ),
@@ -89,7 +89,7 @@ fun SavingsSection(modifier: Modifier = Modifier) {
                     modifier = Modifier.weight(1f)
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
                         modifier = Modifier.horizontalScroll(scrollState)
                     ) {
                         repeat(4) {

@@ -1,4 +1,4 @@
-package com.gmail.vondenuelle.denuspend.ui.home.components
+package com.gmail.vondenuelle.denuspend.ui.common.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -29,7 +29,7 @@ fun TransactionItem(modifier: Modifier = Modifier) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
 
-            IncomeIcon(modifier = Modifier.padding(end = 8.dp))
+            ExpenseIcon(modifier = Modifier.padding(end = 8.dp))
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -58,6 +58,20 @@ fun IncomeIcon(modifier: Modifier = Modifier) {
             painterResource(R.drawable.ic_payment_arrow_down),
             contentDescription = null,
             tint = colorResource(R.color.verified_green)
+        )
+    }
+}
+@Composable
+fun ExpenseIcon(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(color = colorResource(R.color.not_verified_red_container), shape = CircleShape).padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_credit_card),
+            contentDescription = null,
+            tint = colorResource(R.color.not_verified_red)
         )
     }
 }

@@ -55,6 +55,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
 import com.gmail.vondenuelle.denuspend.navigation.AppNavigation
+import com.gmail.vondenuelle.denuspend.navigation.MainScreens
+import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.navigation.ProfileScreens
 import com.gmail.vondenuelle.denuspend.navigation.RootGraphs
@@ -142,6 +144,25 @@ fun MainScreen(
         Icons.Filled.Flag,
         Icons.Filled.Savings
     )
+
+    LaunchedEffect(selectedItem) {
+        when (selectedItem) {
+            0 -> navController.navigate(
+                MainScreens.HomeNavigation,
+                navOptions = NavOptions.Builder().apply {
+                    setPopUpTo(0, inclusive = true)
+                    setLaunchSingleTop(true)
+                }.build()
+            )
+            2 -> navController.navigate(
+                MainScreens.AddNavigation,
+                navOptions = NavOptions.Builder().apply {
+                    setPopUpTo(0, inclusive = true)
+                    setLaunchSingleTop(true)
+                }.build()
+            )
+        }
+    }
 
     Scaffold(
         snackbarHost = {

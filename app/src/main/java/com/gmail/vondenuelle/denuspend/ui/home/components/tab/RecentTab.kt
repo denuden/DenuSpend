@@ -24,8 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.room.Transaction
-import com.gmail.vondenuelle.denuspend.ui.home.components.TransactionItem
+import com.gmail.vondenuelle.denuspend.ui.common.components.TransactionItem
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 
 @Composable
@@ -38,13 +37,13 @@ fun RecentTab(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors().copy(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        shape = MaterialTheme.shapes.large.copy(
+        shape = MaterialTheme.shapes.extraLarge.copy(
             bottomStart = CornerSize(0.dp),
             bottomEnd = CornerSize(0.dp)
         ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(top = 16.dp, end = 16.dp, start = 16.dp)
                 .fillMaxWidth()
         ) {
             Box(
