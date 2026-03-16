@@ -3,17 +3,16 @@ package com.gmail.vondenuelle.denuspend.navigation
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
-import com.gmail.vondenuelle.denuspend.ui.add.screen.AddScreen
-import com.gmail.vondenuelle.denuspend.ui.home.screen.HomeScreen
+import androidx.navigation.navigation
+import com.gmail.vondenuelle.denuspend.ui.add.screen.AddExpenseScreen
+import com.gmail.vondenuelle.denuspend.ui.add.screen.AddIncomeScreen
 
-fun NavGraphBuilder.addMainNavGraph(
+fun NavGraphBuilder.addNavGraph(
     navController: NavController
 ) {
-    navigation<RootGraphs.MainGraph>(startDestination = MainScreens.HomeNavigation) {
-        composable<MainScreens.HomeNavigation>(
-        ) {
-            HomeScreen(
+    navigation<RootGraphs.AddGraph>(startDestination = AddScreens.AddIncomeScreenNavigation){
+        composable<AddScreens.AddIncomeScreenNavigation> {
+            AddIncomeScreen(
                 onNavigate = { route, navOptions ->
                     navController.navigate(route, navOptions = navOptions)
                 },
@@ -22,9 +21,8 @@ fun NavGraphBuilder.addMainNavGraph(
                 }
             )
         }
-
-        composable<MainScreens.AddNavigation>() {
-            AddScreen(
+        composable<AddScreens.AddExpenseScreenNavigation> {
+            AddExpenseScreen(
                 onNavigate = { route, navOptions ->
                     navController.navigate(route, navOptions = navOptions)
                 },
@@ -33,6 +31,5 @@ fun NavGraphBuilder.addMainNavGraph(
                 }
             )
         }
-
     }
 }

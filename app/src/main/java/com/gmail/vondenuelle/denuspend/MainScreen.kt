@@ -80,7 +80,6 @@ fun MainScreen(
     // Checks current type to determine which component should be shown or not from the scaffold
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val screenType = "MainScreens"
 
     // holds state if topborcontent should be shown
     var topBarState by rememberSaveable { (mutableStateOf(false)) }
@@ -97,8 +96,10 @@ fun MainScreen(
     //if visible depending on route
 //    LaunchedEffect(currentRoute) {
     //will show topbarcontent if route is from mainscreens (E.G. Home)
-    topBarState = currentRoute?.contains(screenType) == true
-    bottomBarState = currentRoute?.contains(screenType) == true
+    topBarState =
+        currentRoute?.contains("MainScreens") == true ||
+                currentRoute?.contains("AddScreens") == true
+    bottomBarState = currentRoute?.contains("MainScreens") == true
     topBarTitle = viewModel.getTopBarTitle(currentRoute.toString())
 //    }
 

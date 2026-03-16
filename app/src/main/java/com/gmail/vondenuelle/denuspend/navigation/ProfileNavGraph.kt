@@ -17,7 +17,6 @@ fun NavGraphBuilder.addProfileGraph(
 ) {
     navigation<RootGraphs.ProfileGraph>(startDestination = ProfileScreens.ProfileNavigation) {
         composable<ProfileScreens.ProfileNavigation>(
-
         )
         {
             ProfileScreen(

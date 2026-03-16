@@ -31,6 +31,8 @@ class MainViewModel @Inject constructor(
         return when(cleaned){
             "ProfileNavigation" -> "Profile"
             "AddNavigation" -> "Add Transaction"
+            "AddIncomeScreenNavigation" -> "Add Income"
+            "AddExpenseScreenNavigation" -> "Add Expense"
             "HomeNavigation" ->  "Welcome back, ${tokenProvider.getName().split(" ")[0]}"
             else -> "DenuSpend"
         }

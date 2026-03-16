@@ -1,16 +1,13 @@
 package com.gmail.vondenuelle.denuspend.ui.add.components.section
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,12 +23,14 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 
 @Composable
 fun AddButtonsSection(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onIncomeClick : () -> Unit,
+    onExpenseClick : () -> Unit,
 ) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.Center) {
         FilledTonalButton(
             onClick = {
-
+                onExpenseClick()
             },
             colors = ButtonDefaults.filledTonalButtonColors()
                 .copy(containerColor = colorResource(R.color.not_verified_red_container))
@@ -50,7 +49,7 @@ fun AddButtonsSection(
         Spacer(modifier = Modifier.width(8.dp))
         FilledTonalButton(
             onClick = {
-
+                onIncomeClick()
             },
             colors = ButtonDefaults.filledTonalButtonColors()
                 .copy(containerColor = colorResource(R.color.verified_green_container))
@@ -76,7 +75,8 @@ private fun AddButtonsSectionPreview() {
         Surface {
             AddButtonsSection(
                 modifier = Modifier.fillMaxSize()
-            )
+                , onIncomeClick = {}
+            ){}
         }
     }
 }

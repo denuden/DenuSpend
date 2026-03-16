@@ -60,6 +60,8 @@ sealed class RootGraphs {
     data object MainGraph : RootGraphs()
     @Serializable
     data object ProfileGraph : RootGraphs()
+    @Serializable
+    data object AddGraph : RootGraphs()
 }
 
 
@@ -100,5 +102,12 @@ sealed class MainScreens : NavigationScreens {
 sealed class ProfileScreens : NavigationScreens {
     @Serializable
     data object ProfileNavigation : ProfileScreens()
+}
+
+sealed class AddScreens : NavigationScreens {
+    @Serializable
+    data object AddIncomeScreenNavigation : AddScreens()
+    @Serializable
+    data object AddExpenseScreenNavigation : AddScreens()
 }
 
