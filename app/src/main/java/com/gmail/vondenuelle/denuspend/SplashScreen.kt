@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
+import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
+import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewModel
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
@@ -27,22 +31,34 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SplashScreen(
-    onFinished: (isLoggedIn: Boolean) -> Unit,
+    onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
 
     val context = LocalContext.current
-    ObserveAsEvents(viewModel.channel) {
-        when (it) {
-            is OneTimeEvents.ShowError -> Toast.makeText(context, it.msg, Toast.LENGTH_SHORT).show()
+    ObserveAsEvents(viewModel.channel) { event ->
+        when (event) {
+            is OneTimeEvents.ShowError -> Toast.makeText(context, event.msg, Toast.LENGTH_SHORT).show()
 
             is OneTimeEvents.OnNavigate -> {
-                //if success
-                if(it.route == AuthScreens.SplashNavigation){
-                    onFinished(true)
-                } else { //if unauthorized
-                    onFinished(false)
-                }
+                val options = NavOptions.Builder().apply {
+                    when (event.behavior) {
+                        NavBehavior.ClearAll -> {
+                            setPopUpTo(0, inclusive = true)
+                            setLaunchSingleTop(true)
+                        }
+
+                        is NavBehavior.PopUpTo -> {
+                            setPopUpTo(
+                                event.behavior.destination,
+                                inclusive = event.behavior.inclusive
+                            )
+                        }
+                        NavBehavior.None -> Unit
+                    }
+                }.build()
+
+                onNavigate(event.route, options)
             }
 
             else -> Unit

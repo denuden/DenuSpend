@@ -3,10 +3,11 @@ package com.gmail.vondenuelle.denuspend.ui.add
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
-import com.gmail.vondenuelle.denuspend.data.repositories.SampleRepository
+import com.gmail.vondenuelle.denuspend.data.repositories.TransactionRepository
 import com.gmail.vondenuelle.denuspend.navigation.AddScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
-import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.*
+import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
+import com.gmail.vondenuelle.denuspend.utils.SnackbarEvent
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,8 +22,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddViewModel @Inject constructor(
-    private val sampleRepository: SampleRepository
-): ViewModel(){
+    private val transactionRepository: TransactionRepository
+) : ViewModel() {
     private val TAG = AddViewModel::class.java.simpleName
 
     private val _channel = Channel<OneTimeEvents>()
@@ -31,18 +32,51 @@ class AddViewModel @Inject constructor(
     private val _stateFlow = MutableStateFlow<AddScreenState>(AddScreenState())
     val stateFlow = _stateFlow.asStateFlow()
 
-    fun onEvent(event : AddScreenEvents) {
-        when(event){
+    fun onEvent(event: AddScreenEvents) {
+        when (event) {
             is AddScreenEvents.OnNavigateToIncomeScreen -> {
                 sendEvent(OnNavigate(AddScreens.AddIncomeScreenNavigation))
             }
+
             is AddScreenEvents.OnNavigateToExpenseScreen -> {
                 sendEvent(OnNavigate(AddScreens.AddExpenseScreenNavigation))
             }
 
-            is AddScreenEvents.OnIncomeAmountChanged -> _stateFlow.update { it.copy(transactionAmount = event.value) }
-            is AddScreenEvents.OnIncomeDescriptionChanged -> _stateFlow.update { it.copy(transactionDescription = event.value) }
-            is AddScreenEvents.OnIncomeTitleChanged -> _stateFlow.update { it.copy(transactionTitle = event.value) }
+            is AddScreenEvents.OnAddTransaction -> {
+                viewModelScope.launch {
+                    try {
+                        _stateFlow.update { it.copy(isLoading = true) }
+                        transactionRepository.addTransaction(event.request)
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = if (event.request.amount > 0) "Income Added" else "Expense Added")))
+                        sendEvent(OneTimeEvents.OnPopBackStack)
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+
+            }
+
+            is AddScreenEvents.OnAmountChanged -> _stateFlow.update { it.copy(transactionAmount = event.value) }
+            is AddScreenEvents.OnDescriptionChanged -> _stateFlow.update {
+                it.copy(
+                    transactionDescription = event.value
+                )
+            }
+
+            is AddScreenEvents.OnTitleChanged -> _stateFlow.update { it.copy(transactionTitle = event.value) }
+            is AddScreenEvents.OnCategoryChanged -> _stateFlow.update { it.copy(transactionCategory = event.value) }
+
+            AddScreenEvents.OnGetAllTransactions -> {
+                viewModelScope.launch {
+                    try {
+
+                    } catch (e : Exception) {
+                        onError(e)
+                    }
+                }
+            }
         }
     }
 
@@ -56,7 +90,7 @@ class AddViewModel @Inject constructor(
                 val errorResponse: ErrorModel? = gson.fromJson(errorBody?.charStream(), type)
 
                 // Example: Handle specific status
-                when(statusCode) {
+                when (statusCode) {
                     401 -> {
 //                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation))
                         return
@@ -74,6 +108,7 @@ class AddViewModel @Inject constructor(
                     sendEvent(OneTimeEvents.ShowError(errorResponse.message))
                 }
             }
+
             else -> {
                 sendEvent(OneTimeEvents.ShowError(e?.message.orEmpty()))
             }

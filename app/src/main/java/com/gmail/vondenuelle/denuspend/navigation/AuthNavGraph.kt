@@ -17,7 +17,7 @@ import com.gmail.vondenuelle.denuspend.ui.auth.screen.RegisterScreen
 fun NavGraphBuilder.addAuthNavGraph(
     navController: NavController
 ) {
-    navigation<RootGraphs.AuthGraph>(startDestination = AuthScreens.LoginNavigation) {
+    navigation<AppRootScreens.AuthTopLevel>(startDestination = AuthScreens.LoginNavigation) {
 
         val animationSpec = tween<IntOffset>(durationMillis = 400, easing = FastOutSlowInEasing)
 

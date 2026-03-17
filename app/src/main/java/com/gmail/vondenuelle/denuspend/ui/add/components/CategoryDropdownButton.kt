@@ -1,14 +1,12 @@
 package com.gmail.vondenuelle.denuspend.ui.add.components
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -16,7 +14,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -29,11 +26,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import com.gmail.vondenuelle.denuspend.utils.clickableDelayed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoryDropdownButton(modifier: Modifier = Modifier) {
+fun CategoryDropdownButton(modifier: Modifier = Modifier, onSelected : (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
@@ -89,6 +85,7 @@ fun CategoryDropdownButton(modifier: Modifier = Modifier) {
                         onClick = {
                             expanded = false
                             textFieldState.setTextAndPlaceCursorAtEnd(option)
+                            onSelected(option)
                         },
                         contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                     )

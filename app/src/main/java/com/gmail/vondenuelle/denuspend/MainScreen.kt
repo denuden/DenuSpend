@@ -1,6 +1,5 @@
 package com.gmail.vondenuelle.denuspend
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,7 +43,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,10 +51,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import coil3.compose.AsyncImage
 import com.gmail.vondenuelle.denuspend.navigation.AppNavigation
 import com.gmail.vondenuelle.denuspend.navigation.MainScreens
-import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.navigation.ProfileScreens
 import com.gmail.vondenuelle.denuspend.navigation.RootGraphs
@@ -69,7 +65,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    isLoggedIn: Boolean,
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
@@ -212,7 +207,7 @@ fun MainScreen(
         Box(modifier = Modifier.padding(padding)) {
             AppNavigation(
                 navController,
-                startDestination = if (isLoggedIn) RootGraphs.MainGraph else RootGraphs.AuthGraph
+                startDestination = RootGraphs.MainGraph
             )
         }
     }

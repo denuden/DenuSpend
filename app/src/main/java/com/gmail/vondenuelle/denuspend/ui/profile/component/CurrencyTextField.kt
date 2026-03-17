@@ -29,6 +29,7 @@ fun CurrencyTextField(
     amountInCents: Long,
     onAmountChange: (Long) -> Unit,
     maxDigits: Int = 12,
+    prefixText : String = "₱",
     colors : TextFieldColors =  TextFieldDefaults.colors().copy(
         focusedContainerColor = Color.Transparent,
         errorContainerColor = Color.Transparent,
@@ -77,7 +78,7 @@ fun CurrencyTextField(
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         placeholder = { Text ("00.00", style = TextStyle(textAlign = TextAlign.Center, fontSize = 26.sp, fontWeight = FontWeight.Bold), modifier = Modifier.fillMaxWidth())},
-        prefix = { Text("₱",fontSize = 26.sp,) },
+        prefix = { Text(prefixText,fontSize = 26.sp,) },
         colors = colors,
         textStyle = textStyle,
         modifier = modifier

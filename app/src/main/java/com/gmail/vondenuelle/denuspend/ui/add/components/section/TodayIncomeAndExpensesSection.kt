@@ -45,10 +45,10 @@ fun TodayIncomeAndExpensesSection(
                 },
                 strokeWidth = 10.dp,
                 modifier = Modifier
-                    .size(168.dp)
+                    .size(148.dp)
             )
             ElevatedCard(
-                modifier = Modifier.size(154.dp),
+                modifier = Modifier.size(134.dp),
                 shape = CircleShape,
                 onClick = {}
             ) {
@@ -63,7 +63,7 @@ fun TodayIncomeAndExpensesSection(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "03 March 2026",
+                            "03 September 2026",
                             fontWeight = FontWeight.Light,
                             style = MaterialTheme.typography.labelMedium
                         )

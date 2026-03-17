@@ -40,22 +40,10 @@ import kotlinx.serialization.Serializable
  *   MainScreens.FavoritesNavigation → "/main/favorites"
  */
 
-/**
- * For splashscreen and simple navigation
- */
-sealed interface AppRootScreens {
-    @Serializable
-    data object Splash : AppRootScreens
-
-    @Serializable
-    data class Main(val isLoggedIn: Boolean) : AppRootScreens
-}
 
 sealed class RootGraphs {
     @Serializable
     data object SampleGraph : RootGraphs()
-    @Serializable
-    data object AuthGraph : RootGraphs()
     @Serializable
     data object MainGraph : RootGraphs()
     @Serializable
@@ -65,10 +53,25 @@ sealed class RootGraphs {
 }
 
 
+
+
 /**
  *  General or shared type of all screens
  */
 sealed interface NavigationScreens
+
+/**
+ * Top level screens - used with different navhost
+ */
+sealed class AppRootScreens : NavigationScreens {
+    @Serializable
+    data object SplashTopLevel : AppRootScreens()
+    @Serializable
+    data object AuthTopLevel : AppRootScreens()
+    @Serializable
+    data object MainTopLevel : AppRootScreens()
+}
+
 
 sealed class SampleScreens : NavigationScreens {
     @Serializable
@@ -84,12 +87,6 @@ sealed class AuthScreens : NavigationScreens {
     data object LoginNavigation : AuthScreens()
     @Serializable
     data object RegisterNavigation : AuthScreens()
-
-    //Not part, just a holder to indicate that i am in splashscreen
-    //and tells compose ui whether i am logged in or not if routed here
-    //check SplashScreen.kt
-    @Serializable
-    data object SplashNavigation : AuthScreens()
 }
 
 sealed class MainScreens : NavigationScreens {

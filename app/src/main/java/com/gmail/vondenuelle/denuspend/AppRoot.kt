@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
+import com.gmail.vondenuelle.denuspend.navigation.addAuthNavGraph
 
 @Composable
 fun AppRoot() {
@@ -13,22 +13,21 @@ fun AppRoot() {
 
     NavHost(
         navController = navController,
-        startDestination = AppRootScreens.Splash
+        startDestination = AppRootScreens.SplashTopLevel
     ) {
-        composable<AppRootScreens.Splash> {
+        composable<AppRootScreens.SplashTopLevel> {
             SplashScreen(
-                onFinished = { isLoggedIn ->
-                    navController.navigate(AppRootScreens.Main(isLoggedIn = isLoggedIn)) {
-                        popUpTo<AppRootScreens.Splash> { inclusive = true }
-                    }
-                }
+                onNavigate = { route,  options ->
+                    navController.navigate(route, options)
+                },
             )
         }
 
-        composable<AppRootScreens.Main>  { backStackEntry ->
+        addAuthNavGraph(navController)
+
+        composable<AppRootScreens.MainTopLevel>  { backStackEntry ->
             // Extract the argument using .toRoute()
-            val args = backStackEntry.toRoute<AppRootScreens.Main>()
-            MainScreen(isLoggedIn = args.isLoggedIn)
+            MainScreen()
         }
     }
 }

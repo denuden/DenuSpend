@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.ui.add.screen
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,17 +11,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
@@ -31,10 +37,14 @@ import com.gmail.vondenuelle.denuspend.ui.add.AddViewModel
 import com.gmail.vondenuelle.denuspend.ui.add.components.section.AddButtonsSection
 import com.gmail.vondenuelle.denuspend.ui.add.components.section.TodayIncomeAndExpensesSection
 import com.gmail.vondenuelle.denuspend.ui.common.components.TransactionItem
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
+import com.gmail.vondenuelle.denuspend.utils.SnackBarController
+import kotlinx.coroutines.launch
 
 @Composable
 fun AddScreen(
@@ -46,6 +56,8 @@ fun AddScreen(
     var error by remember { mutableStateOf("") }
 
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val lifecycle = LocalLifecycleOwner.current
 
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
@@ -79,7 +91,20 @@ fun AddScreen(
             is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT)
                 .show()
 
-            else -> Unit
+            is OneTimeEvents.ShowSnackbar -> {
+                scope.launch {
+                    SnackBarController.sendEvent(event.snackbarEvent)
+                }
+            }
+
+            OneTimeEvents.OnCloseDialog -> {}
+            is OneTimeEvents.ShowInputError -> {}
+        }
+    }
+
+    ComposableLifecycle(lifecycle) { _, event ->
+        if(event == Lifecycle.Event.ON_START) {
+            viewModel.onEvent(AddScreenEvents)
         }
     }
 
@@ -88,7 +113,10 @@ fun AddScreen(
         showDialog = state.isLoading,
         text = "Loading...",
     ) { }
-
+    ErrorDialog(
+        text = error,
+        showDialog = error.isNotEmpty()
+    ) { error = "" }
     AddScreenContent(
         state = state,
         onEvent = viewModel::onEvent
@@ -121,8 +149,21 @@ fun AddScreenContent(
         })
 
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Last Added", fontWeight = FontWeight.Medium)
-        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Last Added", fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(
+                onClick = {
+                    //TODO
+                }
+            ) {
+                Text("See All", fontWeight = FontWeight.Medium)
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             items(5) {

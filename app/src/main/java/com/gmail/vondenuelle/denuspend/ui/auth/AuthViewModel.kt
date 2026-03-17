@@ -10,8 +10,8 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.domain.usecase.auth.RegisterUseCase
+import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
-import com.gmail.vondenuelle.denuspend.navigation.MainScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.google.gson.Gson
@@ -49,11 +49,10 @@ class AuthViewModel @Inject constructor(
 
                     try {
                         val user = repository.login(event.request)
-                        Log.e("inigewgt", user.toString())
                         if(user.email != null) {
                             _stateFlow.update { it.copy(userModel = user) }
                             sendEvent(OneTimeEvents.ShowToast(message = user.email))
-                            sendEvent(OneTimeEvents.OnNavigate(MainScreens.HomeNavigation,  behavior = NavBehavior.ClearAll))
+                            sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.MainTopLevel,  behavior = NavBehavior.ClearAll))
                         }else{
                             sendEvent(OneTimeEvents.ShowError("User is not existing"))
                         }
@@ -74,7 +73,7 @@ class AuthViewModel @Inject constructor(
                         if(user.email != null) {
                             _stateFlow.update { it.copy(userModel = user) }
                             sendEvent(OneTimeEvents.ShowToast(message = user.email))
-                            sendEvent(OneTimeEvents.OnNavigate(MainScreens.HomeNavigation,  behavior = NavBehavior.ClearAll))
+                            sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.MainTopLevel,  behavior = NavBehavior.ClearAll))
                         }else{
                             sendEvent(OneTimeEvents.ShowError("User is not existing"))
                         }
@@ -94,7 +93,7 @@ class AuthViewModel @Inject constructor(
 
                         _stateFlow.update { it.copy(userModel = user, isSigningIn = false) }
                         //if user is existing, just send SplashNavigation for placeholder
-                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.SplashNavigation))
+                        sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.MainTopLevel))
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy( isSigningIn = false) }
                         onError(e)
@@ -125,7 +124,6 @@ class AuthViewModel @Inject constructor(
                         _stateFlow.update { it.copy(isLoading = false, showForgotPasswordDialog = false) }
                         sendEvent(OneTimeEvents.ShowToast("Password reset has been sent"))
                     } catch (e: Exception) {
-                        Log.e("gewgwe", e.toString())
                         _stateFlow.update { it.copy( isLoading = false) }
                         onError(e)
                     }
@@ -191,7 +189,7 @@ class AuthViewModel @Inject constructor(
                 //remove stored creds
                 sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
                 logout()
-                sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation, behavior = NavBehavior.ClearAll))
+                sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.AuthTopLevel, behavior = NavBehavior.ClearAll))
             }
             is InvalidCredentialsException -> {
                 sendEvent(OneTimeEvents.ShowError(e.message.orEmpty()))

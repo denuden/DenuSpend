@@ -7,9 +7,12 @@ import com.gmail.vondenuelle.denuspend.data.remote.services.profile.ProfileServi
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.FirebaseSampleServiceImpl
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.RetrofitSampleServiceImpl
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.SampleService
+import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl
+import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.TransactionService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseAuth
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseProfile
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseSample
+import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseTransaction
 import com.gmail.vondenuelle.denuspend.di.qualifiers.RetrofitSample
 import dagger.Binds
 import dagger.Module
@@ -30,6 +33,10 @@ abstract class ServiceModule {
     @Binds
     @FirebaseAuth
     abstract fun bindAuthService(firebaseAuthServiceImpl: FirebaseAuthServiceImpl): AuthService
+
+    @Binds
+    @FirebaseTransaction
+    abstract fun bindTransactionService(firebaseTransactionServiceImpl: FirebaseTransactionServiceImpl): TransactionService
 
 
 

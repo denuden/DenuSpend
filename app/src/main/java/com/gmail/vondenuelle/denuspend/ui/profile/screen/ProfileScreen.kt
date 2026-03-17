@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,11 +57,13 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
+import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import com.gmail.vondenuelle.denuspend.utils.clickableDelayed
 import com.gmail.vondenuelle.denuspend.utils.media.MediaPickerViewModel
 import com.gmail.vondenuelle.denuspend.utils.media.OptionDialogPicker
 import com.gmail.vondenuelle.denuspend.utils.media.SelectedOption
 import com.gmail.vondenuelle.denuspend.utils.media.rememberMediaPickerHelper
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
@@ -74,7 +77,7 @@ fun ProfileScreen(
 
     val context = LocalContext.current
     var error by remember { mutableStateOf("") }
-
+    val scope = rememberCoroutineScope()
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
             is OneTimeEvents.OnPopBackStack -> {
@@ -107,7 +110,14 @@ fun ProfileScreen(
             is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT)
                 .show()
 
-            else -> Unit
+            is OneTimeEvents.ShowSnackbar -> {
+                scope.launch {
+                    SnackBarController.sendEvent(event.snackbarEvent)
+                }
+            }
+
+            OneTimeEvents.OnCloseDialog -> {}
+            is OneTimeEvents.ShowInputError -> {}
         }
     }
 
