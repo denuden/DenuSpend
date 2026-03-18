@@ -120,7 +120,7 @@ fun formatIsoDate(
     if (isoDate == null) return customMessage
     return try {
         // Parse ISO 8601 Date in UTC
-        val isoDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault())
+        val isoDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
         isoDateFormat.timeZone = TimeZone.getTimeZone("UTC")
 
         // Convert to Philippine Time (UTC+8)
@@ -132,4 +132,26 @@ fun formatIsoDate(
     } catch (e: Exception) {
         customMessage // Return custom message if parsing fails
     }
+}
+
+
+fun formatFirebaseDate(
+    date: Date?,
+    customMessage: String = "Invalid Date",
+    format: String = "MMM dd, yyyy"
+): String {
+    if (date == null) return customMessage
+    return try {
+        val dateFormat = SimpleDateFormat(format, Locale.getDefault())
+        dateFormat.timeZone = TimeZone.getTimeZone("Asia/Manila")
+        dateFormat.format(date)
+    } catch (e: Exception) {
+        customMessage
+    }
+}
+
+fun getCurrentIsoDate(): String {
+    val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+    format.timeZone = TimeZone.getTimeZone("UTC")
+    return format.format(Date())
 }

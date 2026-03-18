@@ -3,18 +3,31 @@ package com.gmail.vondenuelle.denuspend.ui.add
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
+import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.TransactionRepository
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.navigation.AddScreens
+import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
+import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
 import com.gmail.vondenuelle.denuspend.utils.SnackbarEvent
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -22,6 +35,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddViewModel @Inject constructor(
+    private val profileRepository: ProfileRepository,
     private val transactionRepository: TransactionRepository
 ) : ViewModel() {
     private val TAG = AddViewModel::class.java.simpleName
@@ -32,10 +46,42 @@ class AddViewModel @Inject constructor(
     private val _stateFlow = MutableStateFlow<AddScreenState>(AddScreenState())
     val stateFlow = _stateFlow.asStateFlow()
 
+    private val _limit = MutableStateFlow<Long?>(null)
+    fun setTransactionLimit(limit: Long?) {
+        _limit.value = limit
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val transactions: StateFlow<List<TransactionModel>> =
+        _limit.flatMapLatest { limit ->
+            transactionRepository.getAllTransactions(limit)
+        }  .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    init { // update the UI state when data changes
+        viewModelScope.launch {
+            transactions.collect { list ->
+                _stateFlow.update {
+                    it.copy(
+                        transactionList = list,
+                        isListLoading = false
+                    )
+                }
+            }
+        }
+    }
+
     fun onEvent(event: AddScreenEvents) {
         when (event) {
             is AddScreenEvents.OnNavigateToIncomeScreen -> {
                 sendEvent(OnNavigate(AddScreens.AddIncomeScreenNavigation))
+            }
+
+            is AddScreenEvents.OnNavigateToRecentTransactions -> {
+                sendEvent(OnNavigate(AddScreens.AllRecentTransactionsNavigation))
             }
 
             is AddScreenEvents.OnNavigateToExpenseScreen -> {
@@ -55,9 +101,32 @@ class AddViewModel @Inject constructor(
                         onError(e)
                     }
                 }
-
             }
 
+            AddScreenEvents.OnGetAllTransactions -> {
+                viewModelScope.launch {
+                    _stateFlow.update { it.copy(isListLoading = true) }
+                    delay(500)
+                    _stateFlow.update { it.copy(isListLoading = false) }
+                }
+            }
+
+            AddScreenEvents.OnGetSummaryOfDailyTransactions -> {
+                viewModelScope.launch {
+                    try {
+                        _stateFlow.update { it.copy(isSummaryLoading = true) }
+                        val res = transactionRepository.getSummaryOfDailyTransactions()
+                        _stateFlow.update {
+                            it.copy(
+                                transactionSummary = res,
+                                isSummaryLoading = false
+                            )
+                        }
+                    } catch (e : Exception) {
+                        onError(e)
+                    }
+                }
+            }
             is AddScreenEvents.OnAmountChanged -> _stateFlow.update { it.copy(transactionAmount = event.value) }
             is AddScreenEvents.OnDescriptionChanged -> _stateFlow.update {
                 it.copy(
@@ -67,19 +136,19 @@ class AddViewModel @Inject constructor(
 
             is AddScreenEvents.OnTitleChanged -> _stateFlow.update { it.copy(transactionTitle = event.value) }
             is AddScreenEvents.OnCategoryChanged -> _stateFlow.update { it.copy(transactionCategory = event.value) }
-
-            AddScreenEvents.OnGetAllTransactions -> {
-                viewModelScope.launch {
-                    try {
-
-                    } catch (e : Exception) {
-                        onError(e)
-                    }
-                }
-            }
         }
     }
 
+
+    private fun logout(){
+        viewModelScope.launch {
+            try {
+                profileRepository.logout()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
+    }
     private fun onError(e: Throwable?) {
         when (e) {
             is HttpException -> {
@@ -108,7 +177,13 @@ class AddViewModel @Inject constructor(
                     sendEvent(OneTimeEvents.ShowError(errorResponse.message))
                 }
             }
-
+            is NoUserException -> {
+                //send to login
+                //remove stored creds
+                sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
+                logout()
+                sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.AuthTopLevel, behavior = NavBehavior.ClearAll))
+            }
             else -> {
                 sendEvent(OneTimeEvents.ShowError(e?.message.orEmpty()))
             }

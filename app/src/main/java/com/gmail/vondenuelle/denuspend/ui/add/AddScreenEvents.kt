@@ -11,7 +11,11 @@ sealed class AddScreenEvents {
 
     data class OnAddTransaction(val request : TransactionRequest) : AddScreenEvents()
     object OnGetAllTransactions : AddScreenEvents()
+    object OnGetSummaryOfDailyTransactions : AddScreenEvents()
+
+
 
     object OnNavigateToIncomeScreen : AddScreenEvents()
+    object OnNavigateToRecentTransactions : AddScreenEvents()
     object OnNavigateToExpenseScreen : AddScreenEvents()
 }

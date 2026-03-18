@@ -106,5 +106,7 @@ sealed class AddScreens : NavigationScreens {
     data object AddIncomeScreenNavigation : AddScreens()
     @Serializable
     data object AddExpenseScreenNavigation : AddScreens()
+    @Serializable
+    data object AllRecentTransactionsNavigation : AddScreens()
 }
 

@@ -168,7 +168,7 @@ fun AddExpenseScreenContent(
                             onAmountChange = {
                                 onEvent(AddScreenEvents.OnAmountChanged(it))
                             },
-                            prefixText = "₱-",
+                            prefixText = "-₱",
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(end = 16.dp)

@@ -110,7 +110,7 @@ fun MainScreen(
             snackbarHostState.currentSnackbarData?.dismiss() //dismiss ongoing snackbar
             val result = snackbarHostState.showSnackbar( // launch new snackbar
                 message = event.message, actionLabel = event.action?.name,
-                duration = SnackbarDuration.Long
+                duration = SnackbarDuration.Short
             )
 
             if (result == SnackbarResult.ActionPerformed) {

@@ -25,17 +25,31 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils.formatCents
+import com.gmail.vondenuelle.denuspend.utils.formatFirebaseDate
+import com.gmail.vondenuelle.denuspend.utils.formatIsoDate
+import com.google.firebase.Timestamp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun TransactionItem(modifier: Modifier = Modifier) {
+fun TransactionItem(
+    modifier: Modifier = Modifier,
+    transactionModel: TransactionModel
+) {
     Column(
         modifier
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
 
-            ExpenseIcon(modifier = Modifier.padding(end = 8.dp))
+            if(
+                transactionModel.amount < 0
+            ) {
+                ExpenseIcon(modifier = Modifier.padding(end = 8.dp))
+            } else {
+                IncomeIcon(modifier = Modifier.padding(end = 8.dp))
+            }
 
             Column(
                 modifier = Modifier
@@ -43,19 +57,25 @@ fun TransactionItem(modifier: Modifier = Modifier) {
                     .padding(end = 8.dp)
             ) {
                 Text(
-                    "From my checking account",
+                    transactionModel.title,
                     fontWeight = FontWeight.Medium,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    "Transfer",
+                    transactionModel.description,
                     fontWeight = FontWeight.Light,
                     style = MaterialTheme.typography.labelLargeEmphasized
                 )
             }
 
+            val formattedAmount = if (transactionModel.amount < 0) {
+                "-₱${formatCents(-transactionModel.amount)}" //add negative to make it positive Long
+            } else {
+                "₱${formatCents(transactionModel.amount)}"
+            }
+
             Text(
-                "₱500.00",
+                formattedAmount,
                 fontWeight = FontWeight.Black,
                 style = MaterialTheme.typography.bodyLarge,
                 fontSize = 18.sp
@@ -63,7 +83,7 @@ fun TransactionItem(modifier: Modifier = Modifier) {
         }
 
         Text(
-            "01 March 2026",
+            formatFirebaseDate(transactionModel.date.toDate(), format = "dd MMMM yyyy"),
             fontWeight = FontWeight.Normal,
             style = MaterialTheme.typography.labelLargeEmphasized,
             modifier = Modifier
@@ -128,7 +148,14 @@ fun ExpenseIcon(modifier: Modifier = Modifier) {
 private fun TransactionItemPreview() {
     DenuSpendTheme {
         Surface {
-            TransactionItem()
+            TransactionItem(
+                transactionModel = TransactionModel(
+                    title = "From my checking account",
+                    description = "Transfer",
+                    category = "Food",
+                    date = Timestamp.now()
+                )
+            )
         }
     }
 }

@@ -66,7 +66,7 @@ fun RecentTab(
                 state = state
             ) {
                 items(5){
-                    TransactionItem()
+//                    TransactionItem()
                 }
             }
         }

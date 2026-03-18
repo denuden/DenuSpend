@@ -215,7 +215,7 @@ fun AddIncomeScreenContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            "Description (50 characters)",
+            "Description (50 characters | optional)",
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.padding(bottom = 4.dp)
         )
