@@ -9,6 +9,8 @@ import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionMode
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionSummaryModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.AggregateField
+import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
@@ -106,6 +108,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         val currentUser = firebaseAuth.currentUser
         val id = currentUser?.uid ?: throw NoUserException("User not logged in")
 
+
         val today = java.time.LocalDate.now()
         val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant()
         val endOfDay = today.atTime(23, 59, 59, 999_000_000)
@@ -115,26 +118,33 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         val startTimestamp = Timestamp(java.util.Date.from(startOfDay))
         val endTimestamp = Timestamp(java.util.Date.from(endOfDay))
 
-        val query: Query = firebaseFireStore.collection(TRANSACTION)
+        val expenseQuery = firebaseFireStore.collection(TRANSACTION)
             .whereEqualTo("userId", id)
             .whereGreaterThanOrEqualTo("date", startTimestamp)
             .whereLessThanOrEqualTo("date", endTimestamp)
+            .whereLessThan("amount", 0)
             .orderBy("date", Query.Direction.DESCENDING)
 
-        val doc = query.get().await()
-        var totalExpense = 0L
-        var totalIncome = 0L
 
-        doc.documents.forEach  {
-            val model = it.toObject<TransactionModel>()?.copy(docId = it.id)
-            if (model != null) {
-                if(model.amount < 0) {
-                    totalExpense += model.amount
-                } else {
-                    totalIncome += model.amount
-                }
-            }
-        }
+        val incomeQuery = firebaseFireStore.collection(TRANSACTION)
+            .whereEqualTo("userId", id)
+            .whereGreaterThanOrEqualTo("date", startTimestamp)
+            .whereLessThanOrEqualTo("date", endTimestamp)
+            .whereGreaterThanOrEqualTo("amount", 0)
+            .orderBy("date", Query.Direction.DESCENDING)
+
+        val expenseSnapshot = expenseQuery
+            .aggregate(AggregateField.sum("amount"))
+            .get(AggregateSource.SERVER)
+            .await()
+
+        val incomeSnapshot = incomeQuery
+            .aggregate(AggregateField.sum("amount"))
+            .get(AggregateSource.SERVER)
+            .await()
+
+        val totalExpense = expenseSnapshot.get(AggregateField.sum("amount")) as Long? ?: 0L
+        val totalIncome = incomeSnapshot.get(AggregateField.sum("amount")) as Long? ?: 0L
 
         return TransactionSummaryModel(
             totalExpense = totalExpense,

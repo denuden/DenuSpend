@@ -105,9 +105,9 @@ fun getTimeNow() : String {
     val formattedTime = current.format(formatter)
     return formattedTime
 }
-fun getDateNow() : String {
+fun getDateNow(format : String = "dd MMM yyyy") : String {
     val current = LocalDateTime.now()
-    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy") // Use "hh" for 12-hour format
+    val formatter = DateTimeFormatter.ofPattern(format) // Use "hh" for 12-hour format
     val formattedTime = current.format(formatter)
     return formattedTime
 }

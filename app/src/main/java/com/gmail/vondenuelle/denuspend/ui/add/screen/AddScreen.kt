@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.ui.add.screen
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -142,7 +143,7 @@ fun AddScreenContent(
             .padding(16.dp)
     ) {
 
-        val expense = state.transactionSummary.totalExpense
+        val expense = -state.transactionSummary.totalExpense
         val income = state.transactionSummary.totalIncome
 
         val progress: Float = if (income > 0) {
@@ -154,7 +155,7 @@ fun AddScreenContent(
         TodayIncomeAndExpensesSection(
             modifier = Modifier.fillMaxWidth(),
             progress = progress,
-            expense = "₱${CurrencyUtils.formatCents(-expense)}",
+            expense = "₱${CurrencyUtils.formatCents(expense)}",
             totalBudget ="₱${CurrencyUtils.formatCents(income)}",
         )
         Spacer(modifier = Modifier.height(16.dp))

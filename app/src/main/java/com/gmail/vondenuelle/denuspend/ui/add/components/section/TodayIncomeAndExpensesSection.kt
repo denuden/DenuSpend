@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -15,13 +14,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
-import kotlin.math.exp
+import com.gmail.vondenuelle.denuspend.utils.getDateNow
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -31,6 +31,7 @@ fun TodayIncomeAndExpensesSection(
     expense: String,
     totalBudget: String,
 ) {
+    val dateToday = remember { getDateNow("dd MMMM yyyy") }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -63,7 +64,7 @@ fun TodayIncomeAndExpensesSection(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "03 September 2026",
+                            dateToday,
                             fontWeight = FontWeight.Light,
                             style = MaterialTheme.typography.labelMedium
                         )
