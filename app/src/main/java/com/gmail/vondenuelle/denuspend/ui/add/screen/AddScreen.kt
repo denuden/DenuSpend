@@ -2,6 +2,9 @@ package com.gmail.vondenuelle.denuspend.ui.add.screen
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -112,7 +115,7 @@ fun AddScreen(
 
     ComposableLifecycle(lifecycle) { _, event ->
         if(event == Lifecycle.Event.ON_START ) {
-            viewModel.setTransactionLimit(3)
+            viewModel.setTransactionLimit(null)
             viewModel.onEvent(AddScreenEvents.OnGetSummaryOfDailyTransactions)
         }
     }
@@ -152,13 +155,23 @@ fun AddScreenContent(
             0f // avoid division by zero
         }
 
+        // Animate the progress value
+        val animatedProgress by animateFloatAsState(
+            targetValue = progress.coerceIn(0f, 1f), // keep within [0,1]
+            animationSpec = tween(
+                durationMillis = 800, // adjust speed
+                easing = FastOutSlowInEasing // smooth curve
+            )
+        )
+
         TodayIncomeAndExpensesSection(
             modifier = Modifier.fillMaxWidth(),
-            progress = progress,
-            expense = "₱${CurrencyUtils.formatCents(expense)}",
-            totalBudget ="₱${CurrencyUtils.formatCents(income)}",
+            progress = animatedProgress,
+            expense =   "₱${CurrencyUtils.formatCents(expense)}",
+            totalBudget = "₱${CurrencyUtils.formatCents(income)}",
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
         AddButtonsSection(modifier = Modifier.fillMaxWidth(), onExpenseClick = {
             onEvent(AddScreenEvents.OnNavigateToExpenseScreen)
 
@@ -166,7 +179,8 @@ fun AddScreenContent(
             onEvent(AddScreenEvents.OnNavigateToIncomeScreen)
         })
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
 
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -179,10 +193,9 @@ fun AddScreenContent(
                     onEvent(AddScreenEvents.OnNavigateToRecentTransactions)
                 }
             ) {
-                Text("See All", fontWeight = FontWeight.Medium)
+                Text("History", fontWeight = FontWeight.Medium)
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             items(state.transactionList) {

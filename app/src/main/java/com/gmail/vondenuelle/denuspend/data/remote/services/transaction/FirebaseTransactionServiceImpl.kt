@@ -1,28 +1,29 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.transaction
 
-import android.util.Log
-import com.gmail.vondenuelle.denuspend.data.remote.error.DocumentNotFoundException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
-import com.gmail.vondenuelle.denuspend.data.remote.error.ReturnedNullException
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.response.TransactionOverviewResponse
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
-import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionSummaryModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.AggregateField
-import com.google.firebase.firestore.AggregateSource
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.toObject
-import com.google.type.Date
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import java.time.ZoneId
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.abs
 
 @Singleton
 class FirebaseTransactionServiceImpl @Inject constructor(
@@ -32,140 +33,173 @@ class FirebaseTransactionServiceImpl @Inject constructor(
     companion object {
         //Transaction collection
         const val TRANSACTION = "transactions"
+        const val DAILY_HISTORY = "daily_history"
+
+        val utcFormatter = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
     }
 
     override suspend fun addTransaction(transactionRequest: TransactionRequest): TransactionModel {
         val currentUser = firebaseAuth.currentUser
-        val id = currentUser?.uid ?: throw NoUserException("User not logged in")
+            ?: throw NoUserException("User not logged in")
+        val userId = currentUser.uid
+
+        val timestamp = Timestamp.now()
 
         val transaction = TransactionModel(
-            userId = id,
+            userId = userId,
             title = transactionRequest.title,
             description = transactionRequest.description,
             amount = transactionRequest.amount,
             category = transactionRequest.category,
-             date = Timestamp.now()
+            date = timestamp
         )
 
+        val todayId = utcFormatter.format(Date())
+
+        val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY)
+            .document("${userId}_$todayId")
+
         try {
-            val docRef = firebaseFireStore.collection(TRANSACTION)
+            // 1. Add transaction to daily subcollection
+            val transactionDocRef = dailyDocRef.collection(TRANSACTION)
                 .add(transaction)
                 .await()
 
-            return transaction.copy(
-                docId = docRef.id,
-            )
+            val savedTransaction = transaction.copy(docId = transactionDocRef.id)
+
+            // 2. Upsert daily totals
+            dailyDocRef
+                .set(
+                    mapOf(
+                        "userId" to userId,
+                        "date" to timestamp,
+                        "totalIncome" to if (transaction.amount > 0) FieldValue.increment(transaction.amount) else FieldValue.increment(0),
+                        "totalExpense" to if (transaction.amount < 0) FieldValue.increment(
+                            abs(
+                                transaction.amount
+                            )
+                        ) else FieldValue.increment(0)
+                    ),
+                    SetOptions.merge()
+                ).await()
+
+            return savedTransaction
         } catch (e : Exception) {
             throw  e
         }
     }
-
-    override fun getAllTransactions(limit : Long?): Flow<List<TransactionModel>> = callbackFlow {
+    override fun getDailyTransactionHistory(limit: Long?): Flow<List<DailyHistoryModel>> = callbackFlow {
         val currentUser = firebaseAuth.currentUser
-        val id = currentUser?.uid ?: throw NoUserException("User not logged in")
+            ?: throw NoUserException("User not logged in")
+        val userId = currentUser.uid
 
-        val today = java.time.LocalDate.now()
-        val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant()
-        val endOfDay = today.atTime(23, 59, 59, 999_000_000)
-            .atZone(ZoneId.systemDefault())
-            .toInstant()
-
-        val startTimestamp = Timestamp(java.util.Date.from(startOfDay))
-        val endTimestamp = Timestamp(java.util.Date.from(endOfDay))
-
-        var query: Query = firebaseFireStore.collection(TRANSACTION)
-            .whereEqualTo("userId", id)
-            .whereGreaterThanOrEqualTo("date", startTimestamp)
-            .whereLessThanOrEqualTo("date", endTimestamp)
+        var query: Query = firebaseFireStore.collection(DAILY_HISTORY)
+            .whereEqualTo("userId", userId)
             .orderBy("date", Query.Direction.DESCENDING)
 
         if (limit != null) {
             query = query.limit(limit)
         }
 
-        val listener = query
-            .addSnapshotListener { snapshot, error ->
-                Log.d("Firestore", "Snapshot received with ${snapshot?.size()} docs, limit=$limit")
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
 
+            val data = snapshot?.documents?.mapNotNull { doc ->
+                doc.toObject<DailyHistoryModel>()?.copy(
+                    docId = doc.id
+                )
+            } ?: emptyList()
+
+            trySend(data)
+        }
+
+        awaitClose { listener.remove() }
+    }
+
+    override fun getTransactionsForDay(request: TransactionsForDayRequest): Flow<List<TransactionModel>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY).document(request.dailyDocId)
+
+        var query: Query = dailyDocRef.collection(TRANSACTION)
+            .orderBy("date", Query.Direction.DESCENDING)
+
+        if (request.limit != null) {
+            query = query.limit(request.limit)
+        }
+
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+
+            val data = snapshot?.documents?.mapNotNull { doc ->
+                doc.toObject<TransactionModel>()?.copy(docId = doc.id)
+            } ?: emptyList()
+
+            trySend(data)
+        }
+
+        awaitClose { listener.remove() }
+    }
+
+    override fun getTodayOverview(): Flow<TransactionOverviewResponse>  {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+        val userId = currentUser.uid
+
+        val todayId = utcFormatter.format(Date())
+
+        val dailyDocRef = firebaseFireStore
+            .collection(DAILY_HISTORY)
+            .document("${userId}_$todayId")
+
+        // Listen to the daily doc
+        val dailyFlow = callbackFlow<DailyHistoryModel?> {
+            val listener = dailyDocRef.addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
                     return@addSnapshotListener
                 }
 
-                val data = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject<TransactionModel>()?.copy(docId = doc.id)
-                } ?: emptyList()
+                val data = snapshot?.toObject<DailyHistoryModel>()
+                    ?.copy(docId = snapshot.id)
 
                 trySend(data)
             }
 
-        awaitClose {
-            listener.remove()
+            awaitClose { listener.remove() }
         }
-    }
-
-    override suspend fun getSummaryOfDailyTransactions(): TransactionSummaryModel {
-        val currentUser = firebaseAuth.currentUser
-        val id = currentUser?.uid ?: throw NoUserException("User not logged in")
 
 
-        val today = java.time.LocalDate.now()
-        val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant()
-        val endOfDay = today.atTime(23, 59, 59, 999_000_000)
-            .atZone(ZoneId.systemDefault())
-            .toInstant()
+        val transactionFlow = callbackFlow<List<TransactionModel>> {
+            val listener = dailyDocRef.collection(TRANSACTION)
+                .orderBy("date", Query.Direction.DESCENDING)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        close(error)
+                        return@addSnapshotListener
+                    }
 
-        val startTimestamp = Timestamp(java.util.Date.from(startOfDay))
-        val endTimestamp = Timestamp(java.util.Date.from(endOfDay))
+                    val data = snapshot?.documents?.mapNotNull {
+                        it.toObject<TransactionModel>()?.copy(docId = it.id)
+                    } ?: emptyList()
 
-        val expenseQuery = firebaseFireStore.collection(TRANSACTION)
-            .whereEqualTo("userId", id)
-            .whereGreaterThanOrEqualTo("date", startTimestamp)
-            .whereLessThanOrEqualTo("date", endTimestamp)
-            .whereLessThan("amount", 0)
-            .orderBy("date", Query.Direction.DESCENDING)
+                    trySend(data)
+                }
 
+            awaitClose { listener.remove() }
+        }
 
-        val incomeQuery = firebaseFireStore.collection(TRANSACTION)
-            .whereEqualTo("userId", id)
-            .whereGreaterThanOrEqualTo("date", startTimestamp)
-            .whereLessThanOrEqualTo("date", endTimestamp)
-            .whereGreaterThanOrEqualTo("amount", 0)
-            .orderBy("date", Query.Direction.DESCENDING)
-
-        val expenseSnapshot = expenseQuery
-            .aggregate(AggregateField.sum("amount"))
-            .get(AggregateSource.SERVER)
-            .await()
-
-        val incomeSnapshot = incomeQuery
-            .aggregate(AggregateField.sum("amount"))
-            .get(AggregateSource.SERVER)
-            .await()
-
-        val totalExpense = expenseSnapshot.get(AggregateField.sum("amount")) as Long? ?: 0L
-        val totalIncome = incomeSnapshot.get(AggregateField.sum("amount")) as Long? ?: 0L
-
-        return TransactionSummaryModel(
-            totalExpense = totalExpense,
-            totalIncome = totalIncome
-        )
-    }
-
-    override suspend fun getTransactionById(id: String): TransactionModel {
-        try {
-            val snapshot = firebaseFireStore.collection(TRANSACTION)
-                .document(id).get().await()
-
-            if (!snapshot.exists()) {
-                throw DocumentNotFoundException()
-            }
-
-            return snapshot.toObject<TransactionModel>()?.copy(docId = id)
-                ?: throw ReturnedNullException()
-
-        } catch (e : Exception) {
-            throw e
+        return kotlinx.coroutines.flow.combine(dailyFlow, transactionFlow) { daily, txs ->
+            TransactionOverviewResponse(daily, txs)
         }
     }
 }

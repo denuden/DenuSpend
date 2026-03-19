@@ -42,7 +42,6 @@ fun TransactionItem(
         modifier
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-
             if(
                 transactionModel.amount < 0
             ) {
@@ -78,7 +77,7 @@ fun TransactionItem(
                 formattedAmount,
                 fontWeight = FontWeight.Black,
                 style = MaterialTheme.typography.bodyLarge,
-                fontSize = 18.sp
+                fontSize = 16.sp
             )
         }
 
@@ -90,7 +89,7 @@ fun TransactionItem(
                 .align(
                     Alignment.CenterHorizontally
                 )
-                .padding(top = 10.dp, bottom = 12.dp)
+                .padding(top = 6.dp, bottom = 8.dp)
         )
 
         HorizontalDivider(
@@ -101,7 +100,7 @@ fun TransactionItem(
                 .align(Alignment.CenterHorizontally)
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

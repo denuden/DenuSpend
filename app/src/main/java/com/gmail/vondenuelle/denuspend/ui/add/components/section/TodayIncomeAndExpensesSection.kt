@@ -78,7 +78,7 @@ fun TodayIncomeAndExpensesSection(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.ExtraBold,
             modifier = Modifier
-                .padding(top = 16.dp)
+                .padding(top = 8.dp)
                 .align(Alignment.CenterHorizontally)
         )
 
