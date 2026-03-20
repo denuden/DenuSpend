@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,27 +32,33 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
+import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenState
 import com.gmail.vondenuelle.denuspend.ui.add.AddViewModel
+import com.gmail.vondenuelle.denuspend.ui.add.components.DailyHistoryItem
 import com.gmail.vondenuelle.denuspend.ui.common.components.PullToRefreshCustomStyle
 import com.gmail.vondenuelle.denuspend.ui.common.components.TransactionItem
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.ModalBottomSheetDialog
 import com.gmail.vondenuelle.denuspend.ui.common.skeleton.SkeletonTransactionList
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
+import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
+import com.gmail.vondenuelle.denuspend.utils.formatFirebaseDate
 import kotlinx.coroutines.launch
 
 @Composable
 fun RecentTransactions(
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
-    onPopBackStack : () -> Unit,
+    onPopBackStack: () -> Unit,
     viewModel: AddViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -59,7 +66,8 @@ fun RecentTransactions(
 
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val lifecycle = LocalLifecycleOwner.current
+
+    var shouldShowTransactionDialog by remember { mutableStateOf(false) }
 
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
@@ -104,9 +112,17 @@ fun RecentTransactions(
         }
     }
 
-    ComposableLifecycle(lifecycle) { _, event ->
-        if(event == Lifecycle.Event.ON_START ) {
-            viewModel.setTransactionLimit(null)
+    ComposableLifecycle { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_START -> {
+                viewModel.onEvent(AddScreenEvents.OnGetDailyTransactionHistory)
+            }
+
+            Lifecycle.Event.ON_STOP -> {
+                viewModel.stopOverviewListener()
+            }
+
+            else -> Unit
         }
     }
 
@@ -118,23 +134,64 @@ fun RecentTransactions(
         text = error,
         showDialog = error.isNotEmpty()
     ) { error = "" }
+
+    ModalBottomSheetDialog(
+        showDialog = shouldShowTransactionDialog,
+        onDismissRequest = {
+            shouldShowTransactionDialog = false
+            viewModel.stopPerDayListener()
+        },
+    ) {
+        TransactionDialogContent(
+            modifier = Modifier.fillMaxWidth(),
+            list = state.perDayTransactionList
+        )
+    }
     RecentTransactionsContent(
         modifier = Modifier.fillMaxSize(),
         state = state,
-        onEvent = viewModel::onEvent
+        onEvent = viewModel::onEvent,
+        openDialog = {
+            shouldShowTransactionDialog = it
+        }
     )
+}
+
+@Composable
+fun TransactionDialogContent(modifier: Modifier = Modifier, list: List<TransactionModel>) {
+    LazyColumn(modifier = modifier.fillMaxWidth().padding(16.dp)) {
+        item {
+            Text("Last Added", fontWeight = FontWeight.Medium, modifier = Modifier.padding(bottom = 8.dp))
+        }
+        items(list) {
+            TransactionItem(transactionModel = it)
+        }
+        if (list.isEmpty()) {
+            item {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Nothing to show", fontWeight = FontWeight.W300)
+                }
+            }
+        }
+
+    }
 }
 
 @Composable
 fun RecentTransactionsContent(
     modifier: Modifier = Modifier,
     onEvent: (AddScreenEvents) -> Unit,
-    state: AddScreenState
+    state: AddScreenState,
+    openDialog : (Boolean) -> Unit
 ) {
     PullToRefreshCustomStyle(
         isRefreshing = state.isListLoading,
-        onRefresh =  {
-            onEvent(AddScreenEvents.OnGetAllTransactions)
+        onRefresh = {
+            onEvent(AddScreenEvents.OnGetDailyTransactionHistory)
         }
     ) {
         AnimatedVisibility(
@@ -159,16 +216,26 @@ fun RecentTransactionsContent(
             visible = !state.isListLoading,
             enter = fadeIn(),
             exit = fadeOut()
-        ){
+        ) {
             LazyColumn(
                 modifier = modifier
                     .padding(16.dp)
-            ){
-                items(state.transactionList){
-                    TransactionItem(transactionModel = it)
+            ) {
+                items(state.dailyHistoryList) {
+                    DailyHistoryItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        expense = "₱${CurrencyUtils.formatCents(it.totalExpense)}",
+                        totalBudget = "₱${CurrencyUtils.formatCents(it.totalIncome)}",
+                        date = formatFirebaseDate(it.date.toDate()),
+                        onClick = {
+                            openDialog(true)
+                            onEvent(AddScreenEvents.OnGetTransactionsForDay(
+                                TransactionsForDayRequest(dailyDocId = it.docId, limit = null)))
+                        }
+                    )
                 }
 
-                if(state.transactionList.isEmpty()) {
+                if (state.dailyHistoryList.isEmpty()) {
                     item {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -181,7 +248,6 @@ fun RecentTransactionsContent(
                 }
             }
         }
-
     }
 }
 
@@ -193,7 +259,8 @@ private fun RecentTransactionsPreview() {
             RecentTransactionsContent(
                 modifier = Modifier.fillMaxSize(),
                 state = AddScreenState(),
-                onEvent = {}
+                onEvent = {},
+                openDialog = {}
             )
         }
     }

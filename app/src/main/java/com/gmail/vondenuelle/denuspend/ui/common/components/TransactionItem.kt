@@ -29,7 +29,6 @@ import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionMode
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils.formatCents
 import com.gmail.vondenuelle.denuspend.utils.formatFirebaseDate
-import com.gmail.vondenuelle.denuspend.utils.formatIsoDate
 import com.google.firebase.Timestamp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

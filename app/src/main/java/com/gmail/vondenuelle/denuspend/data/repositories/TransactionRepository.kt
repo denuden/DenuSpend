@@ -2,11 +2,13 @@ package com.gmail.vondenuelle.denuspend.data.repositories
 
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotCreateTransactionException
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
+import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.TransactionService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseTransaction
 import com.gmail.vondenuelle.denuspend.di.qualifiers.IoDispatcher
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
-import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionSummaryModel
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionOverviewModel
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -28,15 +30,29 @@ class TransactionRepository @Inject constructor(
         }
     }
 
-    fun getAllTransactions(limit : Long?) : Flow<List<TransactionModel>>{
-        return transactionService.getAllTransactions(limit).flowOn(dispatcher)
+//    fun getAllTransactions(limit : Long?) : Flow<List<TransactionModel>>{
+//        return transactionService.getAllTransactions(limit).flowOn(dispatcher)
+//    }
+//
+//    suspend fun getTransactionById(id: String) : TransactionModel{
+//        return transactionService.getTransactionById(id)
+//    }
+//
+//    suspend fun getSummaryOfDailyTransactions() : TransactionSummaryModel {
+//        return transactionService.getSummaryOfDailyTransactions()
+//    }
+
+    fun getTodayOverview(): Flow<TransactionOverviewModel> {
+        return transactionService.getTodayOverview()
+            .flowOn(dispatcher)
+    }
+    fun getDailyTransactionHistory(limit : Long?): Flow<List<DailyHistoryModel>> {
+        return transactionService.getDailyTransactionHistory(limit)
+            .flowOn(dispatcher)
     }
 
-    suspend fun getTransactionById(id: String) : TransactionModel{
-        return transactionService.getTransactionById(id)
-    }
-
-    suspend fun getSummaryOfDailyTransactions() : TransactionSummaryModel {
-        return transactionService.getSummaryOfDailyTransactions()
+    fun getTransactionsForDay(request: TransactionsForDayRequest) :  Flow<List<TransactionModel>> {
+        return transactionService.getTransactionsForDay(request)
+            .flowOn(dispatcher)
     }
 }

@@ -1,6 +1,5 @@
 package com.gmail.vondenuelle.denuspend.ui.add.screen
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Surface
@@ -36,7 +34,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
-import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenEvents
@@ -68,7 +65,6 @@ fun AddScreen(
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
-    val lifecycle = LocalLifecycleOwner.current
 
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
@@ -113,10 +109,15 @@ fun AddScreen(
         }
     }
 
-    ComposableLifecycle(lifecycle) { _, event ->
-        if(event == Lifecycle.Event.ON_START ) {
-            viewModel.setTransactionLimit(null)
-            viewModel.onEvent(AddScreenEvents.OnGetSummaryOfDailyTransactions)
+    ComposableLifecycle { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_START -> {
+                viewModel.onEvent(AddScreenEvents.OnGetTransactionOverview)
+            }
+            Lifecycle.Event.ON_STOP -> {
+                viewModel.stopOverviewListener()
+            }
+            else -> Unit
         }
     }
 
@@ -146,8 +147,8 @@ fun AddScreenContent(
             .padding(16.dp)
     ) {
 
-        val expense = -state.transactionSummary.totalExpense
-        val income = state.transactionSummary.totalIncome
+        val expense = -state.dailyHistory.totalExpense
+        val income = state.dailyHistory.totalIncome
 
         val progress: Float = if (income > 0) {
             expense.toFloat() / income.toFloat()

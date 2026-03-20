@@ -33,7 +33,7 @@ class MainViewModel @Inject constructor(
             "AddNavigation" -> "Transaction"
             "AddIncomeScreenNavigation" -> "Add Income"
             "AddExpenseScreenNavigation" -> "Add Expense"
-            "AllRecentTransactionsNavigation" -> "Recent Transactions"
+            "AllRecentTransactionsNavigation" -> "History"
             "HomeNavigation" ->  "Welcome back, ${tokenProvider.getName().split(" ")[0]}"
             else -> "DenuSpend"
         }

@@ -3,9 +3,9 @@ package com.gmail.vondenuelle.denuspend.data.remote.services.transaction
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
-import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.response.TransactionOverviewResponse
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionOverviewModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -34,6 +37,13 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         //Transaction collection
         const val TRANSACTION = "transactions"
         const val DAILY_HISTORY = "daily_history"
+
+        //Fields
+        const val TOTAL_INCOME = "totalIncome"
+        const val TOTAL_EXPENSE = "totalExpense"
+        const val USER_ID = "userId"
+        const val DATE = "date"
+
 
         val utcFormatter = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
@@ -56,7 +66,9 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             date = timestamp
         )
 
-        val todayId = utcFormatter.format(Date())
+        val todayId = LocalDate
+            .now(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("yyyyMMdd"))
 
         val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY)
             .document("${userId}_$todayId")
@@ -73,10 +85,10 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             dailyDocRef
                 .set(
                     mapOf(
-                        "userId" to userId,
-                        "date" to timestamp,
-                        "totalIncome" to if (transaction.amount > 0) FieldValue.increment(transaction.amount) else FieldValue.increment(0),
-                        "totalExpense" to if (transaction.amount < 0) FieldValue.increment(
+                        USER_ID to userId,
+                        DATE to timestamp,
+                        TOTAL_INCOME to if (transaction.amount > 0) FieldValue.increment(transaction.amount) else FieldValue.increment(0),
+                        TOTAL_EXPENSE to if (transaction.amount < 0) FieldValue.increment(
                             abs(
                                 transaction.amount
                             )
@@ -96,8 +108,8 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         val userId = currentUser.uid
 
         var query: Query = firebaseFireStore.collection(DAILY_HISTORY)
-            .whereEqualTo("userId", userId)
-            .orderBy("date", Query.Direction.DESCENDING)
+            .whereEqualTo(USER_ID, userId)
+            .orderBy(DATE, Query.Direction.DESCENDING)
 
         if (limit != null) {
             query = query.limit(limit)
@@ -128,7 +140,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY).document(request.dailyDocId)
 
         var query: Query = dailyDocRef.collection(TRANSACTION)
-            .orderBy("date", Query.Direction.DESCENDING)
+            .orderBy(DATE, Query.Direction.DESCENDING)
 
         if (request.limit != null) {
             query = query.limit(request.limit)
@@ -150,12 +162,14 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    override fun getTodayOverview(): Flow<TransactionOverviewResponse>  {
+    override fun getTodayOverview(): Flow<TransactionOverviewModel>  {
         val currentUser = firebaseAuth.currentUser
             ?: throw NoUserException("User not logged in")
         val userId = currentUser.uid
 
-        val todayId = utcFormatter.format(Date())
+        val todayId = LocalDate
+            .now(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("yyyyMMdd"))
 
         val dailyDocRef = firebaseFireStore
             .collection(DAILY_HISTORY)
@@ -181,7 +195,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
 
         val transactionFlow = callbackFlow<List<TransactionModel>> {
             val listener = dailyDocRef.collection(TRANSACTION)
-                .orderBy("date", Query.Direction.DESCENDING)
+                .orderBy(DATE, Query.Direction.DESCENDING)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         close(error)
@@ -199,7 +213,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         }
 
         return kotlinx.coroutines.flow.combine(dailyFlow, transactionFlow) { daily, txs ->
-            TransactionOverviewResponse(daily, txs)
+            TransactionOverviewModel(daily, txs)
         }
     }
 }

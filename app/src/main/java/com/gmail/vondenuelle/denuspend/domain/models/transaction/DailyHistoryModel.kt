@@ -8,6 +8,6 @@ data class DailyHistoryModel(
     val docId: String = "",
     val userId : String = "",
     val date : Timestamp = Timestamp.now(),
-    val expense : Long = 0L,
-    val totalBudget : Long = 0L
+    val totalExpense : Long = 0L,
+    val totalIncome : Long = 0L
     )

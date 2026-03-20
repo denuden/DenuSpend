@@ -1,7 +1,7 @@
 package com.gmail.vondenuelle.denuspend.ui.add
 
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
-import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionSummaryModel
 
 data class AddScreenState(
     val isLoading : Boolean = false,
@@ -15,5 +15,7 @@ data class AddScreenState(
     val transactionAmount : Long = 0L,
 
     val transactionList : List<TransactionModel> = emptyList(),
-    val transactionSummary : TransactionSummaryModel = TransactionSummaryModel()
+    val dailyHistory : DailyHistoryModel = DailyHistoryModel(),
+    val dailyHistoryList : List<DailyHistoryModel> = emptyList(),
+    val perDayTransactionList : List<TransactionModel> = emptyList()
     )
