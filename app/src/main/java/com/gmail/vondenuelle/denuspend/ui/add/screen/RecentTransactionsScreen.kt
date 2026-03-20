@@ -2,6 +2,9 @@ package com.gmail.vondenuelle.denuspend.ui.add.screen
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Column
@@ -222,10 +225,28 @@ fun RecentTransactionsContent(
                     .padding(16.dp)
             ) {
                 items(state.dailyHistoryList) {
+                    val expense = it.totalExpense
+                    val income = it.totalIncome
+
+                    val progress: Float = if (income > 0) {
+                        expense.toFloat() / income.toFloat()
+                    } else {
+                        0f // avoid division by zero
+                    }
+
+                    // Animate the progress value
+                    val animatedProgress by animateFloatAsState(
+                        targetValue = progress.coerceIn(0f, 1f), // keep within [0,1]
+                        animationSpec = tween(
+                            durationMillis = 800, // adjust speed
+                            easing = FastOutSlowInEasing // smooth curve
+                        )
+                    )
                     DailyHistoryItem(
                         modifier = Modifier.fillMaxWidth(),
-                        expense = "₱${CurrencyUtils.formatCents(it.totalExpense)}",
-                        totalBudget = "₱${CurrencyUtils.formatCents(it.totalIncome)}",
+                        expense = "₱${CurrencyUtils.formatCents(expense)}",
+                        totalBudget = "₱${CurrencyUtils.formatCents(income)}",
+                        progress = animatedProgress,
                         date = formatFirebaseDate(it.date.toDate()),
                         onClick = {
                             openDialog(true)
@@ -233,6 +254,7 @@ fun RecentTransactionsContent(
                                 TransactionsForDayRequest(dailyDocId = it.docId, limit = null)))
                         }
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 if (state.dailyHistoryList.isEmpty()) {

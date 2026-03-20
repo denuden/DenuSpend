@@ -37,13 +37,13 @@ fun DailyHistoryItem(
     modifier: Modifier = Modifier,
     expense : String,
     totalBudget : String,
+    progress : Float,
     date : String,
     onClick : () -> Unit,
 ) {
     OutlinedCard (
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge,
-    
         onClick = {
             onClick()
         }
@@ -94,7 +94,7 @@ fun DailyHistoryItem(
             }
 
             LinearProgressIndicator(
-                progress = { 0.24f},
+                progress = { progress },
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(10.dp)
             )
         }
@@ -111,6 +111,7 @@ private fun DailyHistoryItemPreview() {
                 modifier = Modifier.fillMaxWidth(),
                 expense ="₱1,456.00",
                 totalBudget = "₱3,000.00",
+                progress = 0.24f,
                 date = "19 March 2026"
             ){}
         }

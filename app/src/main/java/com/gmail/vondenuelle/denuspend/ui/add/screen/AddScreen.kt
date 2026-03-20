@@ -147,7 +147,7 @@ fun AddScreenContent(
             .padding(16.dp)
     ) {
 
-        val expense = -state.dailyHistory.totalExpense
+        val expense = state.dailyHistory.totalExpense
         val income = state.dailyHistory.totalIncome
 
         val progress: Float = if (income > 0) {
