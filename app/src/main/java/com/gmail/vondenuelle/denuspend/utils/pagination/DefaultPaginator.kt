@@ -2,11 +2,11 @@ package com.gmail.vondenuelle.denuspend.utils.pagination
 
 class DefaultPaginator<Key, Item> (
     private val initialKey : Key,
-    private inline val onLoadUpdated : (Boolean) -> Unit,
-    private inline val onRequest : suspend (nextKey : Key) -> Result<List<Item>>,
-    private inline val getNextKey : suspend (List<Item>) -> Key,
-    private inline val onError : suspend (Throwable?) -> Unit,
-    private inline val onSuccess : suspend (items : List<Item>, newKey : Key) -> Unit
+    private val onLoadUpdated : (Boolean) -> Unit,
+    private val onRequest : suspend (nextKey : Key) -> Result<List<Item>>,
+    private val getNextKey : suspend (List<Item>) -> Key,
+    private val onError : suspend (Throwable?) -> Unit,
+    private val onSuccess : suspend (items : List<Item>, newKey : Key) -> Unit
 ) : Paginator<Key, Item> {
 
     private var currentKey : Key = initialKey

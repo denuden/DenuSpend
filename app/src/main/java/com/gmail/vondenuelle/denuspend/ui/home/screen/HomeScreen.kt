@@ -6,14 +6,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,8 +21,7 @@ import com.gmail.vondenuelle.denuspend.ui.home.HomeScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.home.HomeViewmodel
 import com.gmail.vondenuelle.denuspend.ui.home.components.section.MonthlySpendingSection
 import com.gmail.vondenuelle.denuspend.ui.home.components.section.QuickTabSection
-import com.gmail.vondenuelle.denuspend.ui.home.components.section.SavingsSection
-import com.gmail.vondenuelle.denuspend.ui.home.components.tab.RecentTab
+import com.gmail.vondenuelle.denuspend.ui.home.components.section.BudgetSection
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
@@ -91,7 +85,7 @@ fun HomeScreenContent(
                 modifier = Modifier.padding(16.dp)
             )
             Spacer(modifier = Modifier.padding(vertical = 8.dp))
-            SavingsSection()
+            BudgetSection()
             QuickTabSection(
                 modifier = Modifier.fillMaxWidth()
             ) {

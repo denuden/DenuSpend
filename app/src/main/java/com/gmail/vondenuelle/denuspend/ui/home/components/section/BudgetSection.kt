@@ -38,7 +38,7 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun SavingsSection(modifier: Modifier = Modifier) {
+fun BudgetSection(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge.copy(
@@ -56,7 +56,7 @@ fun SavingsSection(modifier: Modifier = Modifier) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Savings", style = MaterialTheme.typography.bodyMedium)
+                Text("Budget", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = {
                     //TODO
@@ -100,6 +100,7 @@ fun SavingsSection(modifier: Modifier = Modifier) {
                                 progress = 0.56f,
                                 modifier = Modifier
                                     .size(68.dp)
+                                    .padding(end = 8.dp)
                             ) {}
                         }
                     }
@@ -129,10 +130,10 @@ fun SavingsSection(modifier: Modifier = Modifier) {
 
 @Preview
 @Composable
-private fun SavingsSectionPreview() {
+private fun BudgetSectionPreview() {
     DenuSpendTheme {
         Surface {
-            SavingsSection(
+            BudgetSection(
                 modifier = Modifier.fillMaxSize()
             )
         }

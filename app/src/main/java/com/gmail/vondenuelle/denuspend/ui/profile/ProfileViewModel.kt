@@ -11,6 +11,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.Update
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdatePasswordRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
+import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
@@ -110,7 +111,7 @@ class ProfileViewModel @Inject constructor(
                         profileRepository.logout()
                         sendEvent(
                             OnNavigate(
-                                AuthScreens.LoginNavigation,
+                                AppRootScreens.AuthTopLevel,
                                 behavior = NavBehavior.ClearAll
                             )
                         )
@@ -141,7 +142,7 @@ class ProfileViewModel @Inject constructor(
                         profileRepository.deleteAccount()
                         sendEvent(
                             OnNavigate(
-                                AuthScreens.LoginNavigation,
+                                AppRootScreens.AuthTopLevel,
                                 behavior = NavBehavior.ClearAll
                             )
                         )
@@ -348,7 +349,7 @@ class ProfileViewModel @Inject constructor(
                 logout()
                 sendEvent(
                     OneTimeEvents.OnNavigate(
-                        AuthScreens.LoginNavigation,
+                        AppRootScreens.AuthTopLevel,
                         behavior = NavBehavior.ClearAll
                     )
                 )

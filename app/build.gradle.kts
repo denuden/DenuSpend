@@ -174,4 +174,7 @@ dependencies {
 
 //    Appcompat
     implementation(libs.appcompat)
+
+//    Charts
+    implementation(libs.charts)
 }

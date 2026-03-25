@@ -124,7 +124,7 @@ fun MainScreen(
     }
 
     var selectedItem by remember { mutableIntStateOf(0) }
-    val items = listOf("Home", "Wallet", "Add", "Goals", "Savings")
+    val items = listOf("Home", "Wallet", "Add", "Goals", "Budget")
     val unselectedIcons =
         listOf(
             Icons.Outlined.Home,
@@ -157,6 +157,14 @@ fun MainScreen(
                     setLaunchSingleTop(true)
                 }.build()
             )
+            4 -> navController.navigate(
+                MainScreens.BudgetNavigation,
+                navOptions = NavOptions.Builder().apply {
+                    setPopUpTo(0, inclusive = true)
+                    setLaunchSingleTop(true)
+                }.build()
+            )
+
         }
     }
 

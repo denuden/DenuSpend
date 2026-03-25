@@ -81,7 +81,7 @@ fun TransactionItem(
         }
 
         Text(
-            formatFirebaseDate(transactionModel.date.toDate(), format = "dd MMMM yyyy"),
+            formatFirebaseDate(transactionModel.date.toDate(), format = "hh:mm a"),
             fontWeight = FontWeight.Normal,
             style = MaterialTheme.typography.labelLargeEmphasized,
             modifier = Modifier

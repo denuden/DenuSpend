@@ -94,6 +94,8 @@ sealed class MainScreens : NavigationScreens {
     data object HomeNavigation : MainScreens()
     @Serializable
     data object AddNavigation : MainScreens()
+    @Serializable
+    data object BudgetNavigation : MainScreens()
 }
 
 sealed class ProfileScreens : NavigationScreens {
