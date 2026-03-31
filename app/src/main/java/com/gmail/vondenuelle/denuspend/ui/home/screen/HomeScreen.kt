@@ -39,9 +39,10 @@ fun HomeScreen(
             is OneTimeEvents.OnNavigate -> {
                 val options = NavOptions.Builder().apply {
                     when (event.behavior) {
-                        NavBehavior.ClearAll -> {
+                        is NavBehavior.ClearAll -> {
                             setPopUpTo(0, inclusive = true)
                             setLaunchSingleTop(true)
+                            setRestoreState(false)
                         }
                         is NavBehavior.PopUpTo -> {
                             setPopUpTo(event.behavior.destination, inclusive = event.behavior.inclusive)

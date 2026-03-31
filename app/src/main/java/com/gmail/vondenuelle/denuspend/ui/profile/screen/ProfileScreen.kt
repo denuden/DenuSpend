@@ -9,15 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +32,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
-import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
+import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
@@ -67,6 +62,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
+    onSignOut : () -> Unit,
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
@@ -85,11 +81,17 @@ fun ProfileScreen(
             }
 
             is OneTimeEvents.OnNavigate -> {
+                if (event.route ==  AppRootScreens.AuthTopLevel){
+                    onSignOut() //uses different nav controller
+                    return@ObserveAsEvents
+                }
+
                 val options = NavOptions.Builder().apply {
                     when (event.behavior) {
-                        NavBehavior.ClearAll -> {
+                        is NavBehavior.ClearAll -> {
                             setPopUpTo(0, inclusive = true)
                             setLaunchSingleTop(true)
+                            setRestoreState(false)
                         }
 
                         is NavBehavior.PopUpTo -> {

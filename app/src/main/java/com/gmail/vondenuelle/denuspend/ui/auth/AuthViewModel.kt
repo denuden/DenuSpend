@@ -13,6 +13,7 @@ import com.gmail.vondenuelle.denuspend.domain.usecase.auth.RegisterUseCase
 import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
+import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -93,7 +94,8 @@ class AuthViewModel @Inject constructor(
 
                         _stateFlow.update { it.copy(userModel = user, isSigningIn = false) }
                         //if user is existing, just send SplashNavigation for placeholder
-                        sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.MainTopLevel))
+                        sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.MainTopLevel,  behavior = NavBehavior.ClearAll))
+
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy( isSigningIn = false) }
                         onError(e)

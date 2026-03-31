@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -95,9 +96,10 @@ fun RegisterScreen(
             is OneTimeEvents.OnNavigate -> {
                 val options = NavOptions.Builder().apply {
                     when (event.behavior) {
-                        NavBehavior.ClearAll -> {
+                        is NavBehavior.ClearAll -> {
                             setPopUpTo(0, inclusive = true)
                             setLaunchSingleTop(true)
+                            setRestoreState(false)
                         }
                         is NavBehavior.PopUpTo -> {
                             setPopUpTo(event.behavior.destination, inclusive = event.behavior.inclusive)
@@ -144,6 +146,7 @@ fun RegisterScreenContent(
 
     Surface(
         modifier = modifier
+            .safeContentPadding()
     ) {
         Column(
             modifier = Modifier

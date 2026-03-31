@@ -112,7 +112,6 @@ class ProfileViewModel @Inject constructor(
                         sendEvent(
                             OnNavigate(
                                 AppRootScreens.AuthTopLevel,
-                                behavior = NavBehavior.ClearAll
                             )
                         )
                     } catch (e: Exception) {
@@ -143,7 +142,6 @@ class ProfileViewModel @Inject constructor(
                         sendEvent(
                             OnNavigate(
                                 AppRootScreens.AuthTopLevel,
-                                behavior = NavBehavior.ClearAll
                             )
                         )
                         _stateFlow.update {

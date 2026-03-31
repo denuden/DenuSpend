@@ -48,6 +48,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -65,7 +67,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    viewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel(),
+    topLevelNavController : NavHostController,
 ) {
     val navController = rememberNavController()
 
@@ -215,7 +218,8 @@ fun MainScreen(
         Box(modifier = Modifier.padding(padding)) {
             AppNavigation(
                 navController,
-                startDestination = RootGraphs.MainGraph
+                startDestination = RootGraphs.MainGraph,
+                topLevelNavController = topLevelNavController,
             )
         }
     }

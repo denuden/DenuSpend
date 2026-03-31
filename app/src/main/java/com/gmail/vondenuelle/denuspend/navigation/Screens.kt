@@ -72,6 +72,10 @@ sealed class AppRootScreens : NavigationScreens {
     data object MainTopLevel : AppRootScreens()
 }
 
+sealed class MainTopLevelScreens : NavigationScreens {
+    @Serializable
+    data object MainTopLevelNavigation : MainTopLevelScreens()
+}
 
 sealed class SampleScreens : NavigationScreens {
     @Serializable

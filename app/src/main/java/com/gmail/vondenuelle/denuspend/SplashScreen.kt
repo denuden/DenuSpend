@@ -46,6 +46,7 @@ fun SplashScreen(
                         NavBehavior.ClearAll -> {
                             setPopUpTo(0, inclusive = true)
                             setLaunchSingleTop(true)
+                            setRestoreState(false)
                         }
 
                         is NavBehavior.PopUpTo -> {
