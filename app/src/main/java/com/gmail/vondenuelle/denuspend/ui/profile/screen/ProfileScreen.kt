@@ -62,7 +62,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
-    onSignOut : () -> Unit,
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
@@ -81,11 +80,6 @@ fun ProfileScreen(
             }
 
             is OneTimeEvents.OnNavigate -> {
-                if (event.route ==  AppRootScreens.AuthTopLevel){
-                    onSignOut() //uses different nav controller
-                    return@ObserveAsEvents
-                }
-
                 val options = NavOptions.Builder().apply {
                     when (event.behavior) {
                         is NavBehavior.ClearAll -> {

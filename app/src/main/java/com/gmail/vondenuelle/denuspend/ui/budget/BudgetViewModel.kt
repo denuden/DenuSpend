@@ -6,6 +6,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
+import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.google.gson.Gson
@@ -34,6 +35,9 @@ class BudgetViewModel @Inject constructor(
 
     fun onEvent(event : BudgetScreenEvents) {
         when(event){
+            BudgetScreenEvents.OnNavigateToBudgetTransactionScreen -> {
+                sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetTransactionScreenNavigation))
+            }
             else -> {}
         }
     }
@@ -86,7 +90,6 @@ class BudgetViewModel @Inject constructor(
                 sendEvent(
                     OneTimeEvents.OnNavigate(
                         AppRootScreens.AuthTopLevel,
-                        behavior = NavBehavior.ClearAll
                     )
                 )
             }

@@ -9,7 +9,8 @@ import com.gmail.vondenuelle.denuspend.ui.budget.screen.BudgetScreen
 import com.gmail.vondenuelle.denuspend.ui.home.screen.HomeScreen
 
 fun NavGraphBuilder.addMainNavGraph(
-    navController: NavController
+    navController: NavController,
+    topLevelNavController: NavController,
 ) {
     navigation<RootGraphs.MainGraph>(startDestination = MainScreens.HomeNavigation) {
         composable<MainScreens.HomeNavigation>(
@@ -39,7 +40,17 @@ fun NavGraphBuilder.addMainNavGraph(
         composable<MainScreens.BudgetNavigation>() {
             BudgetScreen(
                 onNavigate = { route, navOptions ->
-                    navController.navigate(route, navOptions = navOptions)
+                    if (route == AppRootScreens.AuthTopLevel) {
+                        topLevelNavController.navigate(AppRootScreens.AuthTopLevel) {
+                            popUpTo(AppRootScreens.MainTopLevel) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    } else {
+                        navController.navigate(route, navOptions = navOptions)
+                    }
                 },
                 onPopBackStack = {
                     navController.popBackStack()

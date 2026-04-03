@@ -176,13 +176,13 @@ fun LoginScreenContent(
 
     Surface(
         modifier = modifier
-            .safeContentPadding()
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp)
                 .verticalScroll(scrollState)
-                .imePadding(),
+                .safeContentPadding()
+                .imePadding()
+                .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(

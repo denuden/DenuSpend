@@ -236,7 +236,6 @@ class AddViewModel @Inject constructor(
                 sendEvent(
                     OneTimeEvents.OnNavigate(
                         AppRootScreens.AuthTopLevel,
-                        behavior = NavBehavior.ClearAll
                     )
                 )
             }

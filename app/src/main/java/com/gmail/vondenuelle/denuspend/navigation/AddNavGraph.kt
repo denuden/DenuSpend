@@ -9,13 +9,24 @@ import com.gmail.vondenuelle.denuspend.ui.add.screen.AddIncomeScreen
 import com.gmail.vondenuelle.denuspend.ui.add.screen.RecentTransactions
 
 fun NavGraphBuilder.addNavGraph(
-    navController: NavController
+    navController: NavController,
+    topLevelNavController : NavController,
 ) {
     navigation<RootGraphs.AddGraph>(startDestination = AddScreens.AddIncomeScreenNavigation){
         composable<AddScreens.AddIncomeScreenNavigation> {
             AddIncomeScreen(
                 onNavigate = { route, navOptions ->
-                    navController.navigate(route, navOptions = navOptions)
+                    if (route == AppRootScreens.AuthTopLevel) {
+                        topLevelNavController.navigate(AppRootScreens.AuthTopLevel) {
+                            popUpTo(AppRootScreens.MainTopLevel) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    } else {
+                        navController.navigate(route, navOptions = navOptions)
+                    }
                 },
                 onPopBackStack = {
                     navController.popBackStack()
@@ -25,6 +36,15 @@ fun NavGraphBuilder.addNavGraph(
         composable<AddScreens.AddExpenseScreenNavigation> {
             AddExpenseScreen(
                 onNavigate = { route, navOptions ->
+                    if (route == AppRootScreens.AuthTopLevel) {
+                        topLevelNavController.navigate(AppRootScreens.AuthTopLevel) {
+                            popUpTo(AppRootScreens.MainTopLevel) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    }
                     navController.navigate(route, navOptions = navOptions)
                 },
                 onPopBackStack = {
@@ -35,6 +55,15 @@ fun NavGraphBuilder.addNavGraph(
         composable<AddScreens.AllRecentTransactionsNavigation> {
             RecentTransactions(
                 onNavigate = { route, navOptions ->
+                    if (route == AppRootScreens.AuthTopLevel) {
+                        topLevelNavController.navigate(AppRootScreens.AuthTopLevel) {
+                            popUpTo(AppRootScreens.MainTopLevel) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    }
                     navController.navigate(route, navOptions = navOptions)
                 },
                 onPopBackStack = {

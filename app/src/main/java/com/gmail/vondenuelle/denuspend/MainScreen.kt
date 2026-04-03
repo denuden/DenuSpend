@@ -96,7 +96,8 @@ fun MainScreen(
     //will show topbarcontent if route is from mainscreens (E.G. Home)
     topBarState =
         currentRoute?.contains("MainScreens") == true ||
-                currentRoute?.contains("AddScreens") == true
+                currentRoute?.contains("AddScreens") == true ||
+                currentRoute?.contains("BudgetScreens") == true
     bottomBarState = currentRoute?.contains("MainScreens") == true
     topBarTitle = viewModel.getTopBarTitle(currentRoute.toString())
 //    }

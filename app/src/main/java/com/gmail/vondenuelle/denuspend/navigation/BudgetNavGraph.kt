@@ -3,18 +3,16 @@ package com.gmail.vondenuelle.denuspend.navigation
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
-import com.gmail.vondenuelle.denuspend.ui.profile.screen.ProfileScreen
+import androidx.navigation.navigation
+import com.gmail.vondenuelle.denuspend.ui.budget.screen.BudgetTransactionScreen
 
-fun NavGraphBuilder.addProfileGraph(
+fun NavGraphBuilder.addBudgetNavGraph(
     navController: NavController,
-    topLevelNavController: NavController,
+    topLevelNavController : NavController,
 ) {
-    navigation<RootGraphs.ProfileGraph>(startDestination = ProfileScreens.ProfileNavigation) {
-        composable<ProfileScreens.ProfileNavigation>(
-        )
-        {
-            ProfileScreen(
+    navigation<RootGraphs.BudgetGraph>(startDestination = BudgetScreens.BudgetTransactionScreenNavigation){
+        composable<BudgetScreens.BudgetTransactionScreenNavigation> {
+            BudgetTransactionScreen(
                 onNavigate = { route, navOptions ->
                     if (route == AppRootScreens.AuthTopLevel) {
                         topLevelNavController.navigate(AppRootScreens.AuthTopLevel) {

@@ -348,7 +348,6 @@ class ProfileViewModel @Inject constructor(
                 sendEvent(
                     OneTimeEvents.OnNavigate(
                         AppRootScreens.AuthTopLevel,
-                        behavior = NavBehavior.ClearAll
                     )
                 )
             }

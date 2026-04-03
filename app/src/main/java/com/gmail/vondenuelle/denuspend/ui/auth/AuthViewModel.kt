@@ -191,7 +191,7 @@ class AuthViewModel @Inject constructor(
                 //remove stored creds
                 sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
                 logout()
-                sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.AuthTopLevel, behavior = NavBehavior.ClearAll))
+                sendEvent(OneTimeEvents.OnNavigate(AppRootScreens.AuthTopLevel))
             }
             is InvalidCredentialsException -> {
                 sendEvent(OneTimeEvents.ShowError(e.message.orEmpty()))
