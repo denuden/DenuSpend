@@ -15,4 +15,8 @@
     <color name="not_verified_red">#950606</color>
     <color name="not_verified_red_container">#FBEAEA</color>
     <color name="light_white">#FFFFFF</color>
+
+<!-- Chart color-->
+    <color name="chart_solid_color">#23af92 </color>
+    <color name="chart_gradient_fill_color">#2BC0A1 </color>
 </resources>

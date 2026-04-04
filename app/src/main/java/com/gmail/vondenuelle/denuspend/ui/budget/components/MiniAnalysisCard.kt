@@ -44,12 +44,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils.formatPesoFromDouble
 import ir.ehsannarmani.compose_charts.LineChart
+import ir.ehsannarmani.compose_charts.extensions.format
 import ir.ehsannarmani.compose_charts.models.AnimationMode
 import ir.ehsannarmani.compose_charts.models.DividerProperties
 import ir.ehsannarmani.compose_charts.models.DotProperties
@@ -60,6 +65,7 @@ import ir.ehsannarmani.compose_charts.models.IndicatorCount
 import ir.ehsannarmani.compose_charts.models.IndicatorProperties
 import ir.ehsannarmani.compose_charts.models.LabelHelperProperties
 import ir.ehsannarmani.compose_charts.models.Line
+import ir.ehsannarmani.compose_charts.models.PopupProperties
 import ir.ehsannarmani.compose_charts.models.ViewRange
 import kotlinx.coroutines.launch
 
@@ -72,17 +78,13 @@ fun MiniAnalysisCard(
     onChangeFilter : (String) -> Unit,
 ) {
      var selectedFilterIndex by remember { mutableIntStateOf(1) }
-
-    LaunchedEffect(selectedFilterIndex) {
-        onChangeFilter(filter[selectedFilterIndex])
-    }
-
+    val color = colorResource(R.color.chart_solid_color)
+    val gradientFill = colorResource(R.color.chart_gradient_fill_color)
 
     Column(
     ) {
         Row(modifier = modifier.height(IntrinsicSize.Min)) {
             ElevatedCard(modifier = Modifier.weight(1f)
-
                 , shape = MaterialTheme.shapes.extraLarge) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(16.dp)
@@ -156,13 +158,20 @@ fun MiniAnalysisCard(
                         indicatorProperties = HorizontalIndicatorProperties(enabled = false),
                         labelHelperPadding = 0.dp,
                         labelHelperProperties = LabelHelperProperties(enabled = false),
+                        popupProperties = PopupProperties(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface),
+                            contentBuilder = { dataIndex, valueIndex, value ->
+                                "${formatPesoFromDouble(value.format(2).toDouble())}"
+                            }
+                        ),
                         data = remember {
                             listOf(
                                 Line(
                                     label = "",
                                     values = values,
-                                    color = SolidColor(Color(0xFF23af92)),
-                                    firstGradientFillColor = Color(0xFF2BC0A1).copy(alpha = .5f),
+                                    color = SolidColor(color),
+                                    firstGradientFillColor = gradientFill.copy(alpha = .5f),
                                     secondGradientFillColor = Color.Transparent,
                                     strokeAnimationSpec = tween(2000, easing = EaseInOutCubic),
                                     gradientAnimationDelay = 500,
