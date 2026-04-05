@@ -40,7 +40,6 @@ import kotlinx.serialization.Serializable
  *   MainScreens.FavoritesNavigation → "/main/favorites"
  */
 
-
 sealed class RootGraphs {
     @Serializable
     data object SampleGraph : RootGraphs()
@@ -121,6 +120,6 @@ sealed class AddScreens : NavigationScreens {
 
 sealed class BudgetScreens : NavigationScreens {
     @Serializable
-    data object BudgetTransactionScreenNavigation : AddScreens()
+    data class BudgetInsightsScreenNavigation(val category : String) : BudgetScreens()
 }
 

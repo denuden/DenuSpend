@@ -7,7 +7,6 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
-import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -35,8 +34,15 @@ class BudgetViewModel @Inject constructor(
 
     fun onEvent(event : BudgetScreenEvents) {
         when(event){
-            BudgetScreenEvents.OnNavigateToBudgetTransactionScreen -> {
-                sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetTransactionScreenNavigation))
+            is BudgetScreenEvents.OnNavigateToBudgetTransactionScreen -> {
+                sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetInsightsScreenNavigation(event.category)))
+            }
+            is BudgetScreenEvents.OnShowDatePicker -> {
+                _stateFlow.update {
+                    it.copy(
+                        showDateDialog = event.value
+                    )
+                }
             }
             else -> {}
         }

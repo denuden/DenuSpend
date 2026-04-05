@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,7 +24,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material3.Card
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,7 +35,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,7 +46,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils.formatPesoFromDouble
@@ -57,29 +53,28 @@ import ir.ehsannarmani.compose_charts.LineChart
 import ir.ehsannarmani.compose_charts.extensions.format
 import ir.ehsannarmani.compose_charts.models.AnimationMode
 import ir.ehsannarmani.compose_charts.models.DividerProperties
-import ir.ehsannarmani.compose_charts.models.DotProperties
 import ir.ehsannarmani.compose_charts.models.DrawStyle
 import ir.ehsannarmani.compose_charts.models.GridProperties
 import ir.ehsannarmani.compose_charts.models.HorizontalIndicatorProperties
-import ir.ehsannarmani.compose_charts.models.IndicatorCount
-import ir.ehsannarmani.compose_charts.models.IndicatorProperties
 import ir.ehsannarmani.compose_charts.models.LabelHelperProperties
 import ir.ehsannarmani.compose_charts.models.Line
 import ir.ehsannarmani.compose_charts.models.PopupProperties
-import ir.ehsannarmani.compose_charts.models.ViewRange
-import kotlinx.coroutines.launch
 
 @Composable
 fun MiniAnalysisCard(
     modifier: Modifier = Modifier,
     values : List<Double> = listOf(28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,),
-    filter : List<String> = listOf("Yesterday", "Today", "Last 3 days", "Last 7 days", "Last 15 days",
-        "Last 30 days"),
     onChangeFilter : (String) -> Unit,
 ) {
-     var selectedFilterIndex by remember { mutableIntStateOf(1) }
+    var selectedFilterIndex by remember { mutableIntStateOf(1) }
+    val filter : List<String> = listOf("Yesterday", "Today", "Last 3 days", "Last 7 days", "Last 15 days",
+        "Last 30 days")
     val color = colorResource(R.color.chart_solid_color)
     val gradientFill = colorResource(R.color.chart_gradient_fill_color)
+
+    LaunchedEffect(selectedFilterIndex) {
+        onChangeFilter(filter[selectedFilterIndex])
+    }
 
     Column(
     ) {
@@ -161,8 +156,8 @@ fun MiniAnalysisCard(
                         popupProperties = PopupProperties(
                             containerColor = MaterialTheme.colorScheme.surface,
                             textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface),
-                            contentBuilder = { dataIndex, valueIndex, value ->
-                                "${formatPesoFromDouble(value.format(2).toDouble())}"
+                            contentBuilder = { _, _, value ->
+                                formatPesoFromDouble(value.format(2).toDouble())
                             }
                         ),
                         data = remember {
@@ -177,8 +172,6 @@ fun MiniAnalysisCard(
                                     gradientAnimationDelay = 500,
                                     drawStyle = DrawStyle.Stroke(width = 2.dp),
                                     curvedEdges = true,
-
-
                                     )
                             )
                         },

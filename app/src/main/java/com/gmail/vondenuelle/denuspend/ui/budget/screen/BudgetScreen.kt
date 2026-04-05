@@ -166,6 +166,7 @@ fun BudgetScreenContent(
                 dropdownScrollState.scrollTo(dropdownScrollState.maxValue)
             }
         }
+
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = it },
@@ -209,7 +210,7 @@ fun BudgetScreenContent(
                 category = it,
                 transactionCount = "5",
                 onClick = {
-                    onEvent(BudgetScreenEvents.OnNavigateToBudgetTransactionScreen)
+                    onEvent(BudgetScreenEvents.OnNavigateToBudgetTransactionScreen(it))
                 },
                 icon = {
                     Icon(

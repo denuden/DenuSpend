@@ -4,15 +4,19 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-import com.gmail.vondenuelle.denuspend.ui.budget.screen.BudgetTransactionScreen
+import androidx.navigation.toRoute
+import com.gmail.vondenuelle.denuspend.ui.budget.screen.BudgetInsightsScreen
 
 fun NavGraphBuilder.addBudgetNavGraph(
     navController: NavController,
     topLevelNavController : NavController,
 ) {
-    navigation<RootGraphs.BudgetGraph>(startDestination = BudgetScreens.BudgetTransactionScreenNavigation){
-        composable<BudgetScreens.BudgetTransactionScreenNavigation> {
-            BudgetTransactionScreen(
+    navigation<RootGraphs.BudgetGraph>(startDestination = BudgetScreens.BudgetInsightsScreenNavigation("")){
+        composable<BudgetScreens.BudgetInsightsScreenNavigation>() {
+            val args = it.toRoute<BudgetScreens.BudgetInsightsScreenNavigation>()
+            val category = args.category
+
+            BudgetInsightsScreen(
                 onNavigate = { route, navOptions ->
                     if (route == AppRootScreens.AuthTopLevel) {
                         topLevelNavController.navigate(AppRootScreens.AuthTopLevel) {
@@ -28,7 +32,8 @@ fun NavGraphBuilder.addBudgetNavGraph(
                 },
                 onPopBackStack = {
                     navController.popBackStack()
-                }
+                },
+                category = category
             )
         }
     }

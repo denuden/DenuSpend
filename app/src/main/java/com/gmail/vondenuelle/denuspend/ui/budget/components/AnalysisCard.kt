@@ -67,13 +67,11 @@ fun AnalysisCard(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val dropdownScrollState = rememberScrollState()
-    val list = remember {
-        listOf(
+    val list = listOf(
             "2024",
             "2025",
             "2026",
         )
-    }
     var selectedFilter by remember { mutableIntStateOf(1) }
     val color = colorResource(R.color.chart_solid_color)
 

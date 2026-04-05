@@ -24,7 +24,7 @@ fun NavGraphBuilder.addSampleNavGraph(
      * Sample **
      *  navigation<RootGraphs.AnimeGraph>(startDestination = AnimeScreens.AnimeDetailsNavigation(id = 0)){}
      */
-    navigation<RootGraphs.SampleGraph>(startDestination = SampleScreens.SampleNavigation){
+    navigation<RootGraphs.SampleGraph>(startDestination = SampleScreens.SampleDetailsNavigation(SampleModel(0, "name"))){
 
 //        Old-school NavType / parcelableType approach
         composable<SampleScreens.SampleDetailsNavigation>(typeMap = mapOf(typeOf<SampleModel>() to parcelableType<SampleModel>())) {

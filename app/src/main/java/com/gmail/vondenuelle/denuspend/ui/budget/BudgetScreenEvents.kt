@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.ui.budget
 
 sealed class BudgetScreenEvents {
-    object OnNavigateToBudgetTransactionScreen : BudgetScreenEvents()
+    data class OnShowDatePicker(val value : Boolean) : BudgetScreenEvents()
+    data class OnNavigateToBudgetTransactionScreen(val category : String) : BudgetScreenEvents()
 }

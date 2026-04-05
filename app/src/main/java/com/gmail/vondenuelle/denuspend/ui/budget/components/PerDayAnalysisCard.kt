@@ -42,40 +42,57 @@ import ir.ehsannarmani.compose_charts.models.PopupProperties
 import ir.ehsannarmani.compose_charts.models.VerticalIndicatorProperties
 
 @Composable
-fun PerDayAnalysisCard(modifier: Modifier = Modifier, title : String, numberOfDays : Int, onBarClick: (String) -> Unit) {
+fun PerDayAnalysisCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    numberOfDays: Int,
+    values : List<Double> = listOf(28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,28.0, 41.0, 5.0, 10.0, 35.0,21.2),
+    onBarClick: (String) -> Unit
+) {
     val color = colorResource(R.color.chart_solid_color)
 
     ElevatedCard(modifier = modifier
         , shape = MaterialTheme.shapes.extraLarge) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(title, style = MaterialTheme.typography.titleMedium,)
-                Spacer(modifier = Modifier.weight(1f)
-                )
-                Text("₱1,400.00", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black,
+                Column(modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                    Text("Select month from the graph above", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Light)
+                }
+                Text("Total: ₱1,400.00", style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
                     color = MaterialTheme.colorScheme.onSecondary,
                     modifier = Modifier
                         .background(
                             color = MaterialTheme.colorScheme.secondary,
                             shape = MaterialTheme.shapes.medium
-                        ).padding(vertical = 8.dp, horizontal = 16.dp))
+                        )
+                        .padding(vertical = 8.dp, horizontal = 16.dp))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             RowChart(
-                modifier = Modifier.fillMaxWidth().height(700.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(700.dp),
                 labelHelperProperties = LabelHelperProperties(enabled = false),
                 dividerProperties = DividerProperties(enabled = false),
                 gridProperties = GridProperties(                    enabled = true,
                     yAxisProperties = GridProperties.AxisProperties(color = SolidColor(Color.LightGray)),
                     xAxisProperties = GridProperties.AxisProperties(enabled = false, )
                 ),
-                labelProperties = LabelProperties(enabled = true, textStyle = TextStyle(fontSize = 11.sp)),
+                labelProperties = LabelProperties(enabled = true, builder = { _, value, _, _ ->
+                    Text("Day $value", style = TextStyle(fontSize = 11.sp))
+                }),
                 popupProperties = PopupProperties(
                     containerColor = MaterialTheme.colorScheme.surface,
                     textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface),
@@ -92,7 +109,7 @@ fun PerDayAnalysisCard(modifier: Modifier = Modifier, title : String, numberOfDa
                             label = "$num",
                             values = listOf(
                                 Bars.Data(
-                                    value = 520.43,
+                                    value = values[num - 1],
                                     color = SolidColor(color)
                                 )
                             )

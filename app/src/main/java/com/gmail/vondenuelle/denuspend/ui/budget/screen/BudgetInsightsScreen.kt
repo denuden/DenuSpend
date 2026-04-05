@@ -5,15 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -43,6 +40,7 @@ import com.gmail.vondenuelle.denuspend.ui.budget.components.AnalysisCard
 import com.gmail.vondenuelle.denuspend.ui.budget.components.MiniAnalysisCard
 import com.gmail.vondenuelle.denuspend.ui.budget.components.PerDayAnalysisCard
 import com.gmail.vondenuelle.denuspend.ui.common.components.TransactionItem
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.DatePickerDialogModal
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
@@ -52,9 +50,10 @@ import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import kotlinx.coroutines.launch
 
 @Composable
-fun BudgetTransactionScreen(
+fun BudgetInsightsScreen(
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
+    category : String,
     viewModel: BudgetViewModel = hiltViewModel()
 ) {
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
@@ -107,7 +106,6 @@ fun BudgetTransactionScreen(
         }
     }
 
-
     LoadingDialog(
         showDialog = state.isLoading,
         text = "Loading...",
@@ -117,26 +115,40 @@ fun BudgetTransactionScreen(
         showDialog = error.isNotEmpty()
     ) { error = "" }
 
-    BudgetTransactionScreenContent(state = state, onEvent = viewModel::onEvent,
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp))
+    DatePickerDialogModal(
+        showDialog = state.showDateDialog,
+        onDateSelected = {
+
+        },
+        onDismiss = {
+            viewModel.onEvent(BudgetScreenEvents.OnShowDatePicker(false))
+        }
+    )
+
+    BudgetInsightsScreenContent(state = state, onEvent = viewModel::onEvent,
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), title = category)
 
 }
 
 @Composable
-fun BudgetTransactionScreenContent(
+fun BudgetInsightsScreenContent(
     modifier: Modifier = Modifier,
     state : BudgetScreenState,
+    title : String,
     onEvent : (BudgetScreenEvents) -> Unit
 ) {
     LazyColumn(
         modifier = modifier
     ) {
         item {
+            Text("Category $title", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.padding(vertical = 16.dp))
+        }
+        item {
             MiniAnalysisCard(){}
         }
         item {
             Spacer(modifier = Modifier.height(8.dp))
-            AnalysisCard(title = "Food Analysis") { monthIndex, year -> }
+            AnalysisCard(title = "Budget Analysis") { monthIndex, year -> }
         }
         item {
             Spacer(modifier = Modifier.height(16.dp))
@@ -146,7 +158,9 @@ fun BudgetTransactionScreenContent(
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column {
+                Column(
+                    modifier =Modifier.weight(1f)
+                ) {
                     Text("Total Spent", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -156,13 +170,12 @@ fun BudgetTransactionScreenContent(
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
                 AssistChip(
                     onClick = {
-                        //Todo
+                        onEvent(BudgetScreenEvents.OnShowDatePicker(true))
                     },
                     label = {
-                        Text("01 Jan, 2025")
+                        Text("01 Jan, 2025", maxLines = 1)
                     },
                     trailingIcon = {
                         Icon(Icons.Filled.CalendarMonth, null)
@@ -190,10 +203,10 @@ fun BudgetTransactionScreenContent(
 
 @Preview
 @Composable
-private fun BudgetTransactionScreenPreview() {
+private fun BudgetInsightsScreenPreview() {
     DenuSpendTheme() {
         Surface {
-            BudgetTransactionScreenContent(state = BudgetScreenState()) {}
+            BudgetInsightsScreenContent(state = BudgetScreenState(), title = "Category Food") {}
         }
     }
 
