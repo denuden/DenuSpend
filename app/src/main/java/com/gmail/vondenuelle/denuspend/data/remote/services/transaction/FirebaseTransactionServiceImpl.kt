@@ -21,7 +21,6 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
@@ -54,10 +53,27 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         val currentUser = firebaseAuth.currentUser
             ?: throw NoUserException("User not logged in")
         val userId = currentUser.uid
-
         val timestamp = Timestamp.now()
 
+
+        val todayId = LocalDate
+            .now(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+        val dailyDocId = "${userId}_$todayId"
+
+
+        val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY)
+            .document(dailyDocId)
+        //create empty doc
+        val transactionRef = firebaseFireStore.collection(TRANSACTION).document()
+        //create transaction doc inside daily history doc
+        val dailyTransactionRef =
+            dailyDocRef
+                .collection(TRANSACTION)
+                .document(transactionRef.id)
+
         val transaction = TransactionModel(
+            docId = transactionRef.id,
             userId = userId,
             title = transactionRequest.title,
             description = transactionRequest.description,
@@ -66,42 +82,44 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             date = timestamp
         )
 
-        val todayId = LocalDate
-            .now(ZoneId.systemDefault())
-            .format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-
-        val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY)
-            .document("${userId}_$todayId")
+        //batch for multiple writes
+        val batch = firebaseFireStore.batch()
 
         try {
-            // 1. Add transaction to daily subcollection
-            val transactionDocRef = dailyDocRef.collection(TRANSACTION)
-                .add(transaction)
-                .await()
+            // 1. Write to top-level transactions
+            batch.set(transactionRef, transaction)
 
-            val savedTransaction = transaction.copy(docId = transactionDocRef.id)
+            // 2. Write to daily subcollection (for UI grouping)
+            batch.set(dailyTransactionRef, transaction)
 
-            // 2. Upsert daily totals
-            dailyDocRef
-                .set(
-                    mapOf(
-                        USER_ID to userId,
-                        DATE to timestamp,
-                        TOTAL_INCOME to if (transaction.amount > 0) FieldValue.increment(transaction.amount) else FieldValue.increment(0),
-                        TOTAL_EXPENSE to if (transaction.amount < 0) FieldValue.increment(
-                            abs(
-                                transaction.amount
-                            )
-                        ) else FieldValue.increment(0)
-                    ),
-                    SetOptions.merge()
-                ).await()
+            // 3. Update daily totals
+            batch.set(
+                dailyDocRef,
+                mapOf(
+                    USER_ID to userId,
+                    DATE to timestamp,
+                    TOTAL_INCOME to if (transaction.amount > 0)
+                        FieldValue.increment(transaction.amount)
+                    else FieldValue.increment(0),
 
-            return savedTransaction
+                    TOTAL_EXPENSE to if (transaction.amount < 0)
+                        FieldValue.increment(abs(transaction.amount))
+                    else FieldValue.increment(0)
+                ),
+                SetOptions.merge()
+            )
+
+
+            // Commit all at once (atomic)
+            batch.commit().await()
+
+            return transaction
         } catch (e : Exception) {
             throw  e
         }
     }
+
+
     override fun getDailyTransactionHistory(limit: Long?): Flow<List<DailyHistoryModel>> = callbackFlow {
         val currentUser = firebaseAuth.currentUser
             ?: throw NoUserException("User not logged in")

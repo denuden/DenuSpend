@@ -26,7 +26,7 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 fun BudgetItem(
     modifier: Modifier = Modifier,
     category : String,
-    transactionCount : String,
+    transactionCount : Int,
     icon : @Composable () -> Unit,
     onClick : () -> Unit,
 ) {
@@ -65,7 +65,7 @@ private fun BudgetItemPreview() {
         Surface() {
             BudgetItem(
                 category = "Food",
-                transactionCount = "5",
+                transactionCount = 5,
                 onClick = {},
                 icon = {}
             )

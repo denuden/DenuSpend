@@ -16,6 +16,10 @@ annotation class FirebaseTransaction
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class FirebaseBudget
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class FirebaseSample
 
 @Qualifier

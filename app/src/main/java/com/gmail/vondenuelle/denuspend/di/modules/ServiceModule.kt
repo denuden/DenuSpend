@@ -2,6 +2,8 @@ package com.gmail.vondenuelle.denuspend.di.modules
 
 import com.gmail.vondenuelle.denuspend.data.remote.services.auth.AuthService
 import com.gmail.vondenuelle.denuspend.data.remote.services.auth.FirebaseAuthServiceImpl
+import com.gmail.vondenuelle.denuspend.data.remote.services.budget.BudgetService
+import com.gmail.vondenuelle.denuspend.data.remote.services.budget.FirebaseBudgetServiceImpl
 import com.gmail.vondenuelle.denuspend.data.remote.services.profile.FirebaseProfileServiceImpl
 import com.gmail.vondenuelle.denuspend.data.remote.services.profile.ProfileService
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.FirebaseSampleServiceImpl
@@ -10,6 +12,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.services.sample.SampleService
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.TransactionService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseAuth
+import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseBudget
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseProfile
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseSample
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseTransaction
@@ -37,6 +40,11 @@ abstract class ServiceModule {
     @Binds
     @FirebaseTransaction
     abstract fun bindTransactionService(firebaseTransactionServiceImpl: FirebaseTransactionServiceImpl): TransactionService
+
+
+    @Binds
+    @FirebaseBudget
+    abstract fun bindBudgetService(firebaseBudgetServiceImpl: FirebaseBudgetServiceImpl): BudgetService
 
 
 

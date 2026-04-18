@@ -9,20 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
@@ -46,6 +38,7 @@ import com.gmail.vondenuelle.denuspend.ui.budget.components.section.ChartSection
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
@@ -108,6 +101,18 @@ fun BudgetScreen(
     }
 
 
+    ComposableLifecycle { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_START -> {
+                viewModel.onEvent(BudgetScreenEvents.OnGetBudgetSummary(state.date)) //initial
+            }
+            Lifecycle.Event.ON_STOP -> {
+                viewModel.stopGetBudgetSummaryListener()
+            }
+            else -> Unit
+        }
+    }
+
     LoadingDialog(
         showDialog = state.isLoading,
         text = "Loading...",
@@ -130,21 +135,7 @@ fun BudgetScreenContent(
     state: BudgetScreenState,
     onEvent: (BudgetScreenEvents) -> Unit,
     ) {
-    var expanded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
-    val dropdownScrollState = rememberScrollState()
-    var selectedFilter by remember { mutableStateOf<String>("This Month") }
-    val list = remember {
-        listOf(
-            "This Month",
-            "Last 7 Days",
-            "Last 15 Days",
-            "Last 30 Days",
-            "Last 3 Months",
-            "Last 6 Months",
-            "This Year"
-        )
-    }
 
     Column(
         modifier = modifier
@@ -153,62 +144,32 @@ fun BudgetScreenContent(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
         ChartSection(
-            expense = 254145600,
-            budget = 456300000
+            filter = state.date,
+            budgetData = state.budgetTotalSummaryModel,
+            onChangeFilter = {
+                onEvent(BudgetScreenEvents.OnChangeFilterDate(it))
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-
-        LaunchedEffect(expanded) {
-            if (expanded) {
-                // Scroll to show the bottom menu items.
-                dropdownScrollState.scrollTo(dropdownScrollState.maxValue)
-            }
-        }
-
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-        ) {
-            AssistChip(
-                onClick = {
-                    //Todo
-                },
-                label = {
-                    Text(selectedFilter)
-                },
-                leadingIcon = {
-                    Icon(Icons.Filled.CalendarMonth, null)
-                },
-                modifier = Modifier
-                    .padding(bottom = 4.dp)
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-            )
-
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                scrollState = dropdownScrollState,
-                matchAnchorWidth = false
-            ) {
-                list.forEachIndexed { index, option ->
-                    DropdownMenuItem(
-                        text = { Text(option, style = MaterialTheme.typography.bodyLarge) },
-                        onClick = {
-                            expanded = false
-                            selectedFilter = option
-                        },
-                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                    )
-                }
-            }
-        }
-
+        //list of categories
         CategoryDropdownButtonModel.list.drop(1).mapIndexed { index, it ->
             BudgetItem(
                 category = it,
-                transactionCount = "5",
+                transactionCount =
+                    when(index) {
+                        0 -> state.budgetTotalSummaryModel.foodCount
+                        1 -> state.budgetTotalSummaryModel.entertainmentCount
+                        2 -> state.budgetTotalSummaryModel.householdCount
+                        3 -> state.budgetTotalSummaryModel.transportationCount
+                        4 -> state.budgetTotalSummaryModel.workEducationCount
+                        5 -> state.budgetTotalSummaryModel.healthcareCount
+                        6 -> state.budgetTotalSummaryModel.personalCount
+                        7 -> state.budgetTotalSummaryModel.familyCount
+                        8 -> state.budgetTotalSummaryModel.othersCount
+                        else -> 0
+                    },
                 onClick = {
                     onEvent(BudgetScreenEvents.OnNavigateToBudgetTransactionScreen(it))
                 },

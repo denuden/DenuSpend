@@ -31,6 +31,10 @@ object CurrencyUtils {
         val formatter = DecimalFormat("#,##0.00")
         return "₱${formatter.format(amount)}"
     }
+
+    fun longToAmountDouble(amount : Long): Double {
+        return amount / 100.0
+    }
 }
 
 fun getMonthByIndex(index : Int) : String{

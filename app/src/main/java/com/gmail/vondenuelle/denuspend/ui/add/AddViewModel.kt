@@ -102,7 +102,7 @@ class AddViewModel @Inject constructor(
                         _stateFlow.update { it.copy(isListLoading = false) }
                     }
                     return
-                } // prevent duplicate
+                } // prevent duplicate when doing ux reloading
 
                 overviewJob =
                 viewModelScope.launch {
@@ -133,7 +133,7 @@ class AddViewModel @Inject constructor(
                         _stateFlow.update { it.copy(isListLoading = false) }
                     }
                     return
-                } // prevent duplicate
+                } // prevent duplicate  when doing ux reloading
 
                 overviewJob = viewModelScope.launch {
                     _stateFlow.update { it.copy(isListLoading = true) }

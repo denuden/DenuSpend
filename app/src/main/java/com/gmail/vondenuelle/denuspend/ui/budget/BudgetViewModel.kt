@@ -4,16 +4,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.repositories.BudgetRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
+import com.gmail.vondenuelle.denuspend.utils.network.ResultState
+import com.gmail.vondenuelle.denuspend.utils.network.asResult
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,7 +31,8 @@ import javax.inject.Inject
 @HiltViewModel
 class BudgetViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    ): ViewModel(){
+    private val budgetRepository: BudgetRepository,
+): ViewModel(){
     private val TAG = BudgetViewModel::class.java.simpleName
 
     private val _channel = Channel<OneTimeEvents>()
@@ -32,10 +41,51 @@ class BudgetViewModel @Inject constructor(
     private val _stateFlow = MutableStateFlow<BudgetScreenState>(BudgetScreenState())
     val stateFlow = _stateFlow.asStateFlow()
 
+    private var getBudgetSummaryJob : Job? = null
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun stopGetBudgetSummaryListener() {
+        getBudgetSummaryJob?.cancel()
+        getBudgetSummaryJob = null
+    }
+
     fun onEvent(event : BudgetScreenEvents) {
         when(event){
             is BudgetScreenEvents.OnNavigateToBudgetTransactionScreen -> {
                 sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetInsightsScreenNavigation(event.category)))
+            }
+            is BudgetScreenEvents.OnChangeFilterDate -> {
+                _stateFlow.update { it.copy(date = event.date) }
+            }
+            is BudgetScreenEvents.OnGetBudgetSummary  -> {
+                if (getBudgetSummaryJob != null) {
+                    viewModelScope.launch {
+                        _stateFlow.update { it.copy(isLoading = true) }
+                        delay(500)
+                        _stateFlow.update { it.copy(isLoading = false) }
+                    }
+                    return
+                } // prevent duplicate when doing ux reloading
+
+                getBudgetSummaryJob = viewModelScope.launch {
+                    _stateFlow.update { it.copy(isLoading = true) }
+                    delay(500)
+
+                    budgetRepository.getBudgetSummary(event.date).asResult()
+                        .onEach { res ->
+                            when (res) {
+                                ResultState.Completed -> _stateFlow.update { it.copy(isLoading = false) }
+                                is ResultState.Error -> onError(res.exception)
+                                ResultState.Loading -> _stateFlow.update { it.copy(isLoading = true) }
+                                is ResultState.Success -> _stateFlow.update {
+                                    it.copy(
+                                        budgetTotalSummaryModel = res.data,
+                                        isLoading = false
+                                    )
+                                }
+                            }
+                        }.collect()
+                }
             }
             is BudgetScreenEvents.OnShowDatePicker -> {
                 _stateFlow.update {
