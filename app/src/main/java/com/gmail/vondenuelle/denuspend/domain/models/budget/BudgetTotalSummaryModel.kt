@@ -20,5 +20,5 @@ data class BudgetTotalSummaryModel(
     val others : Long = 0L,
     val othersCount : Int = 0,
 
-    val totalExpense : Long = 0L
+    val totalExpense : Long = 0L,
 )

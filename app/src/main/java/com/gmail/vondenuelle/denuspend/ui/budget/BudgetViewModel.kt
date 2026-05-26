@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.ui.budget
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
@@ -41,7 +42,7 @@ class BudgetViewModel @Inject constructor(
     private val _stateFlow = MutableStateFlow<BudgetScreenState>(BudgetScreenState())
     val stateFlow = _stateFlow.asStateFlow()
 
-    private var getBudgetSummaryJob : Job? = null
+    private var getBudgetSummaryJob : Job? = null //stopper for ux refresh
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun stopGetBudgetSummaryListener() {
@@ -60,6 +61,7 @@ class BudgetViewModel @Inject constructor(
             is BudgetScreenEvents.OnGetBudgetSummary  -> {
                 if (getBudgetSummaryJob != null) {
                     viewModelScope.launch {
+                        Log.d("budgetvm", "no data fetch")
                         _stateFlow.update { it.copy(isLoading = true) }
                         delay(500)
                         _stateFlow.update { it.copy(isLoading = false) }
@@ -70,6 +72,7 @@ class BudgetViewModel @Inject constructor(
                 getBudgetSummaryJob = viewModelScope.launch {
                     _stateFlow.update { it.copy(isLoading = true) }
                     delay(500)
+                    Log.d("budgetvm", "data fetch")
 
                     budgetRepository.getBudgetSummary(event.date).asResult()
                         .onEach { res ->
@@ -80,7 +83,7 @@ class BudgetViewModel @Inject constructor(
                                 is ResultState.Success -> _stateFlow.update {
                                     it.copy(
                                         budgetTotalSummaryModel = res.data,
-                                        isLoading = false
+                                        isLoading = false,
                                     )
                                 }
                             }

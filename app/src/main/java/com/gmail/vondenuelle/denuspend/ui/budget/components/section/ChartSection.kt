@@ -112,7 +112,7 @@ fun ChartSection(
                 style = Pie.Style.Stroke(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(280.dp),
+                    .height(if(budgetData.totalExpense != 0L) 280.dp else 40.dp),
                 data = data,
                 onPieClick = {
                     val clickedIndex = data.indexOf(it)
@@ -242,7 +242,6 @@ fun ChartSection(
         // LEGEND
         Card(
             shape = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.padding(top = 16.dp),
             colors = CardDefaults.cardColors().copy(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
             FlowColumn (

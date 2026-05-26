@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -106,9 +107,6 @@ fun BudgetScreen(
             Lifecycle.Event.ON_START -> {
                 viewModel.onEvent(BudgetScreenEvents.OnGetBudgetSummary(state.date)) //initial
             }
-            Lifecycle.Event.ON_STOP -> {
-                viewModel.stopGetBudgetSummaryListener()
-            }
             else -> Unit
         }
     }
@@ -148,11 +146,15 @@ fun BudgetScreenContent(
             budgetData = state.budgetTotalSummaryModel,
             onChangeFilter = {
                 onEvent(BudgetScreenEvents.OnChangeFilterDate(it))
+                onEvent(BudgetScreenEvents.OnGetBudgetSummary(state.date))
+
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
+        Text("Transactions")
+        Spacer(modifier = Modifier.height(6.dp))
         //list of categories
         CategoryDropdownButtonModel.list.drop(1).mapIndexed { index, it ->
             BudgetItem(

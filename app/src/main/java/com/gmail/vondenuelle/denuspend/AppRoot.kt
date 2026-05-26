@@ -1,6 +1,5 @@
 package com.gmail.vondenuelle.denuspend
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
