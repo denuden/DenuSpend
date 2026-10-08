@@ -9,6 +9,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.EmailRequ
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
+import com.gmail.vondenuelle.denuspend.utils.orDefault
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
@@ -32,8 +33,8 @@ class FirebaseAuthServiceImpl @Inject constructor(
             val user = result.user ?: throw Exception("User is null after login")
             return UserModel(
                 uid = user.uid,
-                name = user.displayName,
-                email = user.email,
+                name = user.displayName.orDefault(),
+                email = user.email.orDefault(),
                 isEmailVerified = user.isEmailVerified,
                 photo = user.photoUrl.toString(),
             )
@@ -59,8 +60,8 @@ class FirebaseAuthServiceImpl @Inject constructor(
             val user = result.user ?: throw Exception("User is null after login")
             return UserModel(
                 uid = user.uid,
-                name = user.displayName,
-                email = user.email,
+                name = user.displayName.orDefault(),
+                email = user.email.orDefault(),
                 isEmailVerified = user.isEmailVerified,
                 photo = user.photoUrl.toString(),
 
@@ -95,8 +96,8 @@ class FirebaseAuthServiceImpl @Inject constructor(
                 
                 return UserModel(
                     uid = user.uid,
-                    name = user.displayName,
-                    email = user.email,
+                    name = user.displayName.orDefault(),
+                    email = user.email.orDefault(),
                     isEmailVerified = user.isEmailVerified,
                     photo = user.photoUrl.toString(),
                 )

@@ -12,7 +12,6 @@ fun AppNavigation(
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
         addMainNavGraph(navController, topLevelNavController)
-        addMainNavGraph(navController, topLevelNavController)
         addProfileGraph(navController, topLevelNavController)
         addNavGraph(navController, topLevelNavController)
         addBudgetNavGraph(navController, topLevelNavController)

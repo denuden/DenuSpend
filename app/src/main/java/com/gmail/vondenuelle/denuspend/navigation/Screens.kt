@@ -40,6 +40,7 @@ import kotlinx.serialization.Serializable
  *   MainScreens.FavoritesNavigation → "/main/favorites"
  */
 
+@Serializable
 sealed class RootGraphs {
     @Serializable
     data object SampleGraph : RootGraphs()
@@ -59,11 +60,13 @@ sealed class RootGraphs {
 /**
  *  General or shared type of all screens
  */
+@Serializable
 sealed interface NavigationScreens
 
 /**
  * Top level screens - used with different navhost
  */
+@Serializable
 sealed class AppRootScreens : NavigationScreens {
     @Serializable
     data object SplashTopLevel : AppRootScreens()
@@ -73,11 +76,13 @@ sealed class AppRootScreens : NavigationScreens {
     data object MainTopLevel : AppRootScreens()
 }
 
+@Serializable
 sealed class MainTopLevelScreens : NavigationScreens {
     @Serializable
     data object MainTopLevelNavigation : MainTopLevelScreens()
 }
 
+@Serializable
 sealed class SampleScreens : NavigationScreens {
     @Serializable
     data object SampleNavigation : SampleScreens()
@@ -85,6 +90,7 @@ sealed class SampleScreens : NavigationScreens {
     data class SampleDetailsNavigation(val sampleModel: SampleModel) : SampleScreens()
 }
 
+@Serializable
 sealed class AuthScreens : NavigationScreens {
     @Serializable
     data object AuthMainNavigation : AuthScreens()
@@ -94,6 +100,7 @@ sealed class AuthScreens : NavigationScreens {
     data object RegisterNavigation : AuthScreens()
 }
 
+@Serializable
 sealed class MainScreens : NavigationScreens {
     @Serializable
     data object HomeNavigation : MainScreens()
@@ -103,11 +110,13 @@ sealed class MainScreens : NavigationScreens {
     data object BudgetNavigation : MainScreens()
 }
 
+@Serializable
 sealed class ProfileScreens : NavigationScreens {
     @Serializable
     data object ProfileNavigation : ProfileScreens()
 }
 
+@Serializable
 sealed class AddScreens : NavigationScreens {
     @Serializable
     data object AddIncomeScreenNavigation : AddScreens()
@@ -118,6 +127,7 @@ sealed class AddScreens : NavigationScreens {
 }
 
 
+@Serializable
 sealed class BudgetScreens : NavigationScreens {
     @Serializable
     data class BudgetInsightsScreenNavigation(val category : String) : BudgetScreens()

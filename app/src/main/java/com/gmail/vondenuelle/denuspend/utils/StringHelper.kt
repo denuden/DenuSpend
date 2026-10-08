@@ -59,3 +59,7 @@ fun getDaysInMonth(monthIndex: Int, year: Int): Int {
     val month = monthIndex + 1 // YearMonth uses 1-12
     return YearMonth.of(year, month).lengthOfMonth()
 }
+
+fun String?.orDefault(default: String = "---"): String {
+    return if (this.isNullOrBlank()) default else this
+}

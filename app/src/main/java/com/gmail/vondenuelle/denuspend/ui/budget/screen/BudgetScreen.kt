@@ -146,8 +146,7 @@ fun BudgetScreenContent(
             budgetData = state.budgetTotalSummaryModel,
             onChangeFilter = {
                 onEvent(BudgetScreenEvents.OnChangeFilterDate(it))
-                onEvent(BudgetScreenEvents.OnGetBudgetSummary(state.date))
-
+                onEvent(BudgetScreenEvents.OnGetBudgetSummary(it))
             }
         )
 

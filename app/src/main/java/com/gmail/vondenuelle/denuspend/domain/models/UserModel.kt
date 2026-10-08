@@ -1,9 +1,12 @@
 package com.gmail.vondenuelle.denuspend.domain.models
 
+import androidx.annotation.Keep
+
+@Keep
 data class UserModel(
-    val uid : String ? = null,
-    val name : String ? = null,
-    val email : String? = null,
-    val photo : String? = null,
-    val isEmailVerified : Boolean? = false,
+    val uid : String = "",
+    val name : String = "",
+    val email : String = "",
+    val photo : String = "",
+    val isEmailVerified : Boolean = false,
 )

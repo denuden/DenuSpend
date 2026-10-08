@@ -11,6 +11,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Parcelize
 data class SampleModel(
-    val id : Int? = null,
-    val nam : String? = null
+    val id : Int = 0,
+    val nam : String = ""
 )  : Parcelable

@@ -14,6 +14,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.Update
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdatePasswordRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
+import com.gmail.vondenuelle.denuspend.utils.orDefault
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.EmailAuthProvider
@@ -49,8 +50,8 @@ class FirebaseProfileServiceImpl @Inject constructor(
             if (user != null) {
                 return UserModel(
                     uid = user.uid,
-                    name = user.displayName,
-                    email = user.email,
+                    name = user.displayName.orDefault(),
+                    email = user.email.orDefault(),
                     isEmailVerified = user.isEmailVerified,
                     photo = user.photoUrl.toString()
                 )

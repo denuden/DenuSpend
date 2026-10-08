@@ -1,5 +1,8 @@
 package com.gmail.vondenuelle.denuspend.domain.models.budget
 
+import androidx.annotation.Keep
+
+@Keep
 data class BudgetTotalSummaryModel(
     val food : Long = 0L,
     val foodCount : Int = 0,
@@ -19,6 +22,5 @@ data class BudgetTotalSummaryModel(
     val familyCount : Int = 0,
     val others : Long = 0L,
     val othersCount : Int = 0,
-
     val totalExpense : Long = 0L,
 )

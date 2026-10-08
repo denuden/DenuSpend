@@ -1,8 +1,10 @@
 package com.gmail.vondenuelle.denuspend.domain.models.transaction
 
+import androidx.annotation.Keep
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Exclude
 
+@Keep
 data class DailyHistoryModel(
     @get:Exclude //excludes this from getting stored in firebase
     val docId: String = "",

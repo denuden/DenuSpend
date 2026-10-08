@@ -59,20 +59,11 @@ class BudgetViewModel @Inject constructor(
                 _stateFlow.update { it.copy(date = event.date) }
             }
             is BudgetScreenEvents.OnGetBudgetSummary  -> {
-                if (getBudgetSummaryJob != null) {
-                    viewModelScope.launch {
-                        Log.d("budgetvm", "no data fetch")
-                        _stateFlow.update { it.copy(isLoading = true) }
-                        delay(500)
-                        _stateFlow.update { it.copy(isLoading = false) }
-                    }
-                    return
-                } // prevent duplicate when doing ux reloading
+                getBudgetSummaryJob?.cancel()
 
                 getBudgetSummaryJob = viewModelScope.launch {
                     _stateFlow.update { it.copy(isLoading = true) }
                     delay(500)
-                    Log.d("budgetvm", "data fetch")
 
                     budgetRepository.getBudgetSummary(event.date).asResult()
                         .onEach { res ->

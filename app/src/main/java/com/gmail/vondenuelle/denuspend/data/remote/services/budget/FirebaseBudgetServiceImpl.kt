@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.budget
 
+import android.util.Log
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.budget.request.GetBudgetSummaryRequest
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
@@ -36,7 +37,7 @@ class FirebaseBudgetServiceImpl @Inject constructor(
 
         val currentUser = firebaseAuth.currentUser
             ?: throw NoUserException("User not logged in")
-
+        Log.d("DATE_RANGE", "start=${request.startDate}, end=${request.endDate}")
         val query = firebaseFireStore
             .collection(TRANSACTION)
             .whereEqualTo(USER_ID, currentUser.uid)
@@ -53,6 +54,7 @@ class FirebaseBudgetServiceImpl @Inject constructor(
                 it.toObject(TransactionModel::class.java)
             } ?: emptyList()
 
+            Log.e("gwgwg", transactions.toString())
             var foodTotal = 0L
             var foodCount = 0
 

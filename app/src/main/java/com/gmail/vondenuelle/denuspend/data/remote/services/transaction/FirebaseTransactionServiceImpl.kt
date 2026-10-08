@@ -231,7 +231,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         }
 
         return kotlinx.coroutines.flow.combine(dailyFlow, transactionFlow) { daily, txs ->
-            TransactionOverviewModel(daily, txs)
+            TransactionOverviewModel(daily ?: DailyHistoryModel(), txs)
         }
     }
 }

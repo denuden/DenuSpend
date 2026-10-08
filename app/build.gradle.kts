@@ -18,7 +18,7 @@ android {
         minSdk = 29
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -45,6 +45,17 @@ android {
                 // R8 configuration files.
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 // Includes a local, custom Proguard rules file
+                "proguard-rules.pro"
+            )
+        }
+        create("release-debuggable") {
+            initWith(getByName("release"))  // inherit release config
+
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
