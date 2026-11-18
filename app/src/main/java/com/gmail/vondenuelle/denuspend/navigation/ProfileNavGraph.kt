@@ -8,25 +8,12 @@ import com.gmail.vondenuelle.denuspend.ui.profile.screen.ProfileScreen
 
 fun NavGraphBuilder.addProfileGraph(
     navController: NavController,
-    topLevelNavController: NavController,
 ) {
     navigation<RootGraphs.ProfileGraph>(startDestination = ProfileScreens.ProfileNavigation) {
-        composable<ProfileScreens.ProfileNavigation>(
-        )
-        {
+        composable<ProfileScreens.ProfileNavigation> {
             ProfileScreen(
                 onNavigate = { route, navOptions ->
-                    if (route == AppRootScreens.AuthTopLevel) {
-                        topLevelNavController.navigate(AppRootScreens.AuthTopLevel) {
-                            popUpTo(AppRootScreens.MainTopLevel) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                            restoreState = false
-                        }
-                    } else {
-                        navController.navigate(route, navOptions = navOptions)
-                    }
+                    navController.navigate(route, navOptions = navOptions)
                 },
                 onPopBackStack = {
                     navController.popBackStack()

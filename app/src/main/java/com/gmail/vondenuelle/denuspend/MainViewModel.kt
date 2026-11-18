@@ -1,51 +1,77 @@
 package com.gmail.vondenuelle.denuspend
 
-import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.gmail.vondenuelle.denuspend.di.modules.TokenProvider
+import androidx.lifecycle.viewModelScope
+import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
+import com.gmail.vondenuelle.denuspend.data.storage.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed interface SessionState {
+    data object Loading : SessionState
+    data object LoggedIn : SessionState
+    data object LoggedOut : SessionState
+}
+
+/**
+ * Lives for the whole Activity (created in AppRoot, outside any NavHost).
+ * Decides which "world" is shown (Splash / Auth / Main) and feeds the shared top bar.
+ */
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val tokenProvider: TokenProvider
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
-    private val _photoState = mutableStateOf("")
-    val photoState: State<String> = _photoState
+    private val _session = MutableStateFlow<SessionState>(SessionState.Loading)
+    val session: StateFlow<SessionState> = _session.asStateFlow()
 
-    /**
-     * Gets proper top app bar title
-     * based on current nvigation
-     */
-    fun getTopBarTitle(currentRoute : String) : String{
-        //Get route name as package  and get the last one the get the class name
-        val route = currentRoute.substringAfterLast(".")
+    // Name and photo for the top bar. Updates live when Profile changes them.
+    val user: StateFlow<UserPreferences> = authRepository.userPreferences
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UserPreferences())
 
-        //check if route has "/" means it has arguments, remove it so we can verify route itself
-        val cleaned = if(route.contains("/")) route.substringBeforeLast("/") else route
+    init {
+        checkCurrentUser()
+        observeSignOut()
+    }
 
-        //check route with specific route under items in sealed class NavigationScreens (not RootGraphs)
-        return when(cleaned){
-            "ProfileNavigation" -> "Profile"
-            "AddNavigation" -> "Transaction"
-            "AddIncomeScreenNavigation" -> "Add Income"
-            "AddExpenseScreenNavigation" -> "Add Expense"
-            "AllRecentTransactionsNavigation" -> "History"
-            "BudgetNavigation" -> "Budget"
-            "BudgetInsightsScreenNavigation" -> "Budget Insights"
-            "HomeNavigation" ->  "Welcome back, ${tokenProvider.getName().split(" ")[0]}"
-            else -> "DenuSpend"
+    // Called by the auth screens only after login/register fully finished (incl. saving the display name)
+    fun onLoginOrRegisterCompleted() {
+        _session.value = SessionState.LoggedIn
+    }
+
+    private fun checkCurrentUser() {
+        viewModelScope.launch {
+            _session.value = try {
+                authRepository.getCurrentUser() // also refreshes the cached user in DataStore
+                SessionState.LoggedIn
+            } catch (e: NoUserException) {
+                SessionState.LoggedOut
+            } catch (e: Exception) {
+                // e.g. offline with an expired token. Firebase still has the user cached, so let them in.
+                if (authRepository.hasUser()) SessionState.LoggedIn else SessionState.LoggedOut
+            }
         }
     }
 
-    fun getPhoto(){
-        _photoState.value = tokenProvider.getPhoto()
-    }
-
-    fun resetPhoto(){
-        _photoState.value = ""
+    /**
+     * Any sign out (Profile sign out, delete account, session expired) ends up here.
+     * Sign-ins are ignored on purpose: Firebase signs in mid-registration, before the name is saved.
+     */
+    private fun observeSignOut() {
+        viewModelScope.launch {
+            authRepository.observeAuthState().collect { isLoggedIn ->
+                if (!isLoggedIn) {
+                    _session.value = SessionState.LoggedOut
+                    authRepository.clearUserPreferences()
+                }
+            }
+        }
     }
 }

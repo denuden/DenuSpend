@@ -31,7 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
-import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
+import com.gmail.vondenuelle.denuspend.navigation.toNavOptions
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.budget.BudgetScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.budget.BudgetScreenState
@@ -69,26 +69,7 @@ fun BudgetInsightsScreen(
             }
 
             is OneTimeEvents.OnNavigate -> {
-                val options = NavOptions.Builder().apply {
-                    when (event.behavior) {
-                        is NavBehavior.ClearAll -> {
-                            setPopUpTo(0, inclusive = true)
-                            setLaunchSingleTop(true)
-                            setRestoreState(false)
-                        }
-
-                        is NavBehavior.PopUpTo -> {
-                            setPopUpTo(
-                                event.behavior.destination,
-                                inclusive = event.behavior.inclusive
-                            )
-                        }
-
-                        NavBehavior.None -> Unit
-                    }
-                }.build()
-
-                onNavigate(event.route, options)
+                onNavigate(event.route, event.behavior.toNavOptions())
             }
 
             is OneTimeEvents.ShowError -> error = event.msg
@@ -102,6 +83,7 @@ fun BudgetInsightsScreen(
             }
 
             OneTimeEvents.OnCloseDialog -> {}
+            OneTimeEvents.OnLoginOrRegisterCompleted -> {}
             is OneTimeEvents.ShowInputError -> {}
         }
     }

@@ -77,7 +77,7 @@ import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.EmailRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
-import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
+import com.gmail.vondenuelle.denuspend.navigation.toNavOptions
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenState
@@ -94,6 +94,7 @@ import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 fun LoginScreen(
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
+    onLoginOrRegisterCompleted: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -102,27 +103,10 @@ fun LoginScreen(
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
             is OneTimeEvents.OnNavigate -> {
-                val options = NavOptions.Builder().apply {
-                    when (event.behavior) {
-                        is NavBehavior.ClearAll -> {
-                            setPopUpTo(0, inclusive = true)
-                            setLaunchSingleTop(true)
-                            setRestoreState(false)
-                        }
-
-                        is NavBehavior.PopUpTo -> {
-                            setPopUpTo(
-                                event.behavior.destination,
-                                inclusive = event.behavior.inclusive
-                            )
-                        }
-
-                        NavBehavior.None -> Unit
-                    }
-                }.build()
-
-                onNavigate(event.route, options)
+                onNavigate(event.route, event.behavior.toNavOptions())
             }
+
+            is OneTimeEvents.OnLoginOrRegisterCompleted -> onLoginOrRegisterCompleted()
 
             is OneTimeEvents.ShowError -> error = event.msg
             is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT)

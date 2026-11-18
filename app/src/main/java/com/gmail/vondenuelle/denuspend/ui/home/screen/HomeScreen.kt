@@ -15,7 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavOptions
-import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
+import com.gmail.vondenuelle.denuspend.navigation.toNavOptions
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.home.HomeScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.home.HomeViewmodel
@@ -37,21 +37,7 @@ fun HomeScreen(
     ObserveAsEvents(viewModel.channel) { event ->
         when(event){
             is OneTimeEvents.OnNavigate -> {
-                val options = NavOptions.Builder().apply {
-                    when (event.behavior) {
-                        is NavBehavior.ClearAll -> {
-                            setPopUpTo(0, inclusive = true)
-                            setLaunchSingleTop(true)
-                            setRestoreState(false)
-                        }
-                        is NavBehavior.PopUpTo -> {
-                            setPopUpTo(event.behavior.destination, inclusive = event.behavior.inclusive)
-                        }
-                        NavBehavior.None -> Unit
-                    }
-                }.build()
-
-                onNavigate(event.route, options)
+                onNavigate(event.route, event.behavior.toNavOptions())
             }
             is OneTimeEvents.ShowError -> Toast.makeText(context, event.msg, Toast.LENGTH_SHORT).show()
             is OneTimeEvents.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()

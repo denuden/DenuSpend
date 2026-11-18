@@ -53,7 +53,7 @@ class FirebaseProfileServiceImpl @Inject constructor(
                     name = user.displayName.orDefault(),
                     email = user.email.orDefault(),
                     isEmailVerified = user.isEmailVerified,
-                    photo = user.photoUrl.toString()
+                    photo = user.photoUrl?.toString().orEmpty()
                 )
             } else {
                 throw NoUserException()

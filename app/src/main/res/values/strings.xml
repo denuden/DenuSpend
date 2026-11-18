@@ -20,6 +20,24 @@
     <string name="register_hint_name">Enter your name</string>
     <string name="register_hint_password">Enter your password</string>
 
+<!--    MAIN SCREEN (shared top bar + bottom bar)-->
+    <string name="main_title_home">Welcome back, %1$s</string>
+    <string name="main_default_name">User</string>
+    <string name="main_title_profile">Profile</string>
+    <string name="main_title_transaction">Transaction</string>
+    <string name="main_title_add_income">Add Income</string>
+    <string name="main_title_add_expense">Add Expense</string>
+    <string name="main_title_history">History</string>
+    <string name="main_title_budget">Budget</string>
+    <string name="main_title_budget_insights">Budget Insights</string>
+    <string name="main_tab_home">Home</string>
+    <string name="main_tab_wallet">Wallet</string>
+    <string name="main_tab_add">Add</string>
+    <string name="main_tab_goals">Goals</string>
+    <string name="main_tab_budget">Budget</string>
+    <string name="main_cd_back">Back</string>
+    <string name="main_cd_profile">Profile</string>
+
 <!--    ERROR-->
     <string name="error_error">Error</string>
 

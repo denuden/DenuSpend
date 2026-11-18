@@ -3,21 +3,26 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.IntOffset
-import androidx.navigation.NavController
-import androidx.navigation.NavGraphBuilder
+import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navigation
+import androidx.navigation.compose.rememberNavController
 import com.gmail.vondenuelle.denuspend.ui.auth.screen.LoginScreen
 import com.gmail.vondenuelle.denuspend.ui.auth.screen.RegisterScreen
 
-
-fun NavGraphBuilder.addAuthNavGraph(
-    navController: NavController
+/**
+ * The logged-out world. Shown by AppRoot while no user is signed in,
+ * so its back stack is thrown away entirely once the user logs in.
+ */
+@Composable
+fun AuthNavHost(
+    onLoginOrRegisterCompleted: () -> Unit,
 ) {
-    navigation<AppRootScreens.AuthTopLevel>(startDestination = AuthScreens.LoginNavigation) {
+    val navController = rememberNavController()
+    val animationSpec = tween<IntOffset>(durationMillis = 400, easing = FastOutSlowInEasing)
 
-        val animationSpec = tween<IntOffset>(durationMillis = 400, easing = FastOutSlowInEasing)
+    NavHost(navController = navController, startDestination = AuthScreens.LoginNavigation) {
 
         // Login Screen (slides to the LEFT when exiting)
         composable<AuthScreens.LoginNavigation>(
@@ -36,7 +41,8 @@ fun NavGraphBuilder.addAuthNavGraph(
                 },
                 onPopBackStack = {
                     navController.popBackStack()
-                }
+                },
+                onLoginOrRegisterCompleted = onLoginOrRegisterCompleted
             )
         }
 
@@ -57,7 +63,8 @@ fun NavGraphBuilder.addAuthNavGraph(
                 },
                 onPopBackStack = {
                     navController.popBackStack()
-                }
+                },
+                onLoginOrRegisterCompleted = onLoginOrRegisterCompleted
             )
         }
     }

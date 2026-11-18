@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -33,27 +34,29 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.gmail.vondenuelle.denuspend.navigation.AddScreens
 import com.gmail.vondenuelle.denuspend.navigation.AppNavigation
+import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
 import com.gmail.vondenuelle.denuspend.navigation.MainScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.navigation.ProfileScreens
@@ -64,43 +67,39 @@ import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import kotlinx.coroutines.launch
 
+// route = null means the tab isn't built yet, so it's shown disabled
+private data class BottomTab(
+    val route: NavigationScreens?,
+    @StringRes val label: Int,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+)
+
+private val bottomTabs = listOf(
+    BottomTab(MainScreens.HomeNavigation, R.string.main_tab_home, Icons.Filled.Home, Icons.Outlined.Home),
+    BottomTab(null, R.string.main_tab_wallet, Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet),
+    BottomTab(MainScreens.AddNavigation, R.string.main_tab_add, Icons.Filled.AddCircle, Icons.Outlined.AddCircleOutline),
+    BottomTab(null, R.string.main_tab_goals, Icons.Filled.Flag, Icons.Outlined.Flag),
+    BottomTab(MainScreens.BudgetNavigation, R.string.main_tab_budget, Icons.Filled.Savings, Icons.Outlined.Savings),
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    viewModel: MainViewModel = hiltViewModel(),
-    topLevelNavController : NavHostController,
+    viewModel: MainViewModel,
 ) {
     val navController = rememberNavController()
-
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val user by viewModel.user.collectAsStateWithLifecycle()
 
-    // Checks current type to determine which component should be shown or not from the scaffold
+    // Everything below is read from the back stack, so it's always in sync (Back button, rotation, etc.)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    // holds state if topborcontent should be shown
-    var topBarState by rememberSaveable { (mutableStateOf(false)) }
-    // holds state if bottombar should be shown
-    var bottomBarState by rememberSaveable { (mutableStateOf(false)) }
-
-    // holds title of top bar
-    var topBarTitle by remember { mutableStateOf("") }
-
-    //for showing navigation back in top app bar
+    val currentDestination = navBackStackEntry?.destination
+    val showTopBar = currentDestination.isIn<RootGraphs.MainGraph>() ||
+            currentDestination.isIn<RootGraphs.AddGraph>() ||
+            currentDestination.isIn<RootGraphs.BudgetGraph>()
+    val showBottomBar = currentDestination.isIn<RootGraphs.MainGraph>()
     val canNavigateBack = navController.previousBackStackEntry != null
-
-    //detects current route changes, then set topbarstate
-    //if visible depending on route
-//    LaunchedEffect(currentRoute) {
-    //will show topbarcontent if route is from mainscreens (E.G. Home)
-    topBarState =
-        currentRoute?.contains("MainScreens") == true ||
-                currentRoute?.contains("AddScreens") == true ||
-                currentRoute?.contains("BudgetScreens") == true
-    bottomBarState = currentRoute?.contains("MainScreens") == true
-    topBarTitle = viewModel.getTopBarTitle(currentRoute.toString())
-//    }
 
     //stating snackbar anywhere so it can be called from any screen
     val snackbarHostState = remember {
@@ -123,55 +122,6 @@ fun MainScreen(
         }
     }
 
-    LaunchedEffect(true) {
-        viewModel.getPhoto()
-    }
-
-    var selectedItem by remember { mutableIntStateOf(0) }
-    val items = listOf("Home", "Wallet", "Add", "Goals", "Budget")
-    val unselectedIcons =
-        listOf(
-            Icons.Outlined.Home,
-            Icons.Outlined.AccountBalanceWallet,
-            Icons.Outlined.AddCircleOutline,
-            Icons.Outlined.Flag,
-            Icons.Outlined.Savings
-        )
-    val selectedIcons = listOf(
-        Icons.Filled.Home,
-        Icons.Filled.AccountBalanceWallet,
-        Icons.Filled.AddCircle,
-        Icons.Filled.Flag,
-        Icons.Filled.Savings
-    )
-
-    LaunchedEffect(selectedItem) {
-        when (selectedItem) {
-            0 -> navController.navigate(
-                MainScreens.HomeNavigation,
-                navOptions = NavOptions.Builder().apply {
-                    setPopUpTo(0, inclusive = true)
-                    setLaunchSingleTop(true)
-                }.build()
-            )
-            2 -> navController.navigate(
-                MainScreens.AddNavigation,
-                navOptions = NavOptions.Builder().apply {
-                    setPopUpTo(0, inclusive = true)
-                    setLaunchSingleTop(true)
-                }.build()
-            )
-            4 -> navController.navigate(
-                MainScreens.BudgetNavigation,
-                navOptions = NavOptions.Builder().apply {
-                    setPopUpTo(0, inclusive = true)
-                    setLaunchSingleTop(true)
-                }.build()
-            )
-
-        }
-    }
-
     Scaffold(
         snackbarHost = {
             SnackbarHost(
@@ -179,12 +129,11 @@ fun MainScreen(
             )
         },
         topBar = {
-            if (topBarState) {
+            if (showTopBar) {
                 TopAppBarContent(
-                    title = topBarTitle,
+                    title = topBarTitle(currentDestination, user.name.orEmpty()),
                     canNavigateBack = canNavigateBack,
-                    photo = viewModel.photoState.value,
-                    onErrorPhoto = { viewModel.resetPhoto() },
+                    photo = user.photo.orEmpty(),
                     onPopBackStack = {
                         navController.popBackStack()
                     },
@@ -195,20 +144,33 @@ fun MainScreen(
             }
         },
         bottomBar = {
-            if (bottomBarState) {
-                NavigationBar(
-                ) {
-                    items.forEachIndexed { index, item ->
+            if (showBottomBar) {
+                NavigationBar {
+                    bottomTabs.forEach { tab ->
+                        val selected = tab.route != null &&
+                                currentDestination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
                         NavigationBarItem(
                             icon = {
                                 Icon(
-                                    if (selectedItem == index) selectedIcons[index] else unselectedIcons[index],
-                                    contentDescription = item,
+                                    if (selected) tab.selectedIcon else tab.unselectedIcon,
+                                    contentDescription = stringResource(tab.label),
                                 )
                             },
-                            label = { Text(item) },
-                            selected = selectedItem == index,
-                            onClick = { selectedItem = index },
+                            label = { Text(stringResource(tab.label)) },
+                            selected = selected,
+                            enabled = tab.route != null,
+                            onClick = {
+                                // Standard bottom-nav options: keep one copy of each tab and remember each tab's state
+                                tab.route?.let { route ->
+                                    navController.navigate(route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
                         )
                     }
                 }
@@ -220,11 +182,30 @@ fun MainScreen(
             AppNavigation(
                 navController,
                 startDestination = RootGraphs.MainGraph,
-                topLevelNavController = topLevelNavController,
             )
         }
     }
+}
 
+// True when the destination is inside the graph/screen T (type-safe, no route string matching)
+private inline fun <reified T : Any> NavDestination?.isIn(): Boolean =
+    this?.hierarchy?.any { it.hasRoute<T>() } == true
+
+@Composable
+private fun topBarTitle(destination: NavDestination?, name: String): String {
+    val firstName = name.substringBefore(" ").ifEmpty { stringResource(R.string.main_default_name) }
+    return when {
+        destination == null -> ""
+        destination.hasRoute<MainScreens.HomeNavigation>() -> stringResource(R.string.main_title_home, firstName)
+        destination.hasRoute<MainScreens.AddNavigation>() -> stringResource(R.string.main_title_transaction)
+        destination.hasRoute<MainScreens.BudgetNavigation>() -> stringResource(R.string.main_title_budget)
+        destination.hasRoute<AddScreens.AddIncomeScreenNavigation>() -> stringResource(R.string.main_title_add_income)
+        destination.hasRoute<AddScreens.AddExpenseScreenNavigation>() -> stringResource(R.string.main_title_add_expense)
+        destination.hasRoute<AddScreens.AllRecentTransactionsNavigation>() -> stringResource(R.string.main_title_history)
+        destination.hasRoute<BudgetScreens.BudgetInsightsScreenNavigation>() -> stringResource(R.string.main_title_budget_insights)
+        destination.hasRoute<ProfileScreens.ProfileNavigation>() -> stringResource(R.string.main_title_profile)
+        else -> stringResource(R.string.app_name)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -233,11 +214,13 @@ fun TopAppBarContent(
     modifier: Modifier = Modifier,
     title: String,
     photo: String,
-    onErrorPhoto: () -> Unit,
     canNavigateBack: Boolean,
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
 ) {
+    // Falls back to the default icon if the photo fails to load. Resets when the photo changes.
+    var photoFailed by remember(photo) { mutableStateOf(false) }
+
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
@@ -254,7 +237,7 @@ fun TopAppBarContent(
                     }.build())
                 }
             ) {
-                if (photo.isNotEmpty()) {
+                if (photo.isNotEmpty() && !photoFailed) {
                     AsyncImageWithErrorHandler(
                         model = photo.toUri(),
                         modifier = Modifier
@@ -262,12 +245,14 @@ fun TopAppBarContent(
                             .clip(CircleShape),
                         shouldShowEnlargeButton = false,
                         onError = {
-                            onErrorPhoto()
+                            photoFailed = true
                         }
                     )
                 } else {
-                    Icon(imageVector = Icons.Filled.AccountCircle, contentDescription = null)
-
+                    Icon(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = stringResource(R.string.main_cd_profile)
+                    )
                 }
             }
         },
@@ -278,7 +263,7 @@ fun TopAppBarContent(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.main_cd_back),
                     )
                 }
             }
@@ -297,7 +282,6 @@ private fun MainScreenPreview() {
             TopAppBarContent(
                 onPopBackStack = {},
                 title = "",
-                onErrorPhoto = {},
                 photo = "",
                 canNavigateBack = true,
                 onNavigate = { _, _ -> })

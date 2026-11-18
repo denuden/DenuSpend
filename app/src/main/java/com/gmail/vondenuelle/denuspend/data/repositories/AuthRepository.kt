@@ -9,6 +9,7 @@ import com.gmail.vondenuelle.denuspend.data.storage.UserPreferences
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseAuth
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 import dagger.hilt.android.scopes.ViewModelScoped
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 //Repository = Regarding about the backend response
@@ -75,5 +76,16 @@ class AuthRepository @Inject constructor(
 
     suspend fun sendPasswordReset(request: EmailRequest) {
         authService.sendPasswordReset(request)
+    }
+
+    suspend fun hasUser(): Boolean = authService.hasUser()
+
+    fun observeAuthState(): Flow<Boolean> = authService.observeAuthState()
+
+    // Cached name/photo/etc. of the signed in user, updates whenever DataStore is written
+    val userPreferences: Flow<UserPreferences> = dataStore.data
+
+    suspend fun clearUserPreferences() {
+        dataStore.updateData { UserPreferences() }
     }
 }
