@@ -11,11 +11,9 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.Update
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdatePasswordRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
-import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
-import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnPopBackStack
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.ShowToast
 import com.google.gson.Gson
@@ -108,12 +106,8 @@ class ProfileViewModel @Inject constructor(
             is ProfileScreenEvents.OnSignOut -> {
                 viewModelScope.launch {
                     try {
+                        // MainViewModel sees the sign out and AppRoot swaps to the auth screens
                         profileRepository.logout()
-                        sendEvent(
-                            OnNavigate(
-                                AppRootScreens.AuthTopLevel,
-                            )
-                        )
                     } catch (e: Exception) {
                         onError(e)
                     }
@@ -138,12 +132,8 @@ class ProfileViewModel @Inject constructor(
                 viewModelScope.launch {
                     try {
                         _stateFlow.update { it.copy(isLoading = true) }
+                        // Deleting also signs out, so AppRoot swaps to the auth screens on its own
                         profileRepository.deleteAccount()
-                        sendEvent(
-                            OnNavigate(
-                                AppRootScreens.AuthTopLevel,
-                            )
-                        )
                         _stateFlow.update {
                             it.copy(
                                 isLoading = false,
@@ -341,15 +331,9 @@ class ProfileViewModel @Inject constructor(
             }
 
             is NoUserException -> {
-                //send to login
-                //remove stored creds
+                // Signing out is enough. AppRoot swaps to the auth screens on its own.
                 sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
                 logout()
-                sendEvent(
-                    OneTimeEvents.OnNavigate(
-                        AppRootScreens.AuthTopLevel,
-                    )
-                )
             }
 
             else -> {

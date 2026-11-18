@@ -64,22 +64,17 @@ sealed class RootGraphs {
 sealed interface NavigationScreens
 
 /**
- * Top level screens - used with different navhost
+ * Top level screens, only used by the NavHost in AppRoot.kt, which switches between them from MainViewModel.session.
+ * Not a NavigationScreens on purpose: no screen/ViewModel can send OnNavigate to these, so login/logout can't leak back into the screens.
  */
 @Serializable
-sealed class AppRootScreens : NavigationScreens {
+sealed class AppRootScreens {
     @Serializable
     data object SplashTopLevel : AppRootScreens()
     @Serializable
     data object AuthTopLevel : AppRootScreens()
     @Serializable
     data object MainTopLevel : AppRootScreens()
-}
-
-@Serializable
-sealed class MainTopLevelScreens : NavigationScreens {
-    @Serializable
-    data object MainTopLevelNavigation : MainTopLevelScreens()
 }
 
 @Serializable
@@ -92,8 +87,6 @@ sealed class SampleScreens : NavigationScreens {
 
 @Serializable
 sealed class AuthScreens : NavigationScreens {
-    @Serializable
-    data object AuthMainNavigation : AuthScreens()
     @Serializable
     data object LoginNavigation : AuthScreens()
     @Serializable

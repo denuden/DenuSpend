@@ -7,7 +7,6 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.BudgetRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
-import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.network.ResultState
@@ -133,15 +132,9 @@ class BudgetViewModel @Inject constructor(
             }
 
             is NoUserException -> {
-                //send to login
-                //remove stored creds
+                // Signing out is enough. AppRoot swaps to the auth screens on its own.
                 sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
                 logout()
-                sendEvent(
-                    OneTimeEvents.OnNavigate(
-                        AppRootScreens.AuthTopLevel,
-                    )
-                )
             }
 
             else -> {

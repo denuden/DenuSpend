@@ -10,7 +10,6 @@ import com.gmail.vondenuelle.denuspend.data.repositories.TransactionRepository
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionOverviewModel
 import com.gmail.vondenuelle.denuspend.navigation.AddScreens
-import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
@@ -229,15 +228,9 @@ class AddViewModel @Inject constructor(
             }
 
             is NoUserException -> {
-                //send to login
-                //remove stored creds
+                // Signing out is enough. AppRoot swaps to the auth screens on its own.
                 sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
                 logout()
-                sendEvent(
-                    OneTimeEvents.OnNavigate(
-                        AppRootScreens.AuthTopLevel,
-                    )
-                )
             }
 
             else -> {

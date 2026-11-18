@@ -15,6 +15,9 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,7 +39,7 @@ class FirebaseAuthServiceImpl @Inject constructor(
                 name = user.displayName.orDefault(),
                 email = user.email.orDefault(),
                 isEmailVerified = user.isEmailVerified,
-                photo = user.photoUrl.toString(),
+                photo = user.photoUrl?.toString().orEmpty(),
             )
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
@@ -63,7 +66,7 @@ class FirebaseAuthServiceImpl @Inject constructor(
                 name = user.displayName.orDefault(),
                 email = user.email.orDefault(),
                 isEmailVerified = user.isEmailVerified,
-                photo = user.photoUrl.toString(),
+                photo = user.photoUrl?.toString().orEmpty(),
 
                 )
         } catch (e: FirebaseAuthException) {
@@ -73,6 +76,14 @@ class FirebaseAuthServiceImpl @Inject constructor(
             // rethrow error for custom exceptions
             throw e
         }
+    }
+
+    // Emits whether a user is signed in, every time Firebase signs someone in or out.
+    // Also emits once right away with the current state when collected.
+    override fun observeAuthState(): Flow<Boolean> = callbackFlow {
+        val listener = FirebaseAuth.AuthStateListener { trySend(it.currentUser != null) }
+        firebaseAuth.addAuthStateListener(listener)
+        awaitClose { firebaseAuth.removeAuthStateListener(listener) }
     }
 
     override suspend fun hasUser(): Boolean {
@@ -99,7 +110,7 @@ class FirebaseAuthServiceImpl @Inject constructor(
                     name = user.displayName.orDefault(),
                     email = user.email.orDefault(),
                     isEmailVerified = user.isEmailVerified,
-                    photo = user.photoUrl.toString(),
+                    photo = user.photoUrl?.toString().orEmpty(),
                 )
             } else {
                 throw NoUserException()

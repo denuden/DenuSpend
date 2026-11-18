@@ -10,6 +10,8 @@ import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 sealed class OneTimeEvents {
     data class OnNavigate(val route : NavigationScreens,  val behavior: NavBehavior = NavBehavior.None) : OneTimeEvents()
     object OnPopBackStack : OneTimeEvents()
+    // Login/register finished. AppRoot swaps from the auth screens to the main screens.
+    object OnLoginOrRegisterCompleted : OneTimeEvents()
     object OnCloseDialog : OneTimeEvents()
     data class ShowSnackbar(val snackbarEvent: SnackbarEvent)  : OneTimeEvents()
     data class ShowToast(val message : String)  : OneTimeEvents()
