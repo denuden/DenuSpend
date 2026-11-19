@@ -3,7 +3,7 @@ package com.gmail.vondenuelle.denuspend.ui.profile.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,20 +18,28 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.clickableDelayed
 
@@ -48,6 +56,7 @@ private fun ProfileButtonsPreview() {
             color = Color.Transparent // Make the Surface itself transparent
         ) {
             ProfileButtons(
+                onEditProfile = {  },
                 onUpdatePassword = {  },
                 onUpdateEmail = {  },
                 onDeleteAccount = {  },
@@ -60,6 +69,7 @@ private fun ProfileButtonsPreview() {
 @Composable
 fun ProfileButtons(
     modifier: Modifier = Modifier,
+    onEditProfile: () -> Unit,
     onUpdatePassword: () -> Unit,
     onUpdateEmail: () -> Unit,
     onDeleteAccount: () -> Unit,
@@ -86,114 +96,41 @@ fun ProfileButtons(
             Column(
                 modifier = Modifier
                     .verticalScroll(scrollState)
-                    .padding(24.dp)
+                    .padding(horizontal = 8.dp, vertical = 16.dp)
             ) {
+                SectionLabel(stringResource(R.string.profile_section_profile))
+                ProfileRow(
+                    icon = Icons.Filled.Person,
+                    label = stringResource(R.string.profile_row_edit_profile),
+                    onClick = onEditProfile
+                )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickableDelayed { onUpdatePassword() }
-                        .padding(horizontal = 4.dp, vertical = 16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        "Update your password",
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp)
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-
-                HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickableDelayed { onUpdateEmail() }
-                        .padding(horizontal = 4.dp, vertical = 16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Email,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        "Update your email",
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp)
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickableDelayed { onDeleteAccount() }
-                        .padding(horizontal = 4.dp, vertical = 16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.DeleteForever,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        "Delete your account",
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp)
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickableDelayed { onSignOut() }
-                        .padding(horizontal = 4.dp, vertical = 16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        "Sign out",
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp)
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                HorizontalDivider()
+                SectionLabel(stringResource(R.string.profile_section_account))
+                ProfileRow(
+                    icon = Icons.Filled.Lock,
+                    label = stringResource(R.string.profile_row_update_password),
+                    onClick = onUpdatePassword
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                ProfileRow(
+                    icon = Icons.Filled.Email,
+                    label = stringResource(R.string.profile_row_update_email),
+                    onClick = onUpdateEmail
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                ProfileRow(
+                    icon = Icons.AutoMirrored.Filled.Logout,
+                    label = stringResource(R.string.profile_row_sign_out),
+                    onClick = onSignOut
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                ProfileRow(
+                    icon = Icons.Filled.DeleteForever,
+                    label = stringResource(R.string.profile_row_delete_account),
+                    onClick = onDeleteAccount,
+                    color = MaterialTheme.colorScheme.error
+                )
 
                 // Extra bottom spacing improves scroll perception
                 Spacer(modifier = Modifier.height(24.dp))
@@ -217,5 +154,56 @@ fun ProfileButtons(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp)
+    )
+}
+
+@Composable
+private fun ProfileRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    color: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+) {
+    ListItem(
+        headlineContent = { Text(label) },
+        leadingContent = { Icon(imageVector = icon, contentDescription = null) },
+        trailingContent = {
+            Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+        },
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent,
+            headlineColor = color,
+            leadingIconColor = color,
+            trailingIconColor = color,
+        ),
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.medium)
+            .clickableDelayed { onClick() }
+    )
+}
+
+// The full-width button every Profile sheet ends with, so they all look the same
+@Composable
+fun ProfileSheetButton(
+    text: String,
+    onClick: () -> Unit,
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        contentPadding = PaddingValues(vertical = 16.dp),
+    ) {
+        Text(text)
     }
 }

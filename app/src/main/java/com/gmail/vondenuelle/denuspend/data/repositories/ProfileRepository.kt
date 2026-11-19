@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.data.repositories
 
 import androidx.datastore.core.DataStore
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotUpdateDetailsException
+import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.PasswordDoNotMatchException
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateEmailRequest
@@ -38,6 +39,12 @@ class ProfileRepository @Inject constructor(
             throw CannotUpdateDetailsException("Name cannot be empty")
         }
         profileService.updateUserProfile(request)
+        // Covers both register (sets the first name) and Profile name edits
+        profileService.syncUserDoc()
+    }
+
+    fun syncUserDoc() {
+        profileService.syncUserDoc()
     }
 
 
@@ -45,8 +52,16 @@ class ProfileRepository @Inject constructor(
         profileService.sendEmailVerification()
     }
 
-    suspend fun deleteAccount() {
-        profileService.deleteAccount()
+    suspend fun deleteAccount(request: LoginRequest) {
+        if (request.password.isBlank()) {
+            throw InvalidCredentialsException("Please enter your password")
+        }
+        profileService.deleteAccount(
+            request.copy(
+                email = request.email.trim(),
+                password = request.password.trim()
+            )
+        )
         dataStore.updateData {
             UserPreferences()
         }

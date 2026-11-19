@@ -1,0 +1,33 @@
+# Profile screen (how it works)
+
+- **One screen, many sheets.** `ProfileScreen` hosts every sheet and dialog. Each one has a `show*` flag in `ProfileScreenState`, so they survive rotation. Sheets: edit profile, update password, update email, credentials (reauth), delete confirm. Dialogs: sign out, delete info.
+- **ON_START only refreshes `profile`.** `OnGetUserProfile` runs on every ON_START, including the return from the camera or photo picker. Copying into the edit fields there wiped the typed name and the new photo. `OnShowEditDialog(true)` copies `profile` → `name`/`photo`, so a dismissed sheet's edits don't come back either.
+- **`getUserProfile` calls `user.reload()` first**, so an email verified in a browser shows up. `FirebaseNetworkException` is ignored (keeps the cached user). `FirebaseAuthInvalidUserException` (deleted or disabled elsewhere) → `NoUserException` → logout.
+- **The info block waits for the first load.** While `profile == null`, a spinner replaces the name, email and verified status, so "not verified" no longer flashes. Unverified shows `VerifyEmailCard` (with a "Send link" button). Verified shows `VerifiedLabel` (green, not tappable). Both are in `ProfileScreen.kt`.
+- **Reauth retry uses `PendingAction`** (`NONE / UPDATE_PASSWORD / UPDATE_EMAIL`). A save that throws `ReAuthenticateException` resets `isLoading` and opens the credentials sheet. `OnValidateCredentials` sets `isLoading = false` *before* re-dispatching the save, so the save's double-tap guard passes. There's no suspension in between, so no flicker. Firebase only asks when the last sign-in isn't recent.
+- **The credentials sheet asks for the password only.** The email comes from `profile.email`. The password is cleared on open, on close and after success.
+- **Double-tap guard:** every save returns early if `isLoading`, and sets it before `launch` (same as Add).
+- **Validation happens in the VM before Firebase:** blank name, blank new password, mismatched re-enter, and new email that's blank, invalid (`Patterns`) or the same as the current one. Blank reauth password too. Errors show under the field, clear on typing, and reset when a sheet opens. Strings come from `strings.xml` via `@ApplicationContext`, like `AuthViewModel`.
+- **Delete account is 2 steps:**
+  - Info dialog (`CustomAlertDialog`, red Continue).
+  - Then `DeleteAccountSheet`: password plus `SlideToConfirm`.
+  - The password doubles as the reauth that `user.delete()` requires, so there's no separate credentials sheet.
+- **`SlideToConfirm` gotcha:** the drag offset is a plain `mutableFloatStateOf` updated synchronously. An earlier version used `Animatable.snapTo` launched per drag delta, and the queued snaps cancelled the release animation. The thumb then stuck at ~98% and `onConfirm` never ran. Don't go back to that.
+  - Release at ≥80% confirms, with haptic feedback.
+  - It's locked while the password is blank or while loading.
+  - It springs back when `isLoading` returns to false, for example after a wrong password.
+- **Delete order matters** (`FirebaseProfileServiceImpl.deleteAccount`): reauth → `deleteUserData(uid)` → `user.delete()`. Data goes first, because once the user is gone the security rules block the deletes.
+  - `deleteUserData` deletes `daily_history` where `userId == uid`, each day's `transactions` subcollection, top-level `transactions` where `userId == uid`, and `users/{uid}`.
+  - It uses batches of ≤500.
+  - It isn't atomic: if `user.delete()` fails afterwards, the account remains with no data, and a retry is safe.
+  - The rules must allow the owner to delete `daily_history` docs and their subdocs.
+- **`users/{uid}` doc:** `syncUserDoc()` does set + merge with `name`, `email` and `createdAt` (from Auth `metadata.creationTimestamp`, so backfilled accounts get the real sign-up date).
+  - It's called after login (`AuthViewModel`) and inside `ProfileRepository.updateUserProfile`, which covers register and name edits.
+  - It's **not awaited** on purpose: an offline write never completes and would block login.
+  - Not stored: `isEmailVerified` (Auth owns it, a copy goes stale) and `photoUri` (a local `content://` URI, meaningless off the device).
+  - Rule: owner-only read/write on `users/{uid}`.
+- **The photo stays local on purpose.** It's a gallery `content://` URI saved as the Auth `photoUrl`. Firebase Storage would need a paid plan, so the photo doesn't follow the user to other devices.
+- **Email links use `context.packageName`** in the shared `actionCodeSettings`, which carries the `.debug` suffix on debug builds. It used to be hardcoded to `.debug`, so release links opened the wrong app. `BuildConfig` isn't enabled in this project.
+- **Header (option A):** a 180dp banner of the photo, `blur(24.dp)` (Android 12+ only; older versions show it unblurred), with a 128dp avatar overlapping it. Tapping the avatar opens `FullScreenDialog` with `ContentScale.Fit`. No photo or a failed load → `Person` icon. The only overlay button is Back; Edit is a row now.
+- **Rows** (`ProfileButtons.kt`): `ListItem`s under two `SectionLabel`s. "Profile" has Edit profile. "Account Management" has password, email, sign out and delete (delete in `colorScheme.error`), with a divider between every row. Sign out asks for confirmation first. Every sheet uses the same layout (title, text, 24dp padding) and ends with `ProfileSheetButton`.
+- **Known gap:** if the connection drops after the delete's reauth succeeds, `batch.commit().await()` can hang and the loading state stays up (same offline gap as Add).

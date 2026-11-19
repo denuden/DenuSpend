@@ -1,4 +1,4 @@
-package com.gmail.vondenuelle.denuspend.ui.profile.component
+package com.gmail.vondenuelle.denuspend.ui.add.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions

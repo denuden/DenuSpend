@@ -15,13 +15,14 @@ class RegisterUseCase @Inject constructor(
     private val profileRepository: ProfileRepository,
 ) {
    suspend fun invoke(registerRequest: RegisterRequest) : UserModel{
-        val user = authRepository.register(registerRequest)
+        authRepository.register(registerRequest)
         profileRepository.updateUserProfile(
             UpdateProfileRequest(
                 name = registerRequest.name,
                 email = registerRequest.email
             )
         )
-       return user
+       // register() cached the user before the name was set, so re-read it to save the name to DataStore
+       return profileRepository.getUserProfile()
     }
 }

@@ -12,7 +12,8 @@ interface ProfileService {
     suspend fun updateEmail(request : UpdateEmailRequest)
     suspend fun updatePassword(request : UpdatePasswordRequest)
     suspend fun sendEmailVerification()
-    suspend fun deleteAccount()
+    suspend fun deleteAccount(request: LoginRequest)
     suspend fun reauthenticateUser(request: LoginRequest)
     suspend fun logout()
+    fun syncUserDoc()
 }
