@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoryDropdownButton(modifier: Modifier = Modifier, onSelected: (String) -> Unit) {
+fun CategoryDropdownButton(modifier: Modifier = Modifier, selected: String = "", onSelected: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
@@ -38,6 +38,11 @@ fun CategoryDropdownButton(modifier: Modifier = Modifier, onSelected: (String) -
         CategoryDropdownButtonModel.list
     }
     val textFieldState = rememberTextFieldState(list[0])
+
+    // Edit mode loads the category after the first frame, so push it into the field when it arrives
+    LaunchedEffect(selected) {
+        if (selected.isNotEmpty()) textFieldState.setTextAndPlaceCursorAtEnd(selected)
+    }
 
     Box(
         modifier = modifier

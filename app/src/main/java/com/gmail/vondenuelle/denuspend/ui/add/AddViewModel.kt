@@ -1,10 +1,13 @@
 package com.gmail.vondenuelle.denuspend.ui.add
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.EditTransactionRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.TransactionRepository
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
@@ -19,6 +22,7 @@ import com.gmail.vondenuelle.denuspend.utils.network.asResult
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -36,9 +40,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import javax.inject.Inject
+import kotlin.math.abs
 
 @HiltViewModel
 class AddViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val profileRepository: ProfileRepository,
     private val transactionRepository: TransactionRepository
 ) : ViewModel() {
@@ -79,7 +85,7 @@ class AddViewModel @Inject constructor(
     fun onEvent(event: AddScreenEvents) {
         when (event) {
             is AddScreenEvents.OnNavigateToIncomeScreen -> {
-                sendEvent(OnNavigate(AddScreens.AddIncomeScreenNavigation))
+                sendEvent(OnNavigate(AddScreens.AddIncomeScreenNavigation()))
             }
 
             is AddScreenEvents.OnNavigateToRecentTransactions -> {
@@ -87,7 +93,86 @@ class AddViewModel @Inject constructor(
             }
 
             is AddScreenEvents.OnNavigateToExpenseScreen -> {
-                sendEvent(OnNavigate(AddScreens.AddExpenseScreenNavigation))
+                sendEvent(OnNavigate(AddScreens.AddExpenseScreenNavigation()))
+            }
+
+            is AddScreenEvents.OnNavigateToEditTransaction -> {
+                val docId = event.transaction.docId
+                sendEvent(
+                    OnNavigate(
+                        if (event.transaction.amount > 0) AddScreens.AddIncomeScreenNavigation(docId, event.dailyDocId)
+                        else AddScreens.AddExpenseScreenNavigation(docId, event.dailyDocId)
+                    )
+                )
+            }
+
+            is AddScreenEvents.OnLoadTransactionForEdit -> {
+                // Already loaded (e.g. after rotation), so keep the user's unsaved edits
+                if (_stateFlow.value.editingTransaction?.docId == event.docId || _stateFlow.value.isLoading) return
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        val transaction = transactionRepository.getTransactionById(event.docId)
+                        _stateFlow.update {
+                            it.copy(
+                                isLoading = false,
+                                editingTransaction = transaction,
+                                editingDailyDocId = event.dailyDocId,
+                                transactionTitle = transaction.title,
+                                transactionDescription = if (transaction.description == "---") "" else transaction.description,
+                                transactionAmount = abs(transaction.amount),
+                                transactionCategory = transaction.category
+                            )
+                        }
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            AddScreenEvents.OnUpdateTransaction -> {
+                val current = _stateFlow.value
+                val original = current.editingTransaction ?: return
+                if (current.isLoading) return // ignore double taps while saving
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        transactionRepository.updateTransaction(
+                            EditTransactionRequest(
+                                docId = original.docId,
+                                dailyDocId = current.editingDailyDocId,
+                                oldAmount = original.amount,
+                                title = current.transactionTitle,
+                                description = current.transactionDescription,
+                                // keep the original sign, the form only holds the positive amount
+                                amount = if (original.amount < 0) -current.transactionAmount else current.transactionAmount,
+                                category = current.transactionCategory
+                            )
+                        )
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.add_snackbar_transaction_updated))))
+                        sendEvent(OneTimeEvents.OnPopBackStack)
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is AddScreenEvents.OnDeleteTransaction -> {
+                if (_stateFlow.value.isLoading) return // ignore double taps while deleting
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        transactionRepository.deleteTransaction(event.transaction, event.dailyDocId)
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.add_snackbar_transaction_deleted))))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
             }
 
             is AddScreenEvents.OnAddTransaction -> {

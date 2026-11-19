@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.ui.add
 
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 
 sealed class AddScreenEvents {
     //Income Screen
@@ -15,6 +16,12 @@ sealed class AddScreenEvents {
     object OnGetDailyTransactionHistory: AddScreenEvents()
     object OnLoadMoreHistory: AddScreenEvents()
     data class OnGetTransactionsForDay(val request : TransactionsForDayRequest): AddScreenEvents()
+
+    //Edit / Delete
+    data class OnLoadTransactionForEdit(val docId : String, val dailyDocId : String) : AddScreenEvents()
+    object OnUpdateTransaction : AddScreenEvents()
+    data class OnDeleteTransaction(val transaction : TransactionModel, val dailyDocId : String) : AddScreenEvents()
+    data class OnNavigateToEditTransaction(val transaction : TransactionModel, val dailyDocId : String) : AddScreenEvents()
 
 
 

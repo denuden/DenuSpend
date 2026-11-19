@@ -22,6 +22,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,6 +59,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AddIncomeScreen(
+    docId: String? = null, // set = edit mode
+    dailyDocId: String? = null,
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
     viewModel: AddViewModel = hiltViewModel()
@@ -100,8 +104,15 @@ fun AddIncomeScreen(
         showDialog = error.isNotEmpty()
     ) { error = "" }
 
+    LaunchedEffect(docId) {
+        if (docId != null && dailyDocId != null) {
+            viewModel.onEvent(AddScreenEvents.OnLoadTransactionForEdit(docId, dailyDocId))
+        }
+    }
+
     AddIncomeScreenContent(
         state = state,
+        isEditMode = docId != null,
         onEvent = viewModel::onEvent
     )
 }
@@ -110,6 +121,7 @@ fun AddIncomeScreen(
 fun AddIncomeScreenContent(
     modifier: Modifier = Modifier,
     state: AddScreenState,
+    isEditMode: Boolean = false,
     onEvent: (AddScreenEvents) -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -227,14 +239,20 @@ fun AddIncomeScreenContent(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        CategoryDropdownButton(modifier = Modifier.fillMaxWidth()){
+        CategoryDropdownButton(modifier = Modifier.fillMaxWidth(), selected = state.transactionCategory){
             onEvent(AddScreenEvents.OnCategoryChanged(it))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         FilledTonalButton(
             shape = MaterialTheme.shapes.extraLarge,
+            // Edit mode waits for the original to load, so it can't be saved as a new one by mistake
+            enabled = !isEditMode || state.editingTransaction != null,
             onClick = {
+                if (isEditMode) {
+                    onEvent(AddScreenEvents.OnUpdateTransaction)
+                    return@FilledTonalButton
+                }
                 onEvent(AddScreenEvents.OnAddTransaction(
                     TransactionRequest(
                         title = state.transactionTitle,
@@ -247,7 +265,7 @@ fun AddIncomeScreenContent(
             contentPadding = PaddingValues(vertical = 16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Save Transaction")
+            Text(if (isEditMode) stringResource(R.string.add_btn_update_transaction) else "Save Transaction")
         }
     }
 

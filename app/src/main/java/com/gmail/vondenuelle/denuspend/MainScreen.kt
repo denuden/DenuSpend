@@ -47,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -54,6 +55,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.gmail.vondenuelle.denuspend.navigation.AddScreens
 import com.gmail.vondenuelle.denuspend.navigation.AppNavigation
 import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
@@ -131,7 +133,7 @@ fun MainScreen(
         topBar = {
             if (showTopBar) {
                 TopAppBarContent(
-                    title = topBarTitle(currentDestination, user.name.orEmpty()),
+                    title = topBarTitle(currentDestination, navBackStackEntry, user.name.orEmpty()),
                     canNavigateBack = canNavigateBack,
                     photo = user.photo.orEmpty(),
                     onPopBackStack = {
@@ -192,15 +194,20 @@ private inline fun <reified T : Any> NavDestination?.isIn(): Boolean =
     this?.hierarchy?.any { it.hasRoute<T>() } == true
 
 @Composable
-private fun topBarTitle(destination: NavDestination?, name: String): String {
+private fun topBarTitle(destination: NavDestination?, entry: NavBackStackEntry?, name: String): String {
     val firstName = name.substringBefore(" ").ifEmpty { stringResource(R.string.main_default_name) }
     return when {
         destination == null -> ""
         destination.hasRoute<MainScreens.HomeNavigation>() -> stringResource(R.string.main_title_home, firstName)
         destination.hasRoute<MainScreens.AddNavigation>() -> stringResource(R.string.main_title_transaction)
         destination.hasRoute<MainScreens.BudgetNavigation>() -> stringResource(R.string.main_title_budget)
-        destination.hasRoute<AddScreens.AddIncomeScreenNavigation>() -> stringResource(R.string.main_title_add_income)
-        destination.hasRoute<AddScreens.AddExpenseScreenNavigation>() -> stringResource(R.string.main_title_add_expense)
+        // A docId in the route args means the form is editing an existing transaction
+        destination.hasRoute<AddScreens.AddIncomeScreenNavigation>() ->
+            if (entry?.toRoute<AddScreens.AddIncomeScreenNavigation>()?.docId != null) stringResource(R.string.main_title_edit_income)
+            else stringResource(R.string.main_title_add_income)
+        destination.hasRoute<AddScreens.AddExpenseScreenNavigation>() ->
+            if (entry?.toRoute<AddScreens.AddExpenseScreenNavigation>()?.docId != null) stringResource(R.string.main_title_edit_expense)
+            else stringResource(R.string.main_title_add_expense)
         destination.hasRoute<AddScreens.AllRecentTransactionsNavigation>() -> stringResource(R.string.main_title_history)
         destination.hasRoute<BudgetScreens.BudgetInsightsScreenNavigation>() -> stringResource(R.string.main_title_budget_insights)
         destination.hasRoute<ProfileScreens.ProfileNavigation>() -> stringResource(R.string.main_title_profile)

@@ -17,6 +17,10 @@ data class AddScreenState(
     val transactionCategory : String = "",
     val transactionAmount : Long = 0L,
 
+//    Edit mode: the original transaction (null = adding a new one)
+    val editingTransaction : TransactionModel? = null,
+    val editingDailyDocId : String = "",
+
     val transactionList : List<TransactionModel> = emptyList(),
     val dailyHistory : DailyHistoryModel = DailyHistoryModel(),
     val dailyHistoryList : List<DailyHistoryModel> = emptyList(),

@@ -1,6 +1,8 @@
 package com.gmail.vondenuelle.denuspend.data.repositories
 
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotCreateTransactionException
+import com.gmail.vondenuelle.denuspend.data.remote.error.CannotUpdateTransactionException
+import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.EditTransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.TransactionService
@@ -28,6 +30,24 @@ class TransactionRepository @Inject constructor(
         } else {
             transactionService.addTransaction(transactionRequest.copy(description = transactionRequest.description.ifEmpty { "---" }))
         }
+    }
+
+    suspend fun getTransactionById(docId: String): TransactionModel {
+        return transactionService.getTransactionById(docId)
+    }
+
+    suspend fun updateTransaction(request: EditTransactionRequest) {
+        if (request.amount == 0L ||
+            request.category.isEmpty() ||
+            request.title.isEmpty()) {
+            throw CannotUpdateTransactionException("Input fields are empty or invalid. Please make sure your inputs are correct")
+        } else {
+            transactionService.updateTransaction(request.copy(description = request.description.ifEmpty { "---" }))
+        }
+    }
+
+    suspend fun deleteTransaction(transaction: TransactionModel, dailyDocId: String) {
+        transactionService.deleteTransaction(transaction, dailyDocId)
     }
 
 //    fun getAllTransactions(limit : Long?) : Flow<List<TransactionModel>>{

@@ -8,6 +8,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +51,15 @@ fun CurrencyTextField(
                 selection = TextRange(CurrencyUtils.formatCents(amountInCents).length)
             )
         )
+    }
+
+    // Picks up amounts set from outside after the first frame (e.g. edit mode loading the saved amount).
+    // Typing already matches the formatted text, so this does nothing while the user types.
+    LaunchedEffect(amountInCents) {
+        val formatted = CurrencyUtils.formatCents(amountInCents)
+        if (formatted != textFieldValue.text) {
+            textFieldValue = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+        }
     }
 
     TextField(
