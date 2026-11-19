@@ -50,7 +50,7 @@ import com.gmail.vondenuelle.denuspend.ui.add.components.CategoryDropdownButton
 import com.gmail.vondenuelle.denuspend.ui.common.components.InformationTooltip
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
-import com.gmail.vondenuelle.denuspend.ui.profile.component.CurrencyTextField
+import com.gmail.vondenuelle.denuspend.ui.add.components.CurrencyTextField
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents

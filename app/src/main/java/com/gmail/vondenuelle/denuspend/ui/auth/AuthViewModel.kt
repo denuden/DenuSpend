@@ -67,6 +67,8 @@ class AuthViewModel @Inject constructor(
                     try {
                         val user = repository.login(event.request)
                         if(user.email != null) {
+                            // Creates the users/{uid} doc if it's missing (older accounts) and refreshes name/email
+                            profileRepository.syncUserDoc()
                             _stateFlow.update { it.copy(userModel = user) }
                             sendEvent(OneTimeEvents.ShowToast(context.getString(R.string.login_toast_welcome, user.name.ifBlank { user.email })))
                             sendEvent(OneTimeEvents.OnLoginOrRegisterCompleted)

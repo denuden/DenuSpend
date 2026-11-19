@@ -61,6 +61,47 @@
     <string name="add_snackbar_transaction_updated">Transaction Updated</string>
     <string name="add_snackbar_transaction_deleted">Transaction Deleted</string>
 
+<!--    PROFILE SCREEN-->
+    <string name="profile_dialog_delete_title">Delete your account?</string>
+    <string name="profile_dialog_delete_text">This permanently deletes your account and all of your transactions and history. This can\'t be undone.</string>
+    <string name="profile_btn_continue">Continue</string>
+    <string name="profile_btn_cancel">Cancel</string>
+    <string name="profile_delete_sheet_title">Delete account</string>
+    <string name="profile_delete_sheet_text">Enter the password for %1$s, then slide to delete your account and all of its data.</string>
+    <string name="profile_slide_to_delete">Slide to delete account</string>
+    <string name="profile_reauth_text">For your security, enter the password for %1$s to continue.</string>
+    <string name="profile_lbl_name">Name</string>
+    <string name="profile_hint_name">Enter your display name</string>
+    <string name="profile_btn_save">Save Changes</string>
+    <string name="profile_lbl_hello_user">Hello, User</string>
+    <string name="profile_lbl_verified">Email verified</string>
+    <string name="profile_verify_title">Verify your email</string>
+    <string name="profile_verify_text">We\'ll send a verification link to %1$s.</string>
+    <string name="profile_btn_send_link">Send link</string>
+    <string name="profile_section_profile">Profile</string>
+    <string name="profile_section_account">Account Management</string>
+    <string name="profile_row_edit_profile">Edit profile</string>
+    <string name="profile_row_update_password">Update your password</string>
+    <string name="profile_row_update_email">Update your email</string>
+    <string name="profile_row_sign_out">Sign out</string>
+    <string name="profile_row_delete_account">Delete your account</string>
+    <string name="profile_dialog_sign_out_title">Sign out?</string>
+    <string name="profile_dialog_sign_out_text">You\'ll need to sign in again to see your transactions.</string>
+    <string name="profile_edit_title">Edit profile</string>
+    <string name="profile_password_title">Update password</string>
+    <string name="profile_password_text">Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.</string>
+    <string name="profile_email_title">Update email</string>
+    <string name="profile_email_text">Enter the email you want to switch to. We\'ll send a link there to confirm the change.</string>
+    <string name="profile_reauth_title">Confirm it\'s you</string>
+    <string name="profile_toast_profile_updated">Profile updated</string>
+    <string name="profile_toast_verification_sent">Verification email sent</string>
+    <string name="profile_toast_password_updated">Password updated</string>
+    <string name="profile_toast_email_update_sent">Check %1$s to verify and complete your update.</string>
+    <string name="profile_error_passwords_mismatch">Passwords don\'t match</string>
+    <string name="profile_error_same_email">That\'s already your email</string>
+    <string name="profile_cd_change_photo">Change photo</string>
+    <string name="profile_cd_view_photo">View photo</string>
+
 <!--    ERROR-->
     <string name="error_error">Error</string>
     <string name="error_email_required">Please enter your email</string>
@@ -87,9 +128,6 @@
     <string name="lbl_sign_up">Sign Up</string>
     <string name="register_navigate_to_login">Already have an account?</string>
     <string name="lbl_sign_in">Sign In</string>
-    <string name="profile_lbl_name">Name</string>
-    <string name="profile_hint_name">Enter your display name</string>
-    <string name="profile_btn_save">Save Changes</string>
 
     <string name="btn_send_password_reset">Send password reset</string>
     <string name="lbl_password_reset_instructions">We will send you an email for resetting your password if the account exists</string>
