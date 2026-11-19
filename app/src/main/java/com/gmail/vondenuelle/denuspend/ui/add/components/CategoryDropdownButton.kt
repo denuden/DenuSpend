@@ -71,7 +71,8 @@ fun CategoryDropdownButton(modifier: Modifier = Modifier, onSelected: (String) -
                 onDismissRequest = { expanded = false },
                 scrollState = scrollState
             ) {
-                list.forEachIndexed { index, option ->
+                // drop(1) hides the blank "" entry, which is only there as the "nothing selected" start value.
+                list.drop(1).forEach { option ->
                     DropdownMenuItem(
                         text = { Text(option, style = MaterialTheme.typography.bodyLarge) },
                         onClick = {

@@ -225,7 +225,7 @@ fun AddExpenseScreenContent(
 
         Spacer( modifier = Modifier. height(16.dp))
         Text(
-            "Income Category",
+            "Expense Category",
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.padding(bottom = 4.dp)
         )

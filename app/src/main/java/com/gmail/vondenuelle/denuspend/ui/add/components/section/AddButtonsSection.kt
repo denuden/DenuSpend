@@ -64,6 +64,7 @@ fun AddButtonsSection(
             onClick = {
                 onIncomeClick()
             },
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             colors = ButtonDefaults.filledTonalButtonColors()
                 .copy(containerColor = colorResource(R.color.verified_green_container)),
             modifier = Modifier.weight(1f)

@@ -57,6 +57,25 @@ import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import com.gmail.vondenuelle.denuspend.utils.formatFirebaseDate
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import com.gmail.vondenuelle.denuspend.R
+import kotlin.math.abs
 
 @Composable
 fun RecentTransactions(
@@ -70,7 +89,8 @@ fun RecentTransactions(
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
-    var shouldShowTransactionDialog by remember { mutableStateOf(false) }
+    // The day the sheet is showing; null means the sheet is closed.
+    var selectedDay by remember { mutableStateOf<DailyHistoryModel?>(null) }
 
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
@@ -98,6 +118,11 @@ fun RecentTransactions(
         }
     }
 
+    // Rotation closes the sheet without onDismissRequest, so stop the per-day listener when this screen leaves composition.
+    DisposableEffect(Unit) {
+        onDispose { viewModel.stopPerDayListener() }
+    }
+
     ComposableLifecycle { _, event ->
         when (event) {
             Lifecycle.Event.ON_START -> {
@@ -105,7 +130,7 @@ fun RecentTransactions(
             }
 
             Lifecycle.Event.ON_STOP -> {
-                viewModel.stopOverviewListener()
+                viewModel.stopHistoryListener()
             }
 
             else -> Unit
@@ -122,37 +147,83 @@ fun RecentTransactions(
     ) { error = "" }
 
     ModalBottomSheetDialog(
-        showDialog = shouldShowTransactionDialog,
+        showDialog = selectedDay != null,
         onDismissRequest = {
-            shouldShowTransactionDialog = false
+            selectedDay = null
             viewModel.stopPerDayListener()
         },
     ) {
-        TransactionDialogContent(
-            modifier = Modifier.fillMaxWidth(),
-            list = state.perDayTransactionList
-        )
+        selectedDay?.let { selected ->
+            // Read the live copy so the header totals update while the sheet is open.
+            val day = state.dailyHistoryList.find { it.docId == selected.docId } ?: selected
+            TransactionDialogContent(
+                modifier = Modifier.fillMaxWidth(),
+                day = day,
+                list = state.perDayTransactionList,
+                isLoading = state.isSheetLoading
+            )
+        }
     }
     RecentTransactionsContent(
         modifier = Modifier.fillMaxSize(),
         state = state,
         onEvent = viewModel::onEvent,
-        openDialog = {
-            shouldShowTransactionDialog = it
+        onDayClick = { day ->
+            selectedDay = day
+            viewModel.onEvent(
+                AddScreenEvents.OnGetTransactionsForDay(
+                    TransactionsForDayRequest(dailyDocId = day.docId, limit = null)
+                )
+            )
         }
     )
 }
 
 @Composable
-fun TransactionDialogContent(modifier: Modifier = Modifier, list: List<TransactionModel>) {
+fun TransactionDialogContent(
+    modifier: Modifier = Modifier,
+    day: DailyHistoryModel,
+    list: List<TransactionModel>,
+    isLoading: Boolean
+) {
     LazyColumn(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         item {
-            Text("Last Added", fontWeight = FontWeight.Medium, modifier = Modifier.padding(bottom = 8.dp))
+            val isOverspent = day.totalExpense > day.totalIncome
+            Text(
+                formatFirebaseDate(day.date.toDate(), format = "EEEE, MMMM dd, yyyy"),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp)) {
+                DayStat(
+                    label = "Income",
+                    value = "₱${CurrencyUtils.formatCents(day.totalIncome)}",
+                    color = colorResource(R.color.verified_green_text),
+                    modifier = Modifier.weight(1f)
+                )
+                DayStat(
+                    label = "Expense",
+                    value = "₱${CurrencyUtils.formatCents(day.totalExpense)}",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                DayStat(
+                    label = if (isOverspent) "Over" else "Left",
+                    value = "₱${CurrencyUtils.formatCents(abs(day.totalIncome - day.totalExpense))}",
+                    color = if (isOverspent) MaterialTheme.colorScheme.error else colorResource(R.color.verified_green_text),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+        if (isLoading) {
+            items(3) {
+                SkeletonTransactionList(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+            }
         }
         items(list) {
             TransactionItem(transactionModel = it)
         }
-        if (list.isEmpty()) {
+        if (list.isEmpty() && !isLoading) {
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -168,12 +239,70 @@ fun TransactionDialogContent(modifier: Modifier = Modifier, list: List<Transacti
 }
 
 @Composable
+private fun DayStat(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = color)
+    }
+}
+
+@Composable
+private fun MonthHeader(month: String, totalExpense: Long) {
+    // Outer solid background so the cards scroll underneath the sticky header instead of showing through.
+    // Inner tonal pill makes the header stand out from the card text.
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(vertical = 8.dp)
+            .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.medium)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        Text(
+            month,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            "₱${CurrencyUtils.formatCents(totalExpense)} spent",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    }
+}
+
+// "₱3,800.00 left" when under income, "₱200.00 over" when expense is higher.
+private fun remainingLabel(income: Long, expense: Long): String =
+    if (expense > income) "₱${CurrencyUtils.formatCents(expense - income)} over"
+    else "₱${CurrencyUtils.formatCents(income - expense)} left"
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 fun RecentTransactionsContent(
     modifier: Modifier = Modifier,
     onEvent: (AddScreenEvents) -> Unit,
     state: AddScreenState,
-    openDialog : (Boolean) -> Unit
+    onDayClick : (DailyHistoryModel) -> Unit
 ) {
+    val listState = rememberLazyListState()
+
+    // Prefetch: ask for the next page once the user is within 5 items of the end.
+    // The item count is part of the key so it re-checks after each page arrives.
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val info = listState.layoutInfo
+            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: 0
+            (info.totalItemsCount > 0 && lastVisible >= info.totalItemsCount - 5) to info.totalItemsCount
+        }
+            .distinctUntilChanged()
+            .filter { (isNearEnd, _) -> isNearEnd }
+            .collect { onEvent(AddScreenEvents.OnLoadMoreHistory) }
+    }
+
     PullToRefreshCustomStyle(
         isRefreshing = state.isListLoading,
         onRefresh = {
@@ -203,41 +332,65 @@ fun RecentTransactionsContent(
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            LazyColumn(
-                modifier = modifier
-                    .padding(16.dp)
-            ) {
-                items(state.dailyHistoryList) {
-                    val expense = it.totalExpense
-                    val income = it.totalIncome
+            // Group the loaded days by month for the sticky headers. groupBy keeps the newest-first order.
+            val daysByMonth = remember(state.dailyHistoryList) {
+                state.dailyHistoryList.groupBy { formatFirebaseDate(it.date.toDate(), format = "MMMM yyyy") }
+            }
 
-                    val progress: Float = if (income > 0) {
-                        expense.toFloat() / income.toFloat()
-                    } else {
-                        0f // avoid division by zero
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                modifier = modifier
+            ) {
+                daysByMonth.forEach { (month, days) ->
+                    stickyHeader(key = "header_$month") {
+                        MonthHeader(
+                            month = month,
+                            totalExpense = days.sumOf { it.totalExpense }
+                        )
                     }
 
-                    // Animate the progress value
-                    val animatedProgress by animateFloatAsState(
-                        targetValue = progress.coerceIn(0f, 1f), // keep within [0,1]
-                        animationSpec = tween(
-                            durationMillis = 800, // adjust speed
-                            easing = FastOutSlowInEasing // smooth curve
-                        )
-                    )
-                    DailyHistoryItem(
-                        modifier = Modifier.fillMaxWidth(),
-                        expense = "₱${CurrencyUtils.formatCents(expense)}",
-                        totalBudget = "₱${CurrencyUtils.formatCents(income)}",
-                        progress = animatedProgress,
-                        date = formatFirebaseDate(it.date.toDate()),
-                        onClick = {
-                            openDialog(true)
-                            onEvent(AddScreenEvents.OnGetTransactionsForDay(
-                                TransactionsForDayRequest(dailyDocId = it.docId, limit = null)))
+                    items(days, key = { it.docId }) {
+                        val expense = it.totalExpense
+                        val income = it.totalIncome
+
+                        val progress: Float = when {
+                            income > 0 -> expense.toFloat() / income.toFloat()
+                            expense > 0 -> 1f // spent with no income yet, show as full
+                            else -> 0f // avoid division by zero
                         }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+
+                        // Animate the progress value
+                        val animatedProgress by animateFloatAsState(
+                            targetValue = progress.coerceIn(0f, 1f), // keep within [0,1]
+                            animationSpec = tween(
+                                durationMillis = 800, // adjust speed
+                                easing = FastOutSlowInEasing // smooth curve
+                            )
+                        )
+                        DailyHistoryItem(
+                            modifier = Modifier.fillMaxWidth(),
+                            date = formatFirebaseDate(it.date.toDate(), format = "EEE, MMM dd"),
+                            expense = "₱${CurrencyUtils.formatCents(expense)}",
+                            totalBudget = "₱${CurrencyUtils.formatCents(income)}",
+                            remaining = remainingLabel(income, expense),
+                            progress = animatedProgress,
+                            isOverspent = expense > income,
+                            onClick = { onDayClick(it) }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+
+                if (state.isLoadingMoreHistory) {
+                    item {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        }
+                    }
                 }
 
                 if (state.dailyHistoryList.isEmpty()) {
@@ -265,7 +418,7 @@ private fun RecentTransactionsPreview() {
                 modifier = Modifier.fillMaxSize(),
                 state = AddScreenState(),
                 onEvent = {},
-                openDialog = {}
+                onDayClick = {}
             )
         }
     }

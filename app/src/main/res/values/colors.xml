@@ -10,6 +10,8 @@
     <!-- VERIFIED (Success) -->
     <color name="verified_green">#50C878</color>
     <color name="verified_green_container">#E6F7EF</color>
+    <!-- Darker green for text, so it stays readable on light backgrounds -->
+    <color name="verified_green_text">#2E7D32</color>
 
     <!-- NOT VERIFIED (Error) -->
     <color name="not_verified_red">#950606</color>

@@ -13,6 +13,7 @@ sealed class AddScreenEvents {
     data class OnAddTransaction(val request : TransactionRequest) : AddScreenEvents()
     object OnGetTransactionOverview: AddScreenEvents()
     object OnGetDailyTransactionHistory: AddScreenEvents()
+    object OnLoadMoreHistory: AddScreenEvents()
     data class OnGetTransactionsForDay(val request : TransactionsForDayRequest): AddScreenEvents()
 
 

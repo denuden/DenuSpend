@@ -133,10 +133,10 @@ fun AddScreenContent(
         val expense = state.dailyHistory.totalExpense
         val income = state.dailyHistory.totalIncome
 
-        val progress: Float = if (income > 0) {
-            expense.toFloat() / income.toFloat()
-        } else {
-            0f // avoid division by zero
+        val progress: Float = when {
+            income > 0 -> expense.toFloat() / income.toFloat()
+            expense > 0 -> 1f // spent with no income yet, show as full
+            else -> 0f // avoid division by zero
         }
 
         // Animate the progress value
@@ -153,6 +153,7 @@ fun AddScreenContent(
             progress = animatedProgress,
             expense =   "₱${CurrencyUtils.formatCents(expense)}",
             totalBudget = "₱${CurrencyUtils.formatCents(income)}",
+            isOverspent = expense > income,
         )
         Spacer(modifier = Modifier.height(8.dp))
 
