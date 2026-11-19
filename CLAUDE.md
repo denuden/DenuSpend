@@ -80,3 +80,4 @@ In terms of theming, we will follow material 3 guidelines as always especially i
 ## Notes
 - Explanations of how parts of the app work are in docs/notes/. Read the relevant note before exploring the code.
   With that, future sessions read your short note instead of going through all the files again, which saves tokens every time you come back to that topic.
+- Docs/notes are written when we PR (compose-pr skill), not after every change.

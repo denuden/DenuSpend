@@ -91,6 +91,9 @@ sealed class AuthScreens : NavigationScreens {
     data object LoginNavigation : AuthScreens()
     @Serializable
     data object RegisterNavigation : AuthScreens()
+    // email = what was typed on Login, so the screen opens pre-filled
+    @Serializable
+    data class ForgotPasswordNavigation(val email: String = "") : AuthScreens()
 }
 
 @Serializable

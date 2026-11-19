@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.gmail.vondenuelle.denuspend.ui.auth.screen.ForgotPasswordScreen
 import com.gmail.vondenuelle.denuspend.ui.auth.screen.LoginScreen
 import com.gmail.vondenuelle.denuspend.ui.auth.screen.RegisterScreen
 
@@ -65,6 +66,25 @@ fun AuthNavHost(
                     navController.popBackStack()
                 },
                 onLoginOrRegisterCompleted = onLoginOrRegisterCompleted
+            )
+        }
+
+        // Forgot Password Screen (pushed on top of Login, slides from the RIGHT like Register)
+        composable<AuthScreens.ForgotPasswordNavigation>(
+            enterTransition = {
+                slideInHorizontally(initialOffsetX = { it }, animationSpec = animationSpec)
+            },
+            exitTransition = {
+                slideOutHorizontally(targetOffsetX = { it }, animationSpec = animationSpec)
+            },
+        ) {
+            ForgotPasswordScreen(
+                onNavigate = { route, navOptions ->
+                    navController.navigate(route, navOptions = navOptions)
+                },
+                onPopBackStack = {
+                    navController.popBackStack()
+                },
             )
         }
     }
