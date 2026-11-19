@@ -9,16 +9,27 @@
     <string name="login_subtitle">Sign in and keep your spending habits at bay</string>
     <string name="login_lbl_email">Email</string>
     <string name="login_lbl_password">Password</string>
+    <string name="login_loading">Signing you in…</string>
+    <string name="login_toast_welcome">Welcome back, %1$s</string>
 
 
 <!--    REGISTER SCREEN-->
     <string name="register_title">Create an account</string>
-    <string name="register_subtitle">Sign up and create your first savings to track</string>
+    <string name="register_subtitle">Start tracking where your money goes</string>
     <string name="register_lbl_email">Email</string>
     <string name="register_lbl_password">Password</string>
     <string name="register_lbl_name">Name</string>
     <string name="register_hint_name">Enter your name</string>
-    <string name="register_hint_password">Enter your password</string>
+    <string name="register_hint_password">At least 6 characters</string>
+    <string name="register_loading">Signing you up…</string>
+    <string name="register_toast_created">Account created. Welcome, %1$s</string>
+
+<!--    FORGOT PASSWORD SHEET-->
+    <string name="forgot_title">Reset password</string>
+    <string name="forgot_sent_title">Check your inbox</string>
+    <string name="forgot_sent_message">We sent a password reset link to %1$s. Check your spam folder if you don\'t see it.</string>
+    <string name="forgot_btn_back_to_sign_in">Back to sign in</string>
+    <string name="forgot_btn_resend">Didn\'t get it? Resend</string>
 
 <!--    MAIN SCREEN (shared top bar + bottom bar)-->
     <string name="main_title_home">Welcome back, %1$s</string>
@@ -40,12 +51,23 @@
 
 <!--    ERROR-->
     <string name="error_error">Error</string>
+    <string name="error_email_required">Please enter your email</string>
+    <string name="error_email_invalid">Please enter a valid email</string>
+    <string name="error_password_required">Please enter your password</string>
+    <string name="error_password_short">Password must be at least 6 characters</string>
+    <string name="error_name_required">Please enter your name</string>
+    <string name="error_user_not_existing">User does not exist</string>
+    <string name="error_invalid_inputs">Input fields are empty or invalid. Please make sure your inputs are correct</string>
+    <string name="error_no_user_signed_in">No user is signed in</string>
 
 <!--    GENERAL LABELS-->
+    <string name="lbl_loading">Loading…</string>
+    <string name="lbl_coming_soon">Coming soon</string>
+    <string name="cd_show_password">Show password</string>
+    <string name="cd_hide_password">Hide password</string>
     <string name="lbl_google">Google</string>
     <string name="lbl_facebook">Facebook</string>
-    <string name="lbl_contact_number">Contact Number</string>
-    <string name="lbl_remember_me">Remember me</string>
+    <string name="lbl_contact_number">Phone number</string>
     <string name="lbl_forgot_password">Forgot password?</string>
     <string name="lbl_other_signin_methods">OR CONTINUE WITH</string>
     <string name="register_btn_create">Create account</string>

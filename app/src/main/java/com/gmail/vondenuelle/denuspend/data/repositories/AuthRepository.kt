@@ -75,7 +75,7 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun sendPasswordReset(request: EmailRequest) {
-        authService.sendPasswordReset(request)
+        authService.sendPasswordReset(request.copy(email = request.email.trim()))
     }
 
     suspend fun hasUser(): Boolean = authService.hasUser()

@@ -8,16 +8,14 @@ sealed class AuthScreenEvents {
     data class OnChangeEmailField(val value: String) : AuthScreenEvents()
     data class OnChangePasswordField(val value: String) : AuthScreenEvents()
     data class OnChangeNameField(val value: String) : AuthScreenEvents()
-    data class OnChangeRememberMeCheckBox(val value: Boolean) : AuthScreenEvents()
-
-    data class OnChangePasswordVisibility(val value: Boolean) : AuthScreenEvents()
 
     data class OnLoginWithEmailAndPassword(val request : LoginRequest) : AuthScreenEvents()
     data class OnRegisterWithEmailAndPassword(val request : RegisterRequest) : AuthScreenEvents()
     data class OnSendPasswordReset(val value : EmailRequest) : AuthScreenEvents()
-    data class OnOpenForgotPassDialog(val value : Boolean) : AuthScreenEvents()
     data class OnChangeForgotPassEmailField(val value: String) : AuthScreenEvents()
     //    Navigation
     object OnNavigateToRegister : AuthScreenEvents()
     object OnNavigateToLogin : AuthScreenEvents()
+    object OnNavigateToForgotPassword : AuthScreenEvents()
+    object OnNavigateBack : AuthScreenEvents()
 }
