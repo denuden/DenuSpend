@@ -16,6 +16,9 @@ import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -180,7 +183,8 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    override fun getTodayOverview(): Flow<TransactionOverviewModel>  {
+    // Wrapped in flow {} so a missing user throws inside the flow and reaches asResult()'s catch instead of crashing the caller.
+    override fun getTodayOverview(): Flow<TransactionOverviewModel> = flow {
         val currentUser = firebaseAuth.currentUser
             ?: throw NoUserException("User not logged in")
         val userId = currentUser.uid
@@ -230,8 +234,10 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             awaitClose { listener.remove() }
         }
 
-        return kotlinx.coroutines.flow.combine(dailyFlow, transactionFlow) { daily, txs ->
-            TransactionOverviewModel(daily ?: DailyHistoryModel(), txs)
-        }
+        emitAll(
+            combine(dailyFlow, transactionFlow) { daily, txs ->
+                TransactionOverviewModel(daily ?: DailyHistoryModel(), txs)
+            }
+        )
     }
 }

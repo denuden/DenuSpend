@@ -11,6 +11,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ fun TodayIncomeAndExpensesSection(
     progress: Float,
     expense: String,
     totalBudget: String,
+    isOverspent: Boolean = false,
 ) {
     val dateToday = remember { getDateNow("dd MMMM yyyy") }
     Column(
@@ -45,13 +47,13 @@ fun TodayIncomeAndExpensesSection(
                     progress
                 },
                 strokeWidth = 10.dp,
+                color = if (isOverspent) MaterialTheme.colorScheme.error else ProgressIndicatorDefaults.circularColor,
                 modifier = Modifier
                     .size(148.dp)
             )
             ElevatedCard(
                 modifier = Modifier.size(134.dp),
                 shape = CircleShape,
-                onClick = {}
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),

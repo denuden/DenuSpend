@@ -51,13 +51,25 @@ class AddViewModel @Inject constructor(
     val stateFlow = _stateFlow.asStateFlow()
 
     private var overviewJob: Job? = null
+    private var historyJob: Job? = null
     private var perDayJob : Job? = null
+
+    // History grows by one page per load-more; the listener is restarted with the bigger limit.
+    private var historyLimit = HISTORY_PAGE_SIZE
+
+    companion object {
+        private const val HISTORY_PAGE_SIZE = 20L
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
 
     fun stopOverviewListener() {
         overviewJob?.cancel()
         overviewJob = null
+    }
+    fun stopHistoryListener() {
+        historyJob?.cancel()
+        historyJob = null
     }
     fun stopPerDayListener() {
         perDayJob?.cancel()
@@ -79,9 +91,10 @@ class AddViewModel @Inject constructor(
             }
 
             is AddScreenEvents.OnAddTransaction -> {
+                if (_stateFlow.value.isLoading) return // ignore double taps while saving
+                _stateFlow.update { it.copy(isLoading = true) }
                 viewModelScope.launch {
                     try {
-                        _stateFlow.update { it.copy(isLoading = true) }
                         transactionRepository.addTransaction(event.request)
                         _stateFlow.update { it.copy(isLoading = false) }
                         sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = if (event.request.amount > 0) "Income Added" else "Expense Added")))
@@ -94,7 +107,7 @@ class AddViewModel @Inject constructor(
             }
 
             AddScreenEvents.OnGetDailyTransactionHistory -> {
-                if (overviewJob != null) {
+                if (historyJob != null) {
                     viewModelScope.launch {
                         _stateFlow.update { it.copy(isListLoading = true) }
                         delay(500)
@@ -103,24 +116,23 @@ class AddViewModel @Inject constructor(
                     return
                 } // prevent duplicate when doing ux reloading
 
-                overviewJob =
+                historyJob =
                 viewModelScope.launch {
                     _stateFlow.update { it.copy(isListLoading = true) }
                     delay(500)
-                    transactionRepository.getDailyTransactionHistory(null).asResult()
-                        .onEach { res ->
-                            when (res) {
-                                ResultState.Completed -> _stateFlow.update { it.copy(isListLoading = false) }
-                                is ResultState.Error -> onError(res.exception)
-                                ResultState.Loading -> _stateFlow.update { it.copy(isListLoading = true) }
-                                is ResultState.Success -> _stateFlow.update {
-                                    it.copy(
-                                        dailyHistoryList = res.data,
-                                        isListLoading = false
-                                    )
-                                }
-                            }
-                        }.collect()
+                    collectDailyHistory(isLoadMore = false)
+                }
+            }
+
+            AddScreenEvents.OnLoadMoreHistory -> {
+                val current = _stateFlow.value
+                if (!current.hasMoreHistory || current.isLoadingMoreHistory || current.isListLoading) return
+
+                historyLimit += HISTORY_PAGE_SIZE
+                stopHistoryListener()
+                historyJob = viewModelScope.launch {
+                    _stateFlow.update { it.copy(isLoadingMoreHistory = true) }
+                    collectDailyHistory(isLoadMore = true)
                 }
             }
 
@@ -156,18 +168,19 @@ class AddViewModel @Inject constructor(
             }
 
             is AddScreenEvents.OnGetTransactionsForDay -> {
+                stopPerDayListener() // drop the previous day's listener before starting a new one
                 perDayJob = viewModelScope.launch {
-                    _stateFlow.update { it.copy(isLoading = true, perDayTransactionList = emptyList()) }
+                    _stateFlow.update { it.copy(isSheetLoading = true, perDayTransactionList = emptyList()) }
 
                     transactionRepository.getTransactionsForDay(event.request).asResult().onEach { res ->
                         when (res) {
-                            ResultState.Completed -> _stateFlow.update { it.copy(isLoading = false) }
+                            ResultState.Completed -> _stateFlow.update { it.copy(isSheetLoading = false) }
                             is ResultState.Error -> onError(res.exception)
-                            ResultState.Loading -> _stateFlow.update { it.copy(isLoading = true) }
+                            ResultState.Loading -> _stateFlow.update { it.copy(isSheetLoading = true) }
                             is ResultState.Success -> _stateFlow.update {
                                 it.copy(
                                     perDayTransactionList = res.data,
-                                    isLoading = false
+                                    isSheetLoading = false
                                 )
                             }
                         }
@@ -187,6 +200,28 @@ class AddViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Collects the daily history listener with the current [historyLimit].
+     * Load-more skips the full skeleton (isListLoading) so the list and scroll position stay on screen.
+     */
+    private suspend fun collectDailyHistory(isLoadMore: Boolean) {
+        transactionRepository.getDailyTransactionHistory(historyLimit).asResult()
+            .onEach { res ->
+                when (res) {
+                    ResultState.Completed -> _stateFlow.update { it.copy(isListLoading = false, isLoadingMoreHistory = false) }
+                    is ResultState.Error -> onError(res.exception)
+                    ResultState.Loading -> if (!isLoadMore) _stateFlow.update { it.copy(isListLoading = true) }
+                    is ResultState.Success -> _stateFlow.update {
+                        it.copy(
+                            dailyHistoryList = res.data,
+                            hasMoreHistory = res.data.size.toLong() == historyLimit,
+                            isListLoading = false,
+                            isLoadingMoreHistory = false
+                        )
+                    }
+                }
+            }.collect()
+    }
 
     private fun logout() {
         viewModelScope.launch {

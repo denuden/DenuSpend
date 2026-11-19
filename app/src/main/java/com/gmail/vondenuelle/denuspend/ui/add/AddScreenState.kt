@@ -7,6 +7,9 @@ data class AddScreenState(
     val isLoading : Boolean = false,
     val isListLoading : Boolean = false,
     val isSummaryLoading : Boolean = false,
+    val isSheetLoading : Boolean = false,
+    val isLoadingMoreHistory : Boolean = false,
+    val hasMoreHistory : Boolean = false,
 
 //    Income Screen
     val transactionTitle : String = "",
