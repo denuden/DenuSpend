@@ -43,6 +43,7 @@ import com.gmail.vondenuelle.denuspend.ui.add.AddScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenState
 import com.gmail.vondenuelle.denuspend.ui.add.AddViewModel
 import com.gmail.vondenuelle.denuspend.ui.add.components.DailyHistoryItem
+import com.gmail.vondenuelle.denuspend.ui.add.components.TransactionActionsSheet
 import com.gmail.vondenuelle.denuspend.ui.common.components.PullToRefreshCustomStyle
 import com.gmail.vondenuelle.denuspend.ui.common.components.TransactionItem
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
@@ -91,6 +92,8 @@ fun RecentTransactions(
 
     // The day the sheet is showing; null means the sheet is closed.
     var selectedDay by remember { mutableStateOf<DailyHistoryModel?>(null) }
+    // The transaction tapped inside the day sheet; null means the actions sheet is closed.
+    var selectedTransaction by remember { mutableStateOf<TransactionModel?>(null) }
 
     ObserveAsEvents(viewModel.channel) { event ->
         when (event) {
@@ -160,7 +163,34 @@ fun RecentTransactions(
                 modifier = Modifier.fillMaxWidth(),
                 day = day,
                 list = state.perDayTransactionList,
-                isLoading = state.isSheetLoading
+                isLoading = state.isSheetLoading,
+                onTransactionClick = { selectedTransaction = it }
+            )
+        }
+    }
+
+    // Opens on top of the day sheet; the day sheet's live listener shows a delete right away.
+    ModalBottomSheetDialog(
+        showDialog = selectedTransaction != null,
+        onDismissRequest = { selectedTransaction = null },
+    ) {
+        val day = selectedDay
+        selectedTransaction?.let { selected ->
+            if (day == null) return@let
+            TransactionActionsSheet(
+                modifier = Modifier.fillMaxWidth(),
+                transaction = selected,
+                onEdit = {
+                    // Close both sheets before leaving; the per-day listener isn't needed on the form
+                    selectedTransaction = null
+                    selectedDay = null
+                    viewModel.stopPerDayListener()
+                    viewModel.onEvent(AddScreenEvents.OnNavigateToEditTransaction(selected, day.docId))
+                },
+                onDelete = {
+                    selectedTransaction = null
+                    viewModel.onEvent(AddScreenEvents.OnDeleteTransaction(selected, day.docId))
+                }
             )
         }
     }
@@ -184,7 +214,8 @@ fun TransactionDialogContent(
     modifier: Modifier = Modifier,
     day: DailyHistoryModel,
     list: List<TransactionModel>,
-    isLoading: Boolean
+    isLoading: Boolean,
+    onTransactionClick: (TransactionModel) -> Unit = {},
 ) {
     LazyColumn(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         item {
@@ -221,7 +252,7 @@ fun TransactionDialogContent(
             }
         }
         items(list) {
-            TransactionItem(transactionModel = it)
+            TransactionItem(transactionModel = it, onClick = { onTransactionClick(it) })
         }
         if (list.isEmpty() && !isLoading) {
             item {

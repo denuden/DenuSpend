@@ -38,6 +38,8 @@
     <string name="main_title_transaction">Transaction</string>
     <string name="main_title_add_income">Add Income</string>
     <string name="main_title_add_expense">Add Expense</string>
+    <string name="main_title_edit_income">Edit Income</string>
+    <string name="main_title_edit_expense">Edit Expense</string>
     <string name="main_title_history">History</string>
     <string name="main_title_budget">Budget</string>
     <string name="main_title_budget_insights">Budget Insights</string>
@@ -48,6 +50,16 @@
     <string name="main_tab_budget">Budget</string>
     <string name="main_cd_back">Back</string>
     <string name="main_cd_profile">Profile</string>
+
+<!--    ADD SCREEN (edit / delete transaction)-->
+    <string name="add_btn_edit">Edit</string>
+    <string name="add_btn_delete">Delete</string>
+    <string name="add_btn_update_transaction">Update Transaction</string>
+    <string name="add_lbl_category">Category: %1$s</string>
+    <string name="add_dialog_delete_title">Delete transaction?</string>
+    <string name="add_dialog_delete_text">This removes \"%1$s\" and updates that day\'s totals. This can\'t be undone.</string>
+    <string name="add_snackbar_transaction_updated">Transaction Updated</string>
+    <string name="add_snackbar_transaction_deleted">Transaction Deleted</string>
 
 <!--    ERROR-->
     <string name="error_error">Error</string>

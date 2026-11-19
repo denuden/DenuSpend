@@ -115,9 +115,10 @@ sealed class ProfileScreens : NavigationScreens {
 @Serializable
 sealed class AddScreens : NavigationScreens {
     @Serializable
-    data object AddIncomeScreenNavigation : AddScreens()
+    // docId/dailyDocId set = edit mode for that transaction, null = add a new one
+    data class AddIncomeScreenNavigation(val docId : String? = null, val dailyDocId : String? = null) : AddScreens()
     @Serializable
-    data object AddExpenseScreenNavigation : AddScreens()
+    data class AddExpenseScreenNavigation(val docId : String? = null, val dailyDocId : String? = null) : AddScreens()
     @Serializable
     data object AllRecentTransactionsNavigation : AddScreens()
 }

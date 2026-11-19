@@ -39,11 +39,14 @@ import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenState
 import com.gmail.vondenuelle.denuspend.ui.add.AddViewModel
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.ui.add.components.TransactionActionsSheet
 import com.gmail.vondenuelle.denuspend.ui.add.components.section.AddButtonsSection
 import com.gmail.vondenuelle.denuspend.ui.add.components.section.TodayIncomeAndExpensesSection
 import com.gmail.vondenuelle.denuspend.ui.common.components.TransactionItem
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
+import com.gmail.vondenuelle.denuspend.ui.common.dialog.ModalBottomSheetDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
@@ -61,6 +64,8 @@ fun AddScreen(
     val context = LocalContext.current
     var error by remember { mutableStateOf("") }
 
+    // The transaction the actions sheet is showing; null means the sheet is closed.
+    var selectedTransaction by remember { mutableStateOf<TransactionModel?>(null) }
 
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
 
@@ -112,9 +117,33 @@ fun AddScreen(
         text = error,
         showDialog = error.isNotEmpty()
     ) { error = "" }
+
+    ModalBottomSheetDialog(
+        showDialog = selectedTransaction != null,
+        onDismissRequest = { selectedTransaction = null },
+    ) {
+        selectedTransaction?.let { selected ->
+            // Today's list only, so the day doc is today's overview doc
+            val dailyDocId = state.dailyHistory.docId
+            TransactionActionsSheet(
+                modifier = Modifier.fillMaxWidth(),
+                transaction = selected,
+                onEdit = {
+                    selectedTransaction = null
+                    viewModel.onEvent(AddScreenEvents.OnNavigateToEditTransaction(selected, dailyDocId))
+                },
+                onDelete = {
+                    selectedTransaction = null
+                    viewModel.onEvent(AddScreenEvents.OnDeleteTransaction(selected, dailyDocId))
+                }
+            )
+        }
+    }
+
     AddScreenContent(
         state = state,
-        onEvent = viewModel::onEvent
+        onEvent = viewModel::onEvent,
+        onTransactionClick = { selectedTransaction = it }
     )
 }
 
@@ -123,6 +152,7 @@ fun AddScreenContent(
     modifier: Modifier = Modifier,
     state: AddScreenState,
     onEvent: (AddScreenEvents) -> Unit,
+    onTransactionClick: (TransactionModel) -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -184,7 +214,7 @@ fun AddScreenContent(
 
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             items(state.transactionList) {
-                TransactionItem(transactionModel = it)
+                TransactionItem(transactionModel = it, onClick = { onTransactionClick(it) })
             }
             if(state.transactionList.isEmpty()) {
                 item {

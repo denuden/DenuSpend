@@ -1,6 +1,8 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.transaction
 
+import com.gmail.vondenuelle.denuspend.data.remote.error.DocumentNotFoundException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.EditTransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
@@ -45,6 +47,10 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         const val TOTAL_EXPENSE = "totalExpense"
         const val USER_ID = "userId"
         const val DATE = "date"
+        const val TITLE = "title"
+        const val DESCRIPTION = "description"
+        const val AMOUNT = "amount"
+        const val CATEGORY = "category"
 
 
         val utcFormatter = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
@@ -120,6 +126,65 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         } catch (e : Exception) {
             throw  e
         }
+    }
+
+    override suspend fun getTransactionById(docId: String): TransactionModel {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        val doc = firebaseFireStore.collection(TRANSACTION).document(docId).get().await()
+        val transaction = doc.toObject<TransactionModel>()?.copy(docId = doc.id)
+
+        // Treat another user's doc the same as a missing one
+        if (transaction == null || transaction.userId != currentUser.uid) {
+            throw DocumentNotFoundException()
+        }
+        return transaction
+    }
+
+    override suspend fun updateTransaction(request: EditTransactionRequest) {
+        firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        val transactionRef = firebaseFireStore.collection(TRANSACTION).document(request.docId)
+        val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY).document(request.dailyDocId)
+        val dailyTransactionRef = dailyDocRef.collection(TRANSACTION).document(request.docId)
+
+        val fields = mapOf(
+            TITLE to request.title,
+            DESCRIPTION to request.description,
+            AMOUNT to request.amount,
+            CATEGORY to request.category
+        )
+
+        // Income stays income on edit, so only one total moves, by the difference.
+        val totalField = if (request.amount > 0) TOTAL_INCOME else TOTAL_EXPENSE
+        val delta = abs(request.amount) - abs(request.oldAmount)
+
+        val batch = firebaseFireStore.batch()
+        batch.update(transactionRef, fields)
+        batch.update(dailyTransactionRef, fields)
+        batch.update(dailyDocRef, totalField, FieldValue.increment(delta))
+        batch.commit().await()
+    }
+
+    override suspend fun deleteTransaction(transaction: TransactionModel, dailyDocId: String) {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+        if (transaction.userId != currentUser.uid) throw DocumentNotFoundException()
+
+        val transactionRef = firebaseFireStore.collection(TRANSACTION).document(transaction.docId)
+        val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY).document(dailyDocId)
+        val dailyTransactionRef = dailyDocRef.collection(TRANSACTION).document(transaction.docId)
+
+        val totalField = if (transaction.amount > 0) TOTAL_INCOME else TOTAL_EXPENSE
+
+        // The daily doc is kept even if this was the day's last transaction (it shows as ₱0).
+        val batch = firebaseFireStore.batch()
+        batch.delete(transactionRef)
+        batch.delete(dailyTransactionRef)
+        batch.update(dailyDocRef, totalField, FieldValue.increment(-abs(transaction.amount)))
+        batch.commit().await()
     }
 
 

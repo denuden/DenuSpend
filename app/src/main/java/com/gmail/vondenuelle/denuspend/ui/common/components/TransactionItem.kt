@@ -1,6 +1,7 @@
 package com.gmail.vondenuelle.denuspend.ui.common.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,10 +36,11 @@ import com.google.firebase.Timestamp
 @Composable
 fun TransactionItem(
     modifier: Modifier = Modifier,
-    transactionModel: TransactionModel
+    transactionModel: TransactionModel,
+    onClick: (() -> Unit)? = null, // null = not clickable
 ) {
     Column(
-        modifier
+        modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if(

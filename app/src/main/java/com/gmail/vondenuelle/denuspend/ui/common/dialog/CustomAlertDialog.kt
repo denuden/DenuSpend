@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import com.gmail.vondenuelle.denuspend.R
@@ -21,6 +22,7 @@ fun CustomAlertDialog(
     icon: ImageVector,
     confirmText: String = "Confirm",
     dismissText: String = "Dismiss",
+    confirmColor: Color = colorResource(R.color.verified_green),
 ) {
     if(showDialog) {
         androidx.compose.material3.AlertDialog(
@@ -42,7 +44,7 @@ fun CustomAlertDialog(
                         onConfirmation()
                     }
                 ) {
-                    Text(confirmText, color = colorResource(R.color.verified_green))
+                    Text(confirmText, color = confirmColor)
                 }
             },
             dismissButton = {
