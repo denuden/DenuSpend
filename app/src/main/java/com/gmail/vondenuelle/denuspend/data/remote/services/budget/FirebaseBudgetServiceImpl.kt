@@ -3,6 +3,7 @@ package com.gmail.vondenuelle.denuspend.data.remote.services.budget
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.budget.request.GetBudgetSummaryRequest
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
+import com.gmail.vondenuelle.denuspend.domain.models.budget.MonthlyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -21,6 +22,8 @@ class FirebaseBudgetServiceImpl @Inject constructor(
         const val DAILY_HISTORY = "daily_history"
         const val USER_ID = "userId"
         const val DATE = "date"
+        const val MONTHLY_HISTORY = "monthly_history"
+        const val MONTH = "month"
 
     }
 
@@ -61,6 +64,58 @@ class FirebaseBudgetServiceImpl @Inject constructor(
             )
 
             trySend(summary)
+        }
+
+        awaitClose { listener.remove() }
+    }
+
+    // Same query as getBudgetSummary (so the same index), but returns each day instead of the sum
+    override fun getDailyHistoryInRange(
+        request: GetBudgetSummaryRequest
+    ): Flow<List<DailyHistoryModel>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+        val query = firebaseFireStore
+            .collection(DAILY_HISTORY)
+            .whereEqualTo(USER_ID, currentUser.uid)
+            .whereGreaterThanOrEqualTo(DATE, request.startDate)
+            .whereLessThanOrEqualTo(DATE, request.endDate)
+
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            val days = snapshot?.documents
+                ?.mapNotNull { doc -> doc.toObject(DailyHistoryModel::class.java)?.copy(docId = doc.id) }
+                ?: emptyList()
+            trySend(days)
+        }
+
+        awaitClose { listener.remove() }
+    }
+
+    // One doc per month. Needs a composite index (userId + month); the first run logs a link that creates it.
+    override fun getMonthlyHistoryInRange(
+        request: GetBudgetSummaryRequest
+    ): Flow<List<MonthlyHistoryModel>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+        val query = firebaseFireStore
+            .collection(MONTHLY_HISTORY)
+            .whereEqualTo(USER_ID, currentUser.uid)
+            .whereGreaterThanOrEqualTo(MONTH, request.startDate)
+            .whereLessThanOrEqualTo(MONTH, request.endDate)
+
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            val months = snapshot?.documents
+                ?.mapNotNull { doc -> doc.toObject(MonthlyHistoryModel::class.java)?.copy(docId = doc.id) }
+                ?: emptyList()
+            trySend(months)
         }
 
         awaitClose { listener.remove() }
