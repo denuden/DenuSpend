@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.BudgetRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
+import com.gmail.vondenuelle.denuspend.data.repositories.TransactionRepository
+import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
@@ -27,6 +29,7 @@ import javax.inject.Inject
 class BudgetViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val budgetRepository: BudgetRepository,
+    private val transactionRepository: TransactionRepository,
 ): ViewModel(){
     private val TAG = BudgetViewModel::class.java.simpleName
 
@@ -43,6 +46,35 @@ class BudgetViewModel @Inject constructor(
         getBudgetSummaryJob = null
     }
 
+    private var insightsJob : Job? = null
+
+    fun stopInsightsListener() {
+        insightsJob?.cancel()
+        insightsJob = null
+    }
+
+    private var insightsMonthJob : Job? = null
+
+    fun stopInsightsMonthListener() {
+        insightsMonthJob?.cancel()
+        insightsMonthJob = null
+    }
+
+    private var insightDayJob : Job? = null
+    private var insightDayDocId = ""
+
+    fun stopInsightDayListener() {
+        insightDayJob?.cancel()
+        insightDayJob = null
+        // A cancel before the first result would leave the sheet's spinner on
+        _stateFlow.update { it.copy(isInsightDaySheetLoading = false) }
+    }
+
+    // Back from the background with the day sheet still open: listen to that day again
+    fun resumeInsightDayListener() {
+        if (insightDayJob == null && insightDayDocId.isNotEmpty()) getInsightDayTransactions(insightDayDocId)
+    }
+
     fun onEvent(event : BudgetScreenEvents) {
         when(event){
             is BudgetScreenEvents.OnNavigateToBudgetTransactionScreen -> {
@@ -55,8 +87,7 @@ class BudgetViewModel @Inject constructor(
                     return
                 }
                 _stateFlow.update { it.copy(filter = event.filter) }
-                stopGetBudgetSummaryListener()
-                getBudgetSummary()
+                restartForFilter()
             }
             BudgetScreenEvents.OnGetBudgetSummary -> {
                 // Already live, so nothing to restart. isActive also covers a listener that ended with an error.
@@ -73,15 +104,32 @@ class BudgetViewModel @Inject constructor(
                         customEndMillis = event.endMillis
                     )
                 }
-                stopGetBudgetSummaryListener()
-                getBudgetSummary()
+                restartForFilter()
             }
-            is BudgetScreenEvents.OnShowDatePicker -> {
-                _stateFlow.update {
-                    it.copy(
-                        showDateDialog = event.value
-                    )
+            is BudgetScreenEvents.OnGetBudgetInsights -> {
+                // Same category already live (e.g. ON_START after a rotation): nothing to restart
+                if (!(insightsJob?.isActive == true && _stateFlow.value.insightsCategory == event.category)) {
+                    _stateFlow.update { it.copy(insightsCategory = event.category) }
+                    stopInsightsListener()
+                    getBudgetInsights()
                 }
+                // A month that was open before ON_STOP gets its listener back too
+                if (_stateFlow.value.insightsMonth != null && insightsMonthJob?.isActive != true) {
+                    getInsightsMonthDays()
+                }
+            }
+            is BudgetScreenEvents.OnOpenInsightsMonth -> {
+                stopInsightsMonthListener()
+                _stateFlow.update { it.copy(insightsMonth = event.month, insightsMonthDays = null) }
+                if (event.month != null) getInsightsMonthDays()
+            }
+            is BudgetScreenEvents.OnGetInsightDayTransactions -> {
+                // A new day replaces the old one's listener. A day without a doc has nothing to load.
+                stopInsightDayListener()
+                insightDayDocId = event.dailyDocId
+                _stateFlow.update { it.copy(insightDayTransactions = emptyList()) }
+                if (event.dailyDocId.isEmpty()) return
+                getInsightDayTransactions(event.dailyDocId)
             }
         }
     }
@@ -102,6 +150,91 @@ class BudgetViewModel @Inject constructor(
                             it.copy(
                                 budgetTotalSummaryModel = res.data,
                                 isLoading = false,
+                            )
+                        }
+                    }
+                }.collect()
+        }
+    }
+
+    // The dashboard and Insights each get their own ViewModel instance, so a filter change restarts this instance's listener
+    private fun restartForFilter() {
+        if (_stateFlow.value.insightsCategory.isEmpty()) {
+            stopGetBudgetSummaryListener()
+            getBudgetSummary()
+        } else {
+            // A new range closes an opened month
+            stopInsightsMonthListener()
+            _stateFlow.update { it.copy(insightsMonth = null, insightsMonthDays = null) }
+            stopInsightsListener()
+            getBudgetInsights()
+        }
+    }
+
+    private fun getInsightsMonthDays() {
+        val current = _stateFlow.value
+        val month = current.insightsMonth ?: return
+        insightsMonthJob = viewModelScope.launch {
+            budgetRepository.getBudgetInsightsMonthDays(current.insightsCategory, month, current.budgetInsights.endDate)
+                .asResult()
+                .onEach { res ->
+                    when (res) {
+                        ResultState.Completed -> _stateFlow.update { it.copy(isInsightsMonthLoading = false) }
+                        is ResultState.Error -> {
+                            _stateFlow.update { it.copy(isInsightsMonthLoading = false) }
+                            onError(res.exception)
+                        }
+                        ResultState.Loading -> _stateFlow.update { it.copy(isInsightsMonthLoading = true) }
+                        is ResultState.Success -> _stateFlow.update {
+                            it.copy(insightsMonthDays = res.data, isInsightsMonthLoading = false)
+                        }
+                    }
+                }.collect()
+        }
+    }
+
+    private fun getBudgetInsights() {
+        val current = _stateFlow.value
+        insightsJob = viewModelScope.launch {
+            budgetRepository.getBudgetInsights(
+                current.insightsCategory,
+                current.filter,
+                current.customStartMillis,
+                current.customEndMillis
+            ).asResult()
+                .onEach { res ->
+                    when (res) {
+                        ResultState.Completed -> _stateFlow.update { it.copy(isInsightsLoading = false) }
+                        is ResultState.Error -> {
+                            _stateFlow.update { it.copy(isInsightsLoading = false) }
+                            onError(res.exception)
+                        }
+                        ResultState.Loading -> _stateFlow.update { it.copy(isInsightsLoading = true) }
+                        is ResultState.Success -> _stateFlow.update {
+                            it.copy(budgetInsights = res.data, isInsightsLoading = false)
+                        }
+                    }
+                }.collect()
+        }
+    }
+
+    // Reads the whole day (usually a few docs) and keeps this category's ones on the device
+    private fun getInsightDayTransactions(dailyDocId: String) {
+        insightDayJob = viewModelScope.launch {
+            transactionRepository.getTransactionsForDay(TransactionsForDayRequest(dailyDocId = dailyDocId))
+                .asResult()
+                .onEach { res ->
+                    when (res) {
+                        ResultState.Completed -> _stateFlow.update { it.copy(isInsightDaySheetLoading = false) }
+                        is ResultState.Error -> {
+                            _stateFlow.update { it.copy(isInsightDaySheetLoading = false) }
+                            onError(res.exception)
+                        }
+                        ResultState.Loading -> _stateFlow.update { it.copy(isInsightDaySheetLoading = true) }
+                        is ResultState.Success -> _stateFlow.update { state ->
+                            state.copy(
+                                insightDayTransactions = res.data.filter { it.category == state.insightsCategory },
+                                isInsightDaySheetLoading = false
                             )
                         }
                     }

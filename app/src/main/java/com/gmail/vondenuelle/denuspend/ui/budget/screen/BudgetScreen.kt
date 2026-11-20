@@ -222,7 +222,7 @@ fun BudgetScreenContent(
 }
 
 // "Nov 3 – Nov 9", or one date when both ends are the same day. The millis are UTC midnight, so format in UTC.
-private fun formatPickerRange(startMillis: Long, endMillis: Long): String {
+fun formatPickerRange(startMillis: Long, endMillis: Long): String {
     val formatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
     val start = Instant.ofEpochMilli(startMillis).atZone(ZoneOffset.UTC).toLocalDate()
     val end = Instant.ofEpochMilli(endMillis).atZone(ZoneOffset.UTC).toLocalDate()
@@ -231,7 +231,7 @@ private fun formatPickerRange(startMillis: Long, endMillis: Long): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BudgetRangePickerDialog(
+fun BudgetRangePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (startMillis: Long, endMillis: Long) -> Unit,
 ) {

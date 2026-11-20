@@ -117,52 +117,7 @@ fun ChartSection(
                         )
                     }
 
-                    var expanded by remember { mutableStateOf(false) }
-                    val dropdownScrollState = rememberScrollState()
-
-                    LaunchedEffect(expanded) {
-                        if (expanded) {
-                            // Scroll to show the bottom menu items.
-                            dropdownScrollState.scrollTo(dropdownScrollState.maxValue)
-                        }
-                    }
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = it },
-                    ) {
-                        AssistChip(
-                            onClick = {
-                                //Todo
-                            },
-                            label = {
-                                Text(filterLabel, maxLines = 1)
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Filled.CalendarMonth, null)
-                            },
-                            modifier = Modifier
-                                .padding(bottom = 4.dp)
-                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                        )
-
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false },
-                            scrollState = dropdownScrollState,
-                            matchAnchorWidth = false
-                        ) {
-                            BudgetChartFilter.entries.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(option.label), style = MaterialTheme.typography.bodyLarge) },
-                                    onClick = {
-                                        expanded = false
-                                        onChangeFilter(option)
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                                )
-                            }
-                        }
-                    }
+                    BudgetFilterChip(filterLabel = filterLabel, onChangeFilter = onChangeFilter)
                 }
                 // Full card width (not squeezed next to the filter chip), so it stays on one line
                 AllowanceLine(
@@ -241,9 +196,66 @@ fun ChartSection(
     }
 }
 
+// The range chip with the BudgetChartFilter menu. Shared by the dashboard and Insights.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BudgetFilterChip(
+    filterLabel: String,
+    onChangeFilter: (BudgetChartFilter) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val dropdownScrollState = rememberScrollState()
+
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            // Scroll to show the bottom menu items.
+            dropdownScrollState.scrollTo(dropdownScrollState.maxValue)
+        }
+    }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        AssistChip(
+            onClick = {
+                //Todo
+            },
+            label = {
+                Text(filterLabel, maxLines = 1)
+            },
+            leadingIcon = {
+                Icon(Icons.Filled.CalendarMonth, null)
+            },
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            scrollState = dropdownScrollState,
+            matchAnchorWidth = false
+        ) {
+            BudgetChartFilter.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(option.label), style = MaterialTheme.typography.bodyLarge) },
+                    onClick = {
+                        expanded = false
+                        onChangeFilter(option)
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                )
+            }
+        }
+    }
+}
+
 // "of ₱11,000.00 allowance · ₱1,705.00 left", green when left and red when over. Nothing allowed yet shows a hint instead.
 @Composable
-private fun AllowanceLine(spent: Long, allowance: Long, modifier: Modifier = Modifier) {
+fun AllowanceLine(spent: Long, allowance: Long, modifier: Modifier = Modifier, category: String = "") {
     if (allowance == 0L) {
         Text(
             stringResource(R.string.budget_lbl_no_allowance_in_range),
@@ -262,7 +274,13 @@ private fun AllowanceLine(spent: Long, allowance: Long, modifier: Modifier = Mod
     // One Text so it wraps like a sentence if it ever has to, instead of the status breaking off on its own
     Text(
         buildAnnotatedString {
-            append(stringResource(R.string.budget_lbl_of_allowance, "₱${CurrencyUtils.formatCents(allowance)}") + " · ")
+            val allowanceText = "₱${CurrencyUtils.formatCents(allowance)}"
+            // Insights passes its category ("of ₱600 Food allowance"), the dashboard's total line doesn't
+            append(
+                if (category.isEmpty()) stringResource(R.string.budget_lbl_of_allowance, allowanceText)
+                else stringResource(R.string.budget_lbl_of_category_allowance, allowanceText, category)
+            )
+            append(" · ")
             withStyle(SpanStyle(color = statusColor, fontWeight = FontWeight.Bold)) { append(status) }
         },
         style = MaterialTheme.typography.bodySmall,

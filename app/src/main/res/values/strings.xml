@@ -171,6 +171,7 @@
     <string name="budget_lbl_breakdown">Breakdown</string>
     <string name="budget_lbl_no_spending">No spending or allowance: %1$s</string>
     <string name="budget_lbl_of_allowance">of %1$s allowance</string>
+    <string name="budget_lbl_of_category_allowance">of %1$s %2$s allowance</string>
     <string name="budget_lbl_left">%1$s left</string>
     <string name="budget_lbl_over">%1$s over</string>
     <string name="budget_lbl_of">of %1$s</string>
@@ -194,6 +195,71 @@
         <item quantity="one">%d transaction</item>
         <item quantity="other">%d transactions</item>
     </plurals>
+
+<!--    BUDGET INSIGHTS SCREEN-->
+    <plurals name="insights_lbl_range_days">
+        <item quantity="one">%1$s · %2$d day</item>
+        <item quantity="other">%1$s · %2$d days</item>
+    </plurals>
+    <string name="insights_lbl_spent_on">Spent on %1$s</string>
+    <string name="insights_stat_avg_day">Avg per day</string>
+    <string name="insights_stat_avg_transaction">Avg per transaction</string>
+    <string name="insights_stat_overspent_days">Overspent days</string>
+    <string name="insights_stat_overspent_months">Overspent months</string>
+    <string name="insights_lbl_none">—</string>
+    <!-- compared to before -->
+    <string name="insights_compare_title">Compared to before</string>
+    <string name="insights_compare_sub">Avg per day vs %1$s</string>
+    <string name="insights_compare_this_range">This range</string>
+    <string name="insights_compare_before">Before</string>
+    <string name="insights_compare_more">You\'re spending %1$s more per day on %2$s than the period before.</string>
+    <string name="insights_compare_less">You\'re spending %1$s less per day on %2$s than the period before.</string>
+    <string name="insights_compare_same">You\'re spending about the same per day on %1$s as the period before.</string>
+    <string name="insights_compare_no_data">No %1$s spending in the period before.</string>
+    <string name="insights_compare_same_chip">same</string>
+    <!-- insight sentences -->
+    <string name="insights_title">Insights</string>
+    <string name="insights_weekday">%1$ss cost you %2$d%% more than your other days. You spend about %3$s on a %1$s, vs %4$s on other days.</string>
+    <string name="insights_over_days">You went over your %1$s allowance on %2$d of %3$d days.</string>
+    <string name="insights_over_days_weekend">You went over your %1$s allowance on %2$d of %3$d days, %4$d of them on Fri–Sun.</string>
+    <string name="insights_over_months">You went over your %1$s allowance in %2$d of %3$d months: %4$s.</string>
+    <string name="insights_no_over_days">You stayed within your %1$s allowance every day in this range.</string>
+    <string name="insights_no_over_months">You stayed within your %1$s allowance every month in this range.</string>
+    <string name="insights_no_allowance">No %1$s allowance in this range, so overspending isn\'t counted.</string>
+    <string name="insights_biggest_day">Biggest day: %1$s at %2$s.</string>
+    <string name="insights_heaviest_month">%1$s is your heaviest month, %2$d%% above your usual daily average.</string>
+    <string name="insights_share">%1$s is %2$d%% of all your spending in this range.</string>
+    <!-- day chart + day sheet -->
+    <string name="insights_chart_per_day">Spending per day</string>
+    <string name="insights_chart_per_day_sub">Tap a day to see its transactions</string>
+    <string name="insights_legend_spent">Spent</string>
+    <string name="insights_legend_over">Over</string>
+    <string name="insights_legend_allowance">%1$s allowance</string>
+    <string name="insights_day_spent">%1$s spent</string>
+    <string name="insights_day_no_allowance">No %1$s allowance this day</string>
+    <string name="insights_day_empty">No %1$s transactions this day</string>
+    <!-- month bars, drill-in, month by month -->
+    <string name="insights_chart_per_month">Spending per month</string>
+    <string name="insights_chart_per_month_sub">Tap a month to see its days</string>
+    <string name="insights_chart_month_days">%1$s · per day</string>
+    <string name="insights_back_to_months">Back to months</string>
+    <string name="insights_month_spent_of">%1$s spent of %2$s %3$s allowance · </string>
+    <string name="insights_month_spent">%1$s spent</string>
+    <string name="insights_month_avg_day">%1$s average a day</string>
+    <string name="insights_month_over_days">Went over your %1$s allowance on %2$d of %3$d days</string>
+    <string name="insights_months_title">Month by month</string>
+    <string name="insights_months_sub">Average spent per day, and how it changed from the month before. Tap a month to open its days.</string>
+    <string name="insights_months_total">%1$s total</string>
+    <string name="insights_per_day">%1$s/day</string>
+    <!-- by day of week + empty state -->
+    <string name="insights_weekday_title">By day of week</string>
+    <string name="insights_weekday_sub">Average %1$s spending on each weekday</string>
+    <string name="insights_weekday_hint">Tap a weekday for details</string>
+    <string name="insights_weekday_detail_count">%1$ss · %2$d in this range</string>
+    <string name="insights_weekday_detail_total">%1$s total · %2$s average</string>
+    <string name="insights_weekday_detail_over">Went over your %1$s allowance on %2$d of %3$d %4$ss</string>
+    <string name="insights_empty_title">No %1$s spending in this range</string>
+    <string name="insights_empty_text">Try a longer range, or add an expense in the Add tab. Charts and insights show up once there\'s spending.</string>
 
 <!--    ERROR-->
     <string name="error_error">Error</string>
