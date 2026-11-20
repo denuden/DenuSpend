@@ -1,12 +1,15 @@
 package com.gmail.vondenuelle.denuspend.ui.budget
 
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
-import com.gmail.vondenuelle.denuspend.ui.budget.components.BudgetChartFilter
 
 data class BudgetScreenState(
     val isLoading : Boolean = false,
     val showDateDialog : Boolean = false,
-    val name : String = "",
-    val date : String = BudgetChartFilter.THIS_MONTH,
+    val filter : BudgetChartFilter = BudgetChartFilter.THIS_MONTH,
+    val showRangePicker : Boolean = false,
+    // Only set once a custom range is picked. UTC-midnight millis, as the date range picker gives them.
+    val customStartMillis : Long? = null,
+    val customEndMillis : Long? = null,
     val budgetTotalSummaryModel: BudgetTotalSummaryModel = BudgetTotalSummaryModel()
 )

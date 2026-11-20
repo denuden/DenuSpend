@@ -36,11 +36,12 @@
     <string name="main_default_name">User</string>
     <string name="main_title_profile">Profile</string>
     <string name="main_title_transaction">Transaction</string>
-    <string name="main_title_add_income">Add Income</string>
+    <string name="main_title_add_income">Add Allowance</string>
     <string name="main_title_add_expense">Add Expense</string>
-    <string name="main_title_edit_income">Edit Income</string>
+    <string name="main_title_edit_income">Edit Allowance</string>
     <string name="main_title_edit_expense">Edit Expense</string>
     <string name="main_title_history">History</string>
+    <string name="main_title_allowance_templates">Allowance Templates</string>
     <string name="main_title_budget">Budget</string>
     <string name="main_title_budget_insights">Budget Insights</string>
     <string name="main_tab_home">Home</string>
@@ -60,6 +61,69 @@
     <string name="add_dialog_delete_text">This removes \"%1$s\" and updates that day\'s totals. This can\'t be undone.</string>
     <string name="add_snackbar_transaction_updated">Transaction Updated</string>
     <string name="add_snackbar_transaction_deleted">Transaction Deleted</string>
+    <string name="add_snackbar_allowance_added">Allowance Added</string>
+    <string name="add_snackbar_expense_added">Expense Added</string>
+    <string name="add_btn_add_allowance">Add Allowance</string>
+    <string name="add_lbl_allowance">Allowance</string>
+    <string name="add_lbl_expense">Expense</string>
+    <string name="add_lbl_allowance_for">What is this allowance for?</string>
+    <string name="add_tooltip_allowance_title">Adding an Allowance</string>
+    <string name="add_lbl_last_added">Last Added</string>
+    <string name="add_lbl_today_date">TODAY · %1$s</string>
+    <string name="add_lbl_amount_spent">%1$s spent</string>
+    <string name="add_lbl_of_total">of %1$s</string>
+    <string name="add_lbl_amount_left">%1$s left</string>
+    <string name="add_lbl_amount_over">%1$s over</string>
+    <string name="add_lbl_nothing_to_show">Nothing to show</string>
+    <string name="add_lbl_over">Over</string>
+    <string name="add_lbl_left">Left</string>
+    <string name="add_btn_add">Add</string>
+
+    <!-- list controls (Last Added and the History day sheet) -->
+    <string name="add_filter_all">All</string>
+    <string name="add_sort_amount">Amount</string>
+    <string name="add_lbl_by_category">By category</string>
+    <plurals name="add_lbl_category_group">
+        <item quantity="one">%1$s · %2$d transaction</item>
+        <item quantity="other">%1$s · %2$d transactions</item>
+    </plurals>
+
+    <!-- allowance templates -->
+    <string name="add_btn_manage_templates">Manage</string>
+    <string name="add_lbl_custom_allowance">Custom allowance</string>
+    <string name="add_lbl_custom_allowance_text">Pick a category and amount yourself</string>
+    <string name="add_lbl_from_template">From a template</string>
+    <string name="add_templates_hint">Save allowances you use often, then add them in one tap.</string>
+    <plurals name="add_lbl_template_categories">
+        <item quantity="one">%d category</item>
+        <item quantity="other">%d categories</item>
+    </plurals>
+    <string name="add_dialog_apply_template_title">Add %1$s?</string>
+    <plurals name="add_dialog_apply_template_text">
+        <item quantity="one">This adds %1$d allowance (%2$s) for today.</item>
+        <item quantity="other">This adds %1$d allowances (%2$s) for today.</item>
+    </plurals>
+    <string name="add_templates_intro">Save a set of allowances you give yourself often, then add them all for today in one tap from the Add tab.</string>
+    <string name="add_btn_new_template">New Template</string>
+    <string name="add_templates_empty_title">No templates yet</string>
+    <string name="add_templates_empty_text">Make one for days with the same allowances, like a weekday or a weekend.</string>
+    <string name="add_template_editor_new">New template</string>
+    <string name="add_template_editor_edit">Edit template</string>
+    <string name="add_lbl_template_name">Template name</string>
+    <string name="add_hint_template_name">E.G. Weekday</string>
+    <string name="add_btn_add_category_row">Add a category</string>
+    <string name="add_lbl_template_total">Total: %1$s</string>
+    <string name="add_lbl_template_categories_header">Categories</string>
+    <string name="add_hint_select_category">Select category</string>
+    <string name="add_btn_save_template">Save Template</string>
+    <string name="add_dialog_delete_template_title">Delete template?</string>
+    <string name="add_dialog_delete_template_text">This removes \"%1$s\". Allowances you already added with it stay.</string>
+    <string name="add_snackbar_template_saved">Template saved</string>
+    <string name="add_snackbar_template_deleted">Template deleted</string>
+    <string name="add_snackbar_template_applied">%1$s allowances added for today</string>
+    <string name="add_cd_remove_row">Remove</string>
+    <string name="add_cd_delete_template">Delete template</string>
+    <string name="add_tooltip_allowance_text">Set how much you\'re giving yourself for a category today. E.G. Lunch money, Bus fare</string>
 
 <!--    PROFILE SCREEN-->
     <string name="profile_dialog_delete_title">Delete your account?</string>
@@ -102,6 +166,35 @@
     <string name="profile_cd_change_photo">Change photo</string>
     <string name="profile_cd_view_photo">View photo</string>
 
+<!--    BUDGET SCREEN-->
+    <string name="budget_lbl_spent">Spent</string>
+    <string name="budget_lbl_breakdown">Breakdown</string>
+    <string name="budget_lbl_no_spending">No spending or allowance: %1$s</string>
+    <string name="budget_lbl_of_allowance">of %1$s allowance</string>
+    <string name="budget_lbl_left">%1$s left</string>
+    <string name="budget_lbl_over">%1$s over</string>
+    <string name="budget_lbl_of">of %1$s</string>
+    <string name="budget_lbl_no_allowance">No allowance set</string>
+    <string name="budget_lbl_no_allowance_in_range">No allowance added in this period</string>
+    <string name="budget_empty_title">No expenses for this period</string>
+    <string name="budget_empty_text">Expenses you add will show up here.</string>
+    <string name="budget_lbl_amount">Amount</string>
+    <string name="budget_chip_total">Total: 100%</string>
+    <string name="budget_chip_category_percent">%1$s: %2$s%%</string>
+    <string name="budget_filter_this_month">This Month</string>
+    <string name="budget_filter_last_3_days">Last 3 Days</string>
+    <string name="budget_filter_last_7_days">Last 7 Days</string>
+    <string name="budget_filter_last_15_days">Last 15 Days</string>
+    <string name="budget_filter_last_30_days">Last 30 Days</string>
+    <string name="budget_filter_last_3_months">Last 3 Months</string>
+    <string name="budget_filter_last_6_months">Last 6 Months</string>
+    <string name="budget_filter_this_year">This Year</string>
+    <string name="budget_filter_custom">Custom range…</string>
+    <plurals name="budget_transactions_made">
+        <item quantity="one">%d transaction</item>
+        <item quantity="other">%d transactions</item>
+    </plurals>
+
 <!--    ERROR-->
     <string name="error_error">Error</string>
     <string name="error_email_required">Please enter your email</string>
@@ -115,6 +208,8 @@
 
 <!--    GENERAL LABELS-->
     <string name="lbl_loading">Loading…</string>
+    <string name="lbl_ok">OK</string>
+    <string name="lbl_cancel">Cancel</string>
     <string name="lbl_coming_soon">Coming soon</string>
     <string name="cd_show_password">Show password</string>
     <string name="cd_hide_password">Hide password</string>

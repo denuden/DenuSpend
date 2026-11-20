@@ -19,14 +19,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.ui.add.components.CategoryDropdownButtonModel
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils.formatCents
 import com.gmail.vondenuelle.denuspend.utils.formatFirebaseDate
@@ -42,13 +45,21 @@ fun TransactionItem(
     Column(
         modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
+        // The category's own icon; the circle's green/red still shows allowance vs expense
+        val categoryIcon = CategoryDropdownButtonModel.icons.getOrNull(CategoryDropdownButtonModel.list.indexOf(transactionModel.category) - 1)
+        // "Food · lunch w/ team", or just "Food" when there's no description ("---" is what an empty one is saved as)
+        val subtitle = listOf(transactionModel.category, transactionModel.description)
+            .filter { it.isNotBlank() && it != "---" }
+            .joinToString(" · ")
+            .ifEmpty { transactionModel.description }
+
         Row(verticalAlignment = Alignment.CenterVertically) {
             if(
                 transactionModel.amount < 0
             ) {
-                ExpenseIcon(modifier = Modifier.padding(end = 8.dp))
+                ExpenseIcon(icon = categoryIcon, modifier = Modifier.padding(end = 8.dp))
             } else {
-                IncomeIcon(modifier = Modifier.padding(end = 8.dp))
+                IncomeIcon(icon = categoryIcon, modifier = Modifier.padding(end = 8.dp))
             }
 
             Column(
@@ -62,9 +73,11 @@ fun TransactionItem(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    transactionModel.description,
+                    subtitle,
                     fontWeight = FontWeight.Light,
-                    style = MaterialTheme.typography.labelLargeEmphasized
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -106,7 +119,7 @@ fun TransactionItem(
 }
 
 @Composable
-fun IncomeIcon(modifier: Modifier = Modifier) {
+fun IncomeIcon(modifier: Modifier = Modifier, icon: ImageVector? = null) { // null = the generic allowance icon
     Box(
         modifier = modifier
             .background(
@@ -116,16 +129,20 @@ fun IncomeIcon(modifier: Modifier = Modifier) {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            painterResource(R.drawable.ic_payment_arrow_down),
-            contentDescription = null,
-            tint = colorResource(R.color.verified_green)
-        )
+        if (icon != null) {
+            Icon(icon, contentDescription = null, tint = colorResource(R.color.verified_green))
+        } else {
+            Icon(
+                painterResource(R.drawable.ic_payment_arrow_down),
+                contentDescription = null,
+                tint = colorResource(R.color.verified_green)
+            )
+        }
     }
 }
 
 @Composable
-fun ExpenseIcon(modifier: Modifier = Modifier) {
+fun ExpenseIcon(modifier: Modifier = Modifier, icon: ImageVector? = null) { // null = the generic expense icon
     Box(
         modifier = modifier
             .background(
@@ -135,11 +152,15 @@ fun ExpenseIcon(modifier: Modifier = Modifier) {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            painterResource(R.drawable.ic_credit_card),
-            contentDescription = null,
-            tint = colorResource(R.color.not_verified_red)
-        )
+        if (icon != null) {
+            Icon(icon, contentDescription = null, tint = colorResource(R.color.not_verified_red))
+        } else {
+            Icon(
+                painterResource(R.drawable.ic_credit_card),
+                contentDescription = null,
+                tint = colorResource(R.color.not_verified_red)
+            )
+        }
     }
 }
 

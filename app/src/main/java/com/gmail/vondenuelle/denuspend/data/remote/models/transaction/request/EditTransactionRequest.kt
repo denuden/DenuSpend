@@ -4,6 +4,7 @@ data class EditTransactionRequest(
     val docId : String,
     val dailyDocId : String,
     val oldAmount : Long, // needed to move the daily totals by the difference
+    val oldCategory : String, // needed to move the per-category daily totals when the category changes
     val title : String,
     val description : String,
     val amount : Long = 0L,

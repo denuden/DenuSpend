@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -101,7 +102,27 @@ fun MainScreen(
             currentDestination.isIn<RootGraphs.AddGraph>() ||
             currentDestination.isIn<RootGraphs.BudgetGraph>()
     val showBottomBar = currentDestination.isIn<RootGraphs.MainGraph>()
-    val canNavigateBack = navController.previousBackStackEntry != null
+    // Tab screens (Home, Add, Budget) are first screens: no back arrow, and hardware back goes Home (see BackHandler below)
+    val isOnTabScreen = bottomTabs.any { tab -> tab.route != null && currentDestination?.hasRoute(tab.route::class) == true }
+    val isOnHome = currentDestination?.hasRoute(MainScreens.HomeNavigation::class) == true
+    val canNavigateBack = navController.previousBackStackEntry != null && !isOnTabScreen
+
+    // Standard bottom-nav options: keep one copy of each tab and remember each tab's state
+    val navigateToTab: (NavigationScreens) -> Unit = { route ->
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    // Back on Add/Budget acts like tapping Home: the tab is saved, not popped, so its ViewModel, data and listeners stay.
+    // A plain popBackStack() would destroy the tab and reload everything next time. Back on Home exits as usual.
+    BackHandler(enabled = isOnTabScreen && !isOnHome) {
+        navigateToTab(MainScreens.HomeNavigation)
+    }
 
     //stating snackbar anywhere so it can be called from any screen
     val snackbarHostState = remember {
@@ -162,16 +183,7 @@ fun MainScreen(
                             selected = selected,
                             enabled = tab.route != null,
                             onClick = {
-                                // Standard bottom-nav options: keep one copy of each tab and remember each tab's state
-                                tab.route?.let { route ->
-                                    navController.navigate(route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
+                                tab.route?.let { route -> navigateToTab(route) }
                             },
                         )
                     }
@@ -209,6 +221,7 @@ private fun topBarTitle(destination: NavDestination?, entry: NavBackStackEntry?,
             if (entry?.toRoute<AddScreens.AddExpenseScreenNavigation>()?.docId != null) stringResource(R.string.main_title_edit_expense)
             else stringResource(R.string.main_title_add_expense)
         destination.hasRoute<AddScreens.AllRecentTransactionsNavigation>() -> stringResource(R.string.main_title_history)
+        destination.hasRoute<AddScreens.AllowanceTemplatesNavigation>() -> stringResource(R.string.main_title_allowance_templates)
         destination.hasRoute<BudgetScreens.BudgetInsightsScreenNavigation>() -> stringResource(R.string.main_title_budget_insights)
         destination.hasRoute<ProfileScreens.ProfileNavigation>() -> stringResource(R.string.main_title_profile)
         else -> stringResource(R.string.app_name)

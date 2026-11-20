@@ -42,6 +42,7 @@ fun CurrencyTextField(
         errorIndicatorColor = Color.Transparent
     ),
     textStyle: TextStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center, fontSize = 26.sp, fontWeight = FontWeight.Bold),
+    singleLine: Boolean = false,
 ) {
 
     var textFieldValue by remember {
@@ -87,8 +88,9 @@ fun CurrencyTextField(
             )
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        placeholder = { Text ("00.00", style = TextStyle(textAlign = TextAlign.Center, fontSize = 26.sp, fontWeight = FontWeight.Bold), modifier = Modifier.fillMaxWidth())},
-        prefix = { Text(prefixText,fontSize = 26.sp,) },
+        placeholder = { Text ("00.00", style = textStyle, modifier = Modifier.fillMaxWidth())},
+        prefix = { Text(prefixText, fontSize = textStyle.fontSize) },
+        singleLine = singleLine,
         colors = colors,
         textStyle = textStyle,
         modifier = modifier

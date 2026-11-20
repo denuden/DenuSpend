@@ -121,6 +121,8 @@ sealed class AddScreens : NavigationScreens {
     data class AddExpenseScreenNavigation(val docId : String? = null, val dailyDocId : String? = null) : AddScreens()
     @Serializable
     data object AllRecentTransactionsNavigation : AddScreens()
+    @Serializable
+    data object AllowanceTemplatesNavigation : AddScreens()
 }
 
 

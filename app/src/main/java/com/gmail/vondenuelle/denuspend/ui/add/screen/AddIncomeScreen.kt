@@ -142,8 +142,8 @@ fun AddIncomeScreenContent(
                 contentAlignment = Alignment.TopEnd
             ) {
                 InformationTooltip(
-                    richTooltipSubheadText = "Adding Income Transaction",
-                    richTooltipText = "Add the amount of the income transaction. You can input a title and description (E.G. For my savings account, From salary) ",
+                    richTooltipSubheadText = stringResource(R.string.add_tooltip_allowance_title),
+                    richTooltipText = stringResource(R.string.add_tooltip_allowance_text),
                     modifier = Modifier.padding(8.dp)
                 )
 
@@ -235,7 +235,7 @@ fun AddIncomeScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "Income Category",
+            stringResource(R.string.add_lbl_allowance_for),
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.padding(bottom = 4.dp)
         )

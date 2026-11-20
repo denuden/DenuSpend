@@ -2,96 +2,102 @@ package com.gmail.vondenuelle.denuspend.ui.add.components.section
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.getDateNow
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+// Compact card: a small ring with the % used on the left, today's numbers on the right.
+// It replaced the big centered ring so the list below gets more room.
 @Composable
 fun TodayIncomeAndExpensesSection(
     modifier: Modifier = Modifier,
     progress: Float,
     expense: String,
     totalBudget: String,
+    remaining: String, //already formatted, e.g. "₱3,870.00 left" or "₱200.00 over"
     isOverspent: Boolean = false,
 ) {
-    val dateToday = remember { getDateNow("dd MMMM yyyy") }
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
+    // Not remembered, so it shows the new day when the listener restarts after midnight
+    val dateToday = getDateNow("dd MMM")
+    val ringColor = if (isOverspent) MaterialTheme.colorScheme.error else ProgressIndicatorDefaults.circularColor
+
+    Card(
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors().copy(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = modifier.fillMaxWidth()
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp)
         ) {
-            CircularProgressIndicator(
-                progress = {
-                    progress
-                },
-                strokeWidth = 10.dp,
-                color = if (isOverspent) MaterialTheme.colorScheme.error else ProgressIndicatorDefaults.circularColor,
-                modifier = Modifier
-                    .size(148.dp)
-            )
-            ElevatedCard(
-                modifier = Modifier.size(134.dp),
-                shape = CircleShape,
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Today".uppercase(),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            dateToday,
-                            fontWeight = FontWeight.Light,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
+            Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = { progress },
+                    strokeWidth = 6.dp,
+                    color = ringColor,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.size(64.dp)
+                )
+                Text(
+                    "${(progress * 100).roundToInt()}%",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isOverspent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.add_lbl_today_date, dateToday),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    stringResource(R.string.add_lbl_amount_spent, expense),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+                Row(modifier = Modifier.padding(top = 2.dp)) {
+                    Text(
+                        stringResource(R.string.add_lbl_of_total, totalBudget) + " · ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        remaining,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isOverspent) MaterialTheme.colorScheme.error else colorResource(R.color.verified_green_text)
+                    )
                 }
             }
         }
-
-        Text(
-            expense,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier
-                .padding(top = 8.dp)
-                .align(Alignment.CenterHorizontally)
-        )
-
-        Text(
-            "of $totalBudget",
-            style = MaterialTheme.typography.labelLargeEmphasized,
-            fontWeight = FontWeight.Light,
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .align(Alignment.CenterHorizontally)
-        )
     }
 }
 
@@ -101,10 +107,10 @@ private fun TodayIncomeAndExpensesSectionPreview() {
     DenuSpendTheme {
         Surface {
             TodayIncomeAndExpensesSection(
-                modifier = Modifier.fillMaxSize(),
-                progress = 0.65f,
-                expense = "₱1,456.00",
-                totalBudget = "₱3,000.00"
+                progress = 0.08f,
+                expense = "₱330.00",
+                totalBudget = "₱4,200.00",
+                remaining = "₱3,870.00 left"
             )
         }
     }

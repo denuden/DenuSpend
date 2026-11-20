@@ -1,17 +1,15 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.budget
 
-import android.util.Log
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.budget.request.GetBudgetSummaryRequest
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
-import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import javax.inject.Inject
-import kotlin.math.abs
 
 class FirebaseBudgetServiceImpl @Inject constructor(
     private val firebaseAuth : FirebaseAuth,
@@ -19,12 +17,8 @@ class FirebaseBudgetServiceImpl @Inject constructor(
 ) : BudgetService {
 
     companion object {
-        //Transaction collection
-        const val TRANSACTION = "transactions"
+        //Daily history collection
         const val DAILY_HISTORY = "daily_history"
-
-        const val TOTAL_INCOME = "totalIncome"
-        const val TOTAL_EXPENSE = "totalExpense"
         const val USER_ID = "userId"
         const val DATE = "date"
 
@@ -37,9 +31,9 @@ class FirebaseBudgetServiceImpl @Inject constructor(
 
         val currentUser = firebaseAuth.currentUser
             ?: throw NoUserException("User not logged in")
-        Log.d("DATE_RANGE", "start=${request.startDate}, end=${request.endDate}")
+        // One doc per day (daily_history) instead of one per transaction, so a range costs at most one read per day
         val query = firebaseFireStore
-            .collection(TRANSACTION)
+            .collection(DAILY_HISTORY)
             .whereEqualTo(USER_ID, currentUser.uid)
             .whereGreaterThanOrEqualTo(DATE, request.startDate)
             .whereLessThanOrEqualTo(DATE, request.endDate)
@@ -50,121 +44,20 @@ class FirebaseBudgetServiceImpl @Inject constructor(
                 return@addSnapshotListener
             }
 
-            val transactions = snapshot?.documents?.mapNotNull {
-                it.toObject(TransactionModel::class.java)
-            } ?: emptyList()
+            val days = snapshot?.documents
+                ?.mapNotNull { it.toObject(DailyHistoryModel::class.java) }
+                ?: emptyList()
 
-            Log.e("gwgwg", transactions.toString())
-            var foodTotal = 0L
-            var foodCount = 0
-
-            var entertainmentTotal = 0L
-            var entertainmentCount = 0
-
-            var householdTotal = 0L
-            var householdCount = 0
-
-            var transportationTotal = 0L
-            var transportationCount = 0
-
-            var workEducationTotal = 0L
-            var workEducationCount = 0
-
-            var healthcareTotal = 0L
-            var healthcareCount = 0
-
-            var personalTotal = 0L
-            var personalCount = 0
-
-            var familyTotal = 0L
-            var familyCount = 0
-
-            var othersTotal = 0L
-            var othersCount = 0
-
-            var totalExpense = 0L
-
-            for (transaction in transactions) {
-                //from negative to positive
-                val amount = abs(transaction.amount)
-
-                when (transaction.category) {
-                    "Food" -> {
-                        foodTotal += amount
-                        totalExpense += amount
-                        foodCount++
-                    }
-
-                    "Entertainment" -> {
-                        entertainmentTotal += amount
-                        totalExpense += amount
-                        entertainmentCount++
-                    }
-
-                    "Household" -> {
-                        householdTotal += amount
-                        totalExpense += amount
-                        householdCount++
-                    }
-
-                    "Transportation" -> {
-                        transportationTotal += amount
-                        totalExpense += amount
-                        transportationCount++
-                    }
-
-                    "Work/Education" -> {
-                        workEducationTotal += amount
-                        totalExpense += amount
-                        workEducationCount++
-                    }
-
-                    "Healthcare" -> {
-                        healthcareTotal += amount
-                        totalExpense += amount
-                        healthcareCount++
-                    }
-
-                    "Personal" -> {
-                        personalTotal += amount
-                        totalExpense += amount
-                        personalCount++
-                    }
-
-                    "Family" -> {
-                        familyTotal += amount
-                        totalExpense += amount
-                        familyCount++
-                    }
-
-                    else -> {
-                        othersTotal += amount
-                        totalExpense += amount
-                        othersCount++
-                    }
-                }
-            }
+            // Add up each day's per-category maps. Days saved before these maps existed add nothing.
+            val totals = sumByCategory(days.map { it.expenseByCategory })
+            val allowances = sumByCategory(days.map { it.allowanceByCategory })
 
             val summary = BudgetTotalSummaryModel(
-                food = foodTotal,
-                foodCount = foodCount,
-                entertainment = entertainmentTotal,
-                entertainmentCount = entertainmentCount,
-                household = householdTotal,
-                householdCount = householdCount,
-                transportation = transportationTotal,
-                transportationCount = transportationCount,
-                workEducation = workEducationTotal,
-                workEducationCount = workEducationCount,
-                healthcare = healthcareTotal,
-                healthcareCount = healthcareCount,
-                personal = personalTotal,
-                personalCount = personalCount,
-                family = familyTotal,
-                familyCount = familyCount,
-                others = othersTotal,
-                othersCount = othersCount,
-                totalExpense = totalExpense
+                totals = totals,
+                counts = sumByCategory(days.map { it.countByCategory }).mapValues { it.value.toInt() },
+                totalExpense = totals.values.sum(),
+                allowances = allowances,
+                totalAllowance = allowances.values.sum()
             )
 
             trySend(summary)
@@ -173,4 +66,8 @@ class FirebaseBudgetServiceImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    private fun sumByCategory(maps: List<Map<String, Long>>): Map<String, Long> =
+        maps.flatMap { it.entries }
+            .groupBy({ it.key }, { it.value })
+            .mapValues { (_, values) -> values.sum() }
 }

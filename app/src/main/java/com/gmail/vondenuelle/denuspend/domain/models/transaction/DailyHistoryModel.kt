@@ -11,5 +11,10 @@ data class DailyHistoryModel(
     val userId : String = "",
     val date : Timestamp = Timestamp.now(),
     val totalExpense : Long = 0L,
-    val totalIncome : Long = 0L
+    val totalIncome : Long = 0L,
+    // Per category, positive cents (counts = number of expenses). Budget adds these up per day instead of reading every transaction.
+    // Empty on days saved before these fields existed.
+    val expenseByCategory : Map<String, Long> = emptyMap(),
+    val allowanceByCategory : Map<String, Long> = emptyMap(),
+    val countByCategory : Map<String, Long> = emptyMap(),
     )
