@@ -16,6 +16,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.Update
 import com.gmail.vondenuelle.denuspend.data.remote.models.profile.request.UpdateProfileRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 import com.gmail.vondenuelle.denuspend.utils.orDefault
+import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.ALLOWANCE_TEMPLATES_COLLECTION
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.DAILY_HISTORY
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.TRANSACTION
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.USER_ID
@@ -241,7 +242,7 @@ class FirebaseProfileServiceImpl @Inject constructor(
         }
     }
 
-    // Deletes every daily_history day (plus its transactions subcollection), every top-level transaction, and users/{uid}.
+    // Deletes every daily_history day (plus its transactions subcollection), every top-level transaction, users/{uid} and allowance_templates/{uid}.
     // A Firestore batch holds at most 500 writes, so the deletes are committed in chunks.
     private suspend fun deleteUserData(uid: String) {
         val refs = mutableListOf<DocumentReference>()
@@ -260,6 +261,7 @@ class FirebaseProfileServiceImpl @Inject constructor(
             .get().await()
         refs += transactions.documents.map { it.reference }
         refs += firebaseFireStore.collection(USERS).document(uid)
+        refs += firebaseFireStore.collection(ALLOWANCE_TEMPLATES_COLLECTION).document(uid)
 
         refs.chunked(500).forEach { chunk ->
             val batch = firebaseFireStore.batch()

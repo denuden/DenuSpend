@@ -8,6 +8,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.Tr
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.TransactionService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseTransaction
 import com.gmail.vondenuelle.denuspend.di.qualifiers.IoDispatcher
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.AllowanceTemplateModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionOverviewModel
@@ -74,5 +75,40 @@ class TransactionRepository @Inject constructor(
     fun getTransactionsForDay(request: TransactionsForDayRequest) :  Flow<List<TransactionModel>> {
         return transactionService.getTransactionsForDay(request)
             .flowOn(dispatcher)
+    }
+
+    fun getAllowanceTemplates(): Flow<List<AllowanceTemplateModel>> {
+        return transactionService.getAllowanceTemplates()
+            .flowOn(dispatcher)
+    }
+
+    // [templates] is the full list to keep, so adding, editing and deleting a template all save through here
+    suspend fun saveAllowanceTemplates(templates: List<AllowanceTemplateModel>) {
+        val invalid = templates.any { template ->
+            template.name.isBlank() ||
+                template.items.isEmpty() ||
+                template.items.any { it.category.isEmpty() || it.amount <= 0L }
+        }
+        if (invalid) {
+            throw CannotCreateTransactionException("Give the template a name, and pick a category and an amount for every row")
+        }
+        transactionService.saveAllowanceTemplates(templates.map { it.copy(name = it.name.trim()) })
+    }
+
+    // Each row becomes one allowance for today, titled with the template's name
+    suspend fun applyAllowanceTemplate(template: AllowanceTemplateModel) {
+        if (template.items.isEmpty()) {
+            throw CannotCreateTransactionException("This template has no allowances to add")
+        }
+        transactionService.addTransactions(
+            template.items.map {
+                TransactionRequest(
+                    title = template.name,
+                    description = "---",
+                    amount = it.amount,
+                    category = it.category
+                )
+            }
+        )
     }
 }

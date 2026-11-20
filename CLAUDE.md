@@ -66,6 +66,7 @@ Type-safe Navigation Compose, with routes defined as `@Serializable` objects/cla
 - Small changes, one feature at a time.
 - If UI, one screen at a time and then we will discuss idea behind it per section
 - Ask before adding a new library.
+- Firestore listeners: ON_STOP stops are only for other screens, as needed. **Never on the first screens of the bottom nav bar** (Home, Add, Budget). Their listeners keep running so the tab stays cached, and back on those tabs goes to Home with saveState instead of popping them.
 - After changes, tell me what to test. I build in Android Studio myself.
 
 In terms of theming, we will follow material 3 guidelines as always especially if using their components. We can use custom one if the UI needs a more complex design and is generally easier if made from scratch rather than editing the material 3 component (E.G like MaterialCard). We will follow the color and as much as possible to use MaterialTheme.colorScheme.****. Only use hardcoded colors if really needed so we can stick to theming without really worrying about switching to dark mode and light mode as much as possible

@@ -5,11 +5,14 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.EditTransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.AllowanceTemplateModel
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.AllowanceTemplatesDoc
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionOverviewModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -41,6 +44,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         //Transaction collection
         const val TRANSACTION = "transactions"
         const val DAILY_HISTORY = "daily_history"
+        const val ALLOWANCE_TEMPLATES_COLLECTION = "allowance_templates"
 
         //Fields
         const val TOTAL_INCOME = "totalIncome"
@@ -51,6 +55,10 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         const val DESCRIPTION = "description"
         const val AMOUNT = "amount"
         const val CATEGORY = "category"
+        const val TEMPLATES = "templates"
+        const val EXPENSE_BY_CATEGORY = "expenseByCategory"
+        const val ALLOWANCE_BY_CATEGORY = "allowanceByCategory"
+        const val COUNT_BY_CATEGORY = "countByCategory"
 
 
         val utcFormatter = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
@@ -58,7 +66,11 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         }
     }
 
-    override suspend fun addTransaction(transactionRequest: TransactionRequest): TransactionModel {
+    override suspend fun addTransaction(transactionRequest: TransactionRequest): TransactionModel =
+        addTransactions(listOf(transactionRequest)).first()
+
+    // Every request lands on today's daily doc in one batch, so a template's allowances move the day totals once.
+    override suspend fun addTransactions(requests: List<TransactionRequest>): List<TransactionModel> {
         val currentUser = firebaseAuth.currentUser
             ?: throw NoUserException("User not logged in")
         val userId = currentUser.uid
@@ -73,59 +85,90 @@ class FirebaseTransactionServiceImpl @Inject constructor(
 
         val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY)
             .document(dailyDocId)
-        //create empty doc
-        val transactionRef = firebaseFireStore.collection(TRANSACTION).document()
-        //create transaction doc inside daily history doc
-        val dailyTransactionRef =
-            dailyDocRef
-                .collection(TRANSACTION)
-                .document(transactionRef.id)
-
-        val transaction = TransactionModel(
-            docId = transactionRef.id,
-            userId = userId,
-            title = transactionRequest.title,
-            description = transactionRequest.description,
-            amount = transactionRequest.amount,
-            category = transactionRequest.category,
-            date = timestamp
-        )
 
         //batch for multiple writes
         val batch = firebaseFireStore.batch()
 
-        try {
+        val transactions = requests.map { transactionRequest ->
+            //create empty doc
+            val transactionRef = firebaseFireStore.collection(TRANSACTION).document()
+            //create transaction doc inside daily history doc
+            val dailyTransactionRef =
+                dailyDocRef
+                    .collection(TRANSACTION)
+                    .document(transactionRef.id)
+
+            val transaction = TransactionModel(
+                docId = transactionRef.id,
+                userId = userId,
+                title = transactionRequest.title,
+                description = transactionRequest.description,
+                amount = transactionRequest.amount,
+                category = transactionRequest.category,
+                date = timestamp
+            )
+
             // 1. Write to top-level transactions
             batch.set(transactionRef, transaction)
 
             // 2. Write to daily subcollection (for UI grouping)
             batch.set(dailyTransactionRef, transaction)
 
-            // 3. Update daily totals
-            batch.set(
-                dailyDocRef,
-                mapOf(
-                    USER_ID to userId,
-                    DATE to timestamp,
-                    TOTAL_INCOME to if (transaction.amount > 0)
-                        FieldValue.increment(transaction.amount)
-                    else FieldValue.increment(0),
-
-                    TOTAL_EXPENSE to if (transaction.amount < 0)
-                        FieldValue.increment(abs(transaction.amount))
-                    else FieldValue.increment(0)
-                ),
-                SetOptions.merge()
-            )
-
-
-            // Commit all at once (atomic)
-            batch.commit().await()
-
-            return transaction
-        } catch (e : Exception) {
-            throw  e
+            transaction
         }
+
+        // 3. Update daily totals
+        val expensesByCategory = transactions.filter { it.amount < 0 }.groupBy { it.category }
+        val allowancesByCategory = transactions.filter { it.amount > 0 }.groupBy { it.category }
+        val dailyFields = mutableMapOf<String, Any>(
+            USER_ID to userId,
+            DATE to timestamp,
+            TOTAL_INCOME to FieldValue.increment(transactions.filter { it.amount > 0 }.sumOf { it.amount }),
+            TOTAL_EXPENSE to FieldValue.increment(transactions.filter { it.amount < 0 }.sumOf { abs(it.amount) })
+        )
+        // Per-category totals as nested maps (set + merge reads the keys literally). Empty maps are left out,
+        // because merging an empty map would replace the existing one.
+        if (expensesByCategory.isNotEmpty()) {
+            dailyFields[EXPENSE_BY_CATEGORY] = expensesByCategory.mapValues { (_, list) -> FieldValue.increment(list.sumOf { abs(it.amount) }) }
+            dailyFields[COUNT_BY_CATEGORY] = expensesByCategory.mapValues { (_, list) -> FieldValue.increment(list.size.toLong()) }
+        }
+        if (allowancesByCategory.isNotEmpty()) {
+            dailyFields[ALLOWANCE_BY_CATEGORY] = allowancesByCategory.mapValues { (_, list) -> FieldValue.increment(list.sumOf { it.amount }) }
+        }
+        batch.set(dailyDocRef, dailyFields, SetOptions.merge())
+
+
+        // Commit all at once (atomic)
+        batch.commit().await()
+
+        return transactions
+    }
+
+    override fun getAllowanceTemplates(): Flow<List<AllowanceTemplateModel>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        // One doc per user (allowance_templates/{uid}) holding every template, so loading them is a single read
+        val listener = firebaseFireStore.collection(ALLOWANCE_TEMPLATES_COLLECTION).document(currentUser.uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.toObject<AllowanceTemplatesDoc>()?.templates ?: emptyList())
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    // Arrays are replaced as a whole on merge, so this saves the full list (add, edit and delete all go through here)
+    override suspend fun saveAllowanceTemplates(templates: List<AllowanceTemplateModel>) {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        firebaseFireStore.collection(ALLOWANCE_TEMPLATES_COLLECTION).document(currentUser.uid)
+            .set(mapOf(USER_ID to currentUser.uid, TEMPLATES to templates), SetOptions.merge())
+            .await()
     }
 
     override suspend fun getTransactionById(docId: String): TransactionModel {
@@ -161,10 +204,30 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         val totalField = if (request.amount > 0) TOTAL_INCOME else TOTAL_EXPENSE
         val delta = abs(request.amount) - abs(request.oldAmount)
 
+        val dailyFields = mutableMapOf<String, Any>(totalField to FieldValue.increment(delta))
+        if (hasCategoryTotals(dailyDocRef)) {
+            val categoryField = if (request.amount > 0) ALLOWANCE_BY_CATEGORY else EXPENSE_BY_CATEGORY
+            if (request.category == request.oldCategory) {
+                dailyFields[categoryField] = mapOf(request.category to FieldValue.increment(delta))
+            } else {
+                // Category changed: take the old amount off the old category and put the new one on the new category
+                dailyFields[categoryField] = mapOf(
+                    request.oldCategory to FieldValue.increment(-abs(request.oldAmount)),
+                    request.category to FieldValue.increment(abs(request.amount))
+                )
+                if (request.amount < 0) {
+                    dailyFields[COUNT_BY_CATEGORY] = mapOf(
+                        request.oldCategory to FieldValue.increment(-1),
+                        request.category to FieldValue.increment(1)
+                    )
+                }
+            }
+        }
+
         val batch = firebaseFireStore.batch()
         batch.update(transactionRef, fields)
         batch.update(dailyTransactionRef, fields)
-        batch.update(dailyDocRef, totalField, FieldValue.increment(delta))
+        batch.set(dailyDocRef, dailyFields, SetOptions.merge())
         batch.commit().await()
     }
 
@@ -179,12 +242,28 @@ class FirebaseTransactionServiceImpl @Inject constructor(
 
         val totalField = if (transaction.amount > 0) TOTAL_INCOME else TOTAL_EXPENSE
 
+        val dailyFields = mutableMapOf<String, Any>(totalField to FieldValue.increment(-abs(transaction.amount)))
+        if (hasCategoryTotals(dailyDocRef)) {
+            val categoryField = if (transaction.amount > 0) ALLOWANCE_BY_CATEGORY else EXPENSE_BY_CATEGORY
+            dailyFields[categoryField] = mapOf(transaction.category to FieldValue.increment(-abs(transaction.amount)))
+            if (transaction.amount < 0) {
+                dailyFields[COUNT_BY_CATEGORY] = mapOf(transaction.category to FieldValue.increment(-1))
+            }
+        }
+
         // The daily doc is kept even if this was the day's last transaction (it shows as ₱0).
         val batch = firebaseFireStore.batch()
         batch.delete(transactionRef)
         batch.delete(dailyTransactionRef)
-        batch.update(dailyDocRef, totalField, FieldValue.increment(-abs(transaction.amount)))
+        batch.set(dailyDocRef, dailyFields, SetOptions.merge())
         batch.commit().await()
+    }
+
+    // Days saved before the per-category fields existed don't have them. Changing those days would create
+    // negative category values, so edit and delete only touch the per-category fields when the day already has them.
+    private suspend fun hasCategoryTotals(dailyDocRef: DocumentReference): Boolean {
+        val day = dailyDocRef.get().await()
+        return day.contains(EXPENSE_BY_CATEGORY) || day.contains(ALLOWANCE_BY_CATEGORY)
     }
 
 

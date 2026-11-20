@@ -1,6 +1,7 @@
 package com.gmail.vondenuelle.denuspend.ui.budget.screen
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,25 +10,38 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
+import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
 import com.gmail.vondenuelle.denuspend.navigation.toNavOptions
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.add.components.CategoryDropdownButtonModel
@@ -37,13 +51,17 @@ import com.gmail.vondenuelle.denuspend.ui.budget.BudgetViewModel
 import com.gmail.vondenuelle.denuspend.ui.budget.components.BudgetItem
 import com.gmail.vondenuelle.denuspend.ui.budget.components.section.ChartSection
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
-import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun BudgetScreen(
@@ -87,20 +105,24 @@ fun BudgetScreen(
     ComposableLifecycle { _, event ->
         when (event) {
             Lifecycle.Event.ON_START -> {
-                viewModel.onEvent(BudgetScreenEvents.OnGetBudgetSummary(state.date)) //initial
+                viewModel.onEvent(BudgetScreenEvents.OnGetBudgetSummary) //initial
             }
+            // No ON_STOP stop: this is a bottom-nav tab screen, so the listener keeps running and the data stays cached
             else -> Unit
         }
     }
 
-    LoadingDialog(
-        showDialog = state.isLoading,
-        text = "Loading...",
-    ) { }
     ErrorDialog(
         text = error,
         showDialog = error.isNotEmpty()
     ) { error = "" }
+
+    if (state.showRangePicker) {
+        BudgetRangePickerDialog(
+            onDismiss = { viewModel.onEvent(BudgetScreenEvents.OnShowRangePicker(false)) },
+            onConfirm = { start, end -> viewModel.onEvent(BudgetScreenEvents.OnCustomRangeSelected(start, end)) }
+        )
+    }
 
     BudgetScreenContent(
         state = state, onEvent = viewModel::onEvent,
@@ -116,58 +138,125 @@ fun BudgetScreenContent(
     onEvent: (BudgetScreenEvents) -> Unit,
     ) {
     val scrollState = rememberScrollState()
+    val summary = state.budgetTotalSummaryModel
+
+    // Biggest spending first. Categories with no spending and no allowance are only named in one line under the list.
+    val (active, unused) = CategoryDropdownButtonModel.list.drop(1)
+        .mapIndexed { index, name -> index to name }
+        .partition { (_, name) -> (summary.totals[name] ?: 0L) > 0 || (summary.allowances[name] ?: 0L) > 0 }
+    val activeSorted = active.sortedWith(
+        compareByDescending<Pair<Int, String>> { (_, name) -> summary.totals[name] ?: 0L }
+            .thenByDescending { (_, name) -> summary.allowances[name] ?: 0L }
+    )
+
+    val filterLabel = if (state.filter == BudgetChartFilter.CUSTOM && state.customStartMillis != null) {
+        formatPickerRange(state.customStartMillis, state.customEndMillis ?: state.customStartMillis)
+    } else {
+        stringResource(state.filter.label)
+    }
 
     Column(
         modifier = modifier
             .padding(horizontal = 16.dp)
             .verticalScroll(scrollState)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        // Thin loading bar instead of a dialog. The slot keeps its height so nothing jumps.
+        Box(modifier = Modifier.fillMaxWidth().height(16.dp), contentAlignment = Alignment.Center) {
+            if (state.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+        }
         ChartSection(
-            filter = state.date,
-            budgetData = state.budgetTotalSummaryModel,
+            filterLabel = filterLabel,
+            budgetData = summary,
             onChangeFilter = {
-                onEvent(BudgetScreenEvents.OnChangeFilterDate(it))
-                onEvent(BudgetScreenEvents.OnGetBudgetSummary(it))
+                onEvent(BudgetScreenEvents.OnChangeFilter(it))
             }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text("Transactions")
-        Spacer(modifier = Modifier.height(6.dp))
-        //list of categories
-        CategoryDropdownButtonModel.list.drop(1).mapIndexed { index, it ->
-            BudgetItem(
-                category = it,
-                transactionCount =
-                    when(index) {
-                        0 -> state.budgetTotalSummaryModel.foodCount
-                        1 -> state.budgetTotalSummaryModel.entertainmentCount
-                        2 -> state.budgetTotalSummaryModel.householdCount
-                        3 -> state.budgetTotalSummaryModel.transportationCount
-                        4 -> state.budgetTotalSummaryModel.workEducationCount
-                        5 -> state.budgetTotalSummaryModel.healthcareCount
-                        6 -> state.budgetTotalSummaryModel.personalCount
-                        7 -> state.budgetTotalSummaryModel.familyCount
-                        8 -> state.budgetTotalSummaryModel.othersCount
-                        else -> 0
-                    },
-                onClick = {
-                    onEvent(BudgetScreenEvents.OnNavigateToBudgetTransactionScreen(it))
-                },
-                icon = {
-                    Icon(
-                        imageVector = CategoryDropdownButtonModel.icons[index],
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
+        if (activeSorted.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                stringResource(R.string.budget_lbl_breakdown),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            //list of categories
+            Card(
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors().copy(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                    activeSorted.forEach { (index, name) ->
+                        BudgetItem(
+                            category = name,
+                            icon = CategoryDropdownButtonModel.icons[index],
+                            color = CategoryDropdownButtonModel.colors[index],
+                            iconTint = CategoryDropdownButtonModel.selectedColors[index],
+                            amount = summary.totals[name] ?: 0L,
+                            allowance = summary.allowances[name] ?: 0L,
+                            transactionCount = summary.counts[name] ?: 0,
+                            onClick = {
+                                onEvent(BudgetScreenEvents.OnNavigateToBudgetTransactionScreen(name))
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+
+            if (unused.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.budget_lbl_no_spending, unused.joinToString(", ") { it.second }),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)
+                )
+            }
         }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+// "Nov 3 – Nov 9", or one date when both ends are the same day. The millis are UTC midnight, so format in UTC.
+private fun formatPickerRange(startMillis: Long, endMillis: Long): String {
+    val formatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+    val start = Instant.ofEpochMilli(startMillis).atZone(ZoneOffset.UTC).toLocalDate()
+    val end = Instant.ofEpochMilli(endMillis).atZone(ZoneOffset.UTC).toLocalDate()
+    return if (start == end) start.format(formatter) else "${start.format(formatter)} – ${end.format(formatter)}"
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BudgetRangePickerDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (startMillis: Long, endMillis: Long) -> Unit,
+) {
+    val state = rememberDateRangePickerState(
+        selectableDates = object : SelectableDates {
+            // No future days. Compare calendar days, because the picker's millis are UTC midnight.
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                !Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate().isAfter(LocalDate.now())
+        }
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            val start = state.selectedStartDateMillis
+            TextButton(
+                enabled = start != null,
+                // Picking only a start day means a one-day range
+                onClick = { if (start != null) onConfirm(start, state.selectedEndDateMillis ?: start) }
+            ) { Text(stringResource(R.string.lbl_ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.lbl_cancel)) }
+        }
+    ) {
+        DateRangePicker(state = state, modifier = Modifier.weight(1f))
     }
 }
 
@@ -178,7 +267,15 @@ private fun BudgetScreenContentPreview() {
         Surface {
             BudgetScreenContent(
                 modifier = Modifier.fillMaxSize(),
-                state = BudgetScreenState(),
+                state = BudgetScreenState(
+                    budgetTotalSummaryModel = BudgetTotalSummaryModel(
+                        totals = mapOf("Food" to 499500L, "Transportation" to 310000L, "Personal" to 120000L),
+                        counts = mapOf("Food" to 12, "Transportation" to 8, "Personal" to 1),
+                        totalExpense = 929500L,
+                        allowances = mapOf("Food" to 600000L, "Transportation" to 300000L, "Household" to 200000L),
+                        totalAllowance = 1100000L
+                    )
+                ),
                 onEvent =  {}
             )
         }

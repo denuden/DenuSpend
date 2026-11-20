@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +46,11 @@ import com.gmail.vondenuelle.denuspend.ui.add.AddViewModel
 import com.gmail.vondenuelle.denuspend.ui.add.components.DailyHistoryItem
 import com.gmail.vondenuelle.denuspend.ui.add.components.TransactionActionsSheet
 import com.gmail.vondenuelle.denuspend.ui.common.components.PullToRefreshCustomStyle
-import com.gmail.vondenuelle.denuspend.ui.common.components.TransactionItem
+import com.gmail.vondenuelle.denuspend.ui.add.components.TransactionListControls
+import com.gmail.vondenuelle.denuspend.ui.add.components.TransactionSort
+import com.gmail.vondenuelle.denuspend.ui.add.components.TransactionTypeFilter
+import com.gmail.vondenuelle.denuspend.ui.add.components.arrangeTransactions
+import com.gmail.vondenuelle.denuspend.ui.add.components.transactionItems
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ModalBottomSheetDialog
@@ -75,6 +80,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import com.gmail.vondenuelle.denuspend.R
 import kotlin.math.abs
 
@@ -217,6 +223,12 @@ fun TransactionDialogContent(
     isLoading: Boolean,
     onTransactionClick: (TransactionModel) -> Unit = {},
 ) {
+    // Display-only choices for this day's list, same controls as "Last Added" on the Add tab
+    var typeFilter by rememberSaveable { mutableStateOf(TransactionTypeFilter.ALL) }
+    var sort by rememberSaveable { mutableStateOf(TransactionSort.LATEST) }
+    var groupByCategory by rememberSaveable { mutableStateOf(false) }
+    val shownTransactions = remember(list, typeFilter, sort) { arrangeTransactions(list, typeFilter, sort) }
+
     LazyColumn(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         item {
             val isOverspent = day.totalExpense > day.totalIncome
@@ -227,41 +239,50 @@ fun TransactionDialogContent(
             )
             Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp)) {
                 DayStat(
-                    label = "Income",
+                    label = stringResource(R.string.add_lbl_allowance),
                     value = "₱${CurrencyUtils.formatCents(day.totalIncome)}",
                     color = colorResource(R.color.verified_green_text),
                     modifier = Modifier.weight(1f)
                 )
                 DayStat(
-                    label = "Expense",
+                    label = stringResource(R.string.add_lbl_expense),
                     value = "₱${CurrencyUtils.formatCents(day.totalExpense)}",
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 DayStat(
-                    label = if (isOverspent) "Over" else "Left",
+                    label = stringResource(if (isOverspent) R.string.add_lbl_over else R.string.add_lbl_left),
                     value = "₱${CurrencyUtils.formatCents(abs(day.totalIncome - day.totalExpense))}",
                     color = if (isOverspent) MaterialTheme.colorScheme.error else colorResource(R.color.verified_green_text),
                     modifier = Modifier.weight(1f)
                 )
             }
         }
+        item {
+            TransactionListControls(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                type = typeFilter,
+                onTypeChange = { typeFilter = it },
+                sort = sort,
+                onSortChange = { sort = it },
+                groupByCategory = groupByCategory,
+                onGroupByCategoryChange = { groupByCategory = it }
+            )
+        }
         if (isLoading) {
             items(3) {
                 SkeletonTransactionList(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
             }
         }
-        items(list) {
-            TransactionItem(transactionModel = it, onClick = { onTransactionClick(it) })
-        }
-        if (list.isEmpty() && !isLoading) {
+        transactionItems(shownTransactions, groupByCategory, onTransactionClick)
+        if (shownTransactions.isEmpty() && !isLoading) {
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text("Nothing to show", fontWeight = FontWeight.W300)
+                    Text(stringResource(R.string.add_lbl_nothing_to_show), fontWeight = FontWeight.W300)
                 }
             }
         }

@@ -1,11 +1,12 @@
 package com.gmail.vondenuelle.denuspend.ui.add
 
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.AllowanceTemplateItem
+import com.gmail.vondenuelle.denuspend.domain.models.transaction.AllowanceTemplateModel
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.R
-import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.EditTransactionRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
@@ -19,8 +20,6 @@ import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
 import com.gmail.vondenuelle.denuspend.utils.SnackbarEvent
 import com.gmail.vondenuelle.denuspend.utils.network.ResultState
 import com.gmail.vondenuelle.denuspend.utils.network.asResult
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,9 +37,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
 import javax.inject.Inject
 import kotlin.math.abs
+import java.time.LocalDate
+import java.util.UUID
 
 @HiltViewModel
 class AddViewModel @Inject constructor(
@@ -57,8 +57,10 @@ class AddViewModel @Inject constructor(
     val stateFlow = _stateFlow.asStateFlow()
 
     private var overviewJob: Job? = null
+    private var overviewDate: LocalDate? = null // the day overviewJob is listening to (its daily doc id is built from it)
     private var historyJob: Job? = null
     private var perDayJob : Job? = null
+    private var templatesJob : Job? = null
 
     // History grows by one page per load-more; the listener is restarted with the bigger limit.
     private var historyLimit = HISTORY_PAGE_SIZE
@@ -81,11 +83,92 @@ class AddViewModel @Inject constructor(
         perDayJob?.cancel()
         perDayJob = null
     }
+    fun stopTemplatesListener() {
+        templatesJob?.cancel()
+        templatesJob = null
+    }
 
     fun onEvent(event: AddScreenEvents) {
         when (event) {
             is AddScreenEvents.OnNavigateToIncomeScreen -> {
                 sendEvent(OnNavigate(AddScreens.AddIncomeScreenNavigation()))
+            }
+
+            is AddScreenEvents.OnNavigateToAllowanceTemplates -> {
+                sendEvent(OnNavigate(AddScreens.AllowanceTemplatesNavigation))
+            }
+
+            AddScreenEvents.OnGetAllowanceTemplates -> {
+                if (templatesJob?.isActive == true) return // already live
+                templatesJob = viewModelScope.launch {
+                    transactionRepository.getAllowanceTemplates().asResult().onEach { res ->
+                        when (res) {
+                            ResultState.Completed, ResultState.Loading -> Unit
+                            is ResultState.Error -> onError(res.exception)
+                            is ResultState.Success -> _stateFlow.update {
+                                it.copy(allowanceTemplates = res.data, hasLoadedTemplates = true)
+                            }
+                        }
+                    }.collect()
+                }
+            }
+
+            is AddScreenEvents.OnOpenTemplateEditor -> _stateFlow.update {
+                it.copy(templateDraft = event.template ?: AllowanceTemplateModel(items = listOf(AllowanceTemplateItem(id = newId()))))
+            }
+            AddScreenEvents.OnCloseTemplateEditor -> _stateFlow.update { it.copy(templateDraft = null) }
+            is AddScreenEvents.OnTemplateDraftChanged -> _stateFlow.update { it.copy(templateDraft = event.draft) }
+
+            AddScreenEvents.OnSaveTemplateDraft -> {
+                val current = _stateFlow.value
+                val draft = current.templateDraft ?: return
+                if (current.isLoading || !current.hasLoadedTemplates) return // ignore double taps, and wait for the list
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        val saved = if (draft.id.isEmpty()) draft.copy(id = newId()) else draft
+                        val isNew = current.allowanceTemplates.none { it.id == saved.id }
+                        val templates = if (isNew) current.allowanceTemplates + saved
+                            else current.allowanceTemplates.map { if (it.id == saved.id) saved else it }
+                        transactionRepository.saveAllowanceTemplates(templates)
+                        _stateFlow.update { it.copy(isLoading = false, templateDraft = null) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.add_snackbar_template_saved))))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is AddScreenEvents.OnDeleteAllowanceTemplate -> {
+                val current = _stateFlow.value
+                if (current.isLoading || !current.hasLoadedTemplates) return
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        transactionRepository.saveAllowanceTemplates(current.allowanceTemplates.filter { it.id != event.template.id })
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.add_snackbar_template_deleted))))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is AddScreenEvents.OnApplyAllowanceTemplate -> {
+                if (_stateFlow.value.isLoading) return // ignore double taps while saving
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        transactionRepository.applyAllowanceTemplate(event.template)
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.add_snackbar_template_applied, event.template.name))))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
             }
 
             is AddScreenEvents.OnNavigateToRecentTransactions -> {
@@ -143,6 +226,7 @@ class AddViewModel @Inject constructor(
                                 docId = original.docId,
                                 dailyDocId = current.editingDailyDocId,
                                 oldAmount = original.amount,
+                                oldCategory = original.category,
                                 title = current.transactionTitle,
                                 description = current.transactionDescription,
                                 // keep the original sign, the form only holds the positive amount
@@ -182,7 +266,7 @@ class AddViewModel @Inject constructor(
                     try {
                         transactionRepository.addTransaction(event.request)
                         _stateFlow.update { it.copy(isLoading = false) }
-                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = if (event.request.amount > 0) "Income Added" else "Expense Added")))
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(if (event.request.amount > 0) R.string.add_snackbar_allowance_added else R.string.add_snackbar_expense_added))))
                         sendEvent(OneTimeEvents.OnPopBackStack)
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy(isLoading = false) }
@@ -221,15 +305,26 @@ class AddViewModel @Inject constructor(
                 }
             }
 
+            AddScreenEvents.OnRefreshOverview -> {
+                if (_stateFlow.value.isRefreshing) return
+                // The listeners are already live, so there's nothing to re-read. This only restarts what needs it:
+                // a new day after midnight, or a listener that ended after an error. The short spinner is just feedback.
+                onEvent(AddScreenEvents.OnGetTransactionOverview)
+                onEvent(AddScreenEvents.OnGetAllowanceTemplates)
+                viewModelScope.launch {
+                    _stateFlow.update { it.copy(isRefreshing = true) }
+                    delay(500)
+                    _stateFlow.update { it.copy(isRefreshing = false) }
+                }
+            }
+
             AddScreenEvents.OnGetTransactionOverview -> {
-                if (overviewJob != null) {
-                    viewModelScope.launch {
-                        _stateFlow.update { it.copy(isListLoading = true) }
-                        delay(500)
-                        _stateFlow.update { it.copy(isListLoading = false) }
-                    }
-                    return
-                } // prevent duplicate  when doing ux reloading
+                // Already live (the tab keeps its listener), so coming back to the tab doesn't flash a loading state or re-read.
+                // Past midnight it's still listening to yesterday's doc, so restart it for the new day instead.
+                val today = LocalDate.now()
+                if (overviewJob?.isActive == true && overviewDate == today) return
+                stopOverviewListener()
+                overviewDate = today
 
                 overviewJob = viewModelScope.launch {
                     _stateFlow.update { it.copy(isListLoading = true) }
@@ -308,6 +403,8 @@ class AddViewModel @Inject constructor(
             }.collect()
     }
 
+    private fun newId() = UUID.randomUUID().toString()
+
     private fun logout() {
         viewModelScope.launch {
             try {
@@ -320,33 +417,6 @@ class AddViewModel @Inject constructor(
 
     private fun onError(e: Throwable?) {
         when (e) {
-            is HttpException -> {
-                val statusCode = e.code()
-                val errorBody = e.response()?.errorBody()
-                val gson = Gson()
-                val type = object : TypeToken<ErrorModel>() {}.type
-                val errorResponse: ErrorModel? = gson.fromJson(errorBody?.charStream(), type)
-
-                // Example: Handle specific status
-                when (statusCode) {
-                    401 -> {
-//                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation))
-                        return
-                    }
-                }
-
-                //if this is not null, then there is a message regarding bad request of params
-                if (errorResponse?.errors != null) {
-                    _stateFlow.update {
-                        it.copy(
-                        )
-                    }
-                    sendEvent(OneTimeEvents.ShowInputError(errorResponse.errors))
-                } else if (errorResponse?.message != null) {
-                    sendEvent(OneTimeEvents.ShowError(errorResponse.message))
-                }
-            }
-
             is NoUserException -> {
                 // Signing out is enough. AppRoot swaps to the auth screens on its own.
                 sendEvent(OneTimeEvents.ShowToast("No user is signed in"))

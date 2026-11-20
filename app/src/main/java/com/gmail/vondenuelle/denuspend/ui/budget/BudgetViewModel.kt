@@ -1,20 +1,16 @@
 package com.gmail.vondenuelle.denuspend.ui.budget
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gmail.vondenuelle.denuspend.data.remote.error.ErrorModel
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.BudgetRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.network.ResultState
 import com.gmail.vondenuelle.denuspend.utils.network.asResult
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -25,7 +21,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -43,7 +38,6 @@ class BudgetViewModel @Inject constructor(
 
     private var getBudgetSummaryJob : Job? = null //stopper for ux refresh
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun stopGetBudgetSummaryListener() {
         getBudgetSummaryJob?.cancel()
         getBudgetSummaryJob = null
@@ -54,31 +48,33 @@ class BudgetViewModel @Inject constructor(
             is BudgetScreenEvents.OnNavigateToBudgetTransactionScreen -> {
                 sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetInsightsScreenNavigation(event.category)))
             }
-            is BudgetScreenEvents.OnChangeFilterDate -> {
-                _stateFlow.update { it.copy(date = event.date) }
-            }
-            is BudgetScreenEvents.OnGetBudgetSummary  -> {
-                getBudgetSummaryJob?.cancel()
-
-                getBudgetSummaryJob = viewModelScope.launch {
-                    _stateFlow.update { it.copy(isLoading = true) }
-                    delay(500)
-
-                    budgetRepository.getBudgetSummary(event.date).asResult()
-                        .onEach { res ->
-                            when (res) {
-                                ResultState.Completed -> _stateFlow.update { it.copy(isLoading = false) }
-                                is ResultState.Error -> onError(res.exception)
-                                ResultState.Loading -> _stateFlow.update { it.copy(isLoading = true) }
-                                is ResultState.Success -> _stateFlow.update {
-                                    it.copy(
-                                        budgetTotalSummaryModel = res.data,
-                                        isLoading = false,
-                                    )
-                                }
-                            }
-                        }.collect()
+            is BudgetScreenEvents.OnChangeFilter -> {
+                // Custom waits for the user to pick a range in the dialog first
+                if (event.filter == BudgetChartFilter.CUSTOM) {
+                    _stateFlow.update { it.copy(showRangePicker = true) }
+                    return
                 }
+                _stateFlow.update { it.copy(filter = event.filter) }
+                stopGetBudgetSummaryListener()
+                getBudgetSummary()
+            }
+            BudgetScreenEvents.OnGetBudgetSummary -> {
+                // Already live, so nothing to restart. isActive also covers a listener that ended with an error.
+                if (getBudgetSummaryJob?.isActive == true) return
+                getBudgetSummary()
+            }
+            is BudgetScreenEvents.OnShowRangePicker -> _stateFlow.update { it.copy(showRangePicker = event.value) }
+            is BudgetScreenEvents.OnCustomRangeSelected -> {
+                _stateFlow.update {
+                    it.copy(
+                        filter = BudgetChartFilter.CUSTOM,
+                        showRangePicker = false,
+                        customStartMillis = event.startMillis,
+                        customEndMillis = event.endMillis
+                    )
+                }
+                stopGetBudgetSummaryListener()
+                getBudgetSummary()
             }
             is BudgetScreenEvents.OnShowDatePicker -> {
                 _stateFlow.update {
@@ -87,7 +83,29 @@ class BudgetViewModel @Inject constructor(
                     )
                 }
             }
-            else -> {}
+        }
+    }
+
+    private fun getBudgetSummary() {
+        getBudgetSummaryJob = viewModelScope.launch {
+            _stateFlow.update { it.copy(isLoading = true) }
+            delay(500)
+
+            val current = _stateFlow.value
+            budgetRepository.getBudgetSummary(current.filter, current.customStartMillis, current.customEndMillis).asResult()
+                .onEach { res ->
+                    when (res) {
+                        ResultState.Completed -> _stateFlow.update { it.copy(isLoading = false) }
+                        is ResultState.Error -> onError(res.exception)
+                        ResultState.Loading -> _stateFlow.update { it.copy(isLoading = true) }
+                        is ResultState.Success -> _stateFlow.update {
+                            it.copy(
+                                budgetTotalSummaryModel = res.data,
+                                isLoading = false,
+                            )
+                        }
+                    }
+                }.collect()
         }
     }
 
@@ -104,33 +122,6 @@ class BudgetViewModel @Inject constructor(
 
     private fun onError(e: Throwable?) {
         when (e) {
-            is HttpException -> {
-                val statusCode = e.code()
-                val errorBody = e.response()?.errorBody()
-                val gson = Gson()
-                val type = object : TypeToken<ErrorModel>() {}.type
-                val errorResponse: ErrorModel? = gson.fromJson(errorBody?.charStream(), type)
-
-                // Example: Handle specific status
-                when(statusCode) {
-                    401 -> {
-//                        sendEvent(OneTimeEvents.OnNavigate(AuthScreens.LoginNavigation))
-                        return
-                    }
-                }
-
-                //if this is not null, then there is a message regarding bad request of params
-                if (errorResponse?.errors != null) {
-                    _stateFlow.update {
-                        it.copy(
-                        )
-                    }
-                    sendEvent(OneTimeEvents.ShowInputError(errorResponse.errors))
-                } else if (errorResponse?.message != null) {
-                    sendEvent(OneTimeEvents.ShowError(errorResponse.message))
-                }
-            }
-
             is NoUserException -> {
                 // Signing out is enough. AppRoot swaps to the auth screens on its own.
                 sendEvent(OneTimeEvents.ShowToast("No user is signed in"))

@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.navigation
 
+import com.gmail.vondenuelle.denuspend.ui.add.screen.AllowanceTemplatesScreen
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -41,6 +42,16 @@ fun NavGraphBuilder.addNavGraph(
         }
         composable<AddScreens.AllRecentTransactionsNavigation> {
             RecentTransactions(
+                onNavigate = { route, navOptions ->
+                    navController.navigate(route, navOptions = navOptions)
+                },
+                onPopBackStack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable<AddScreens.AllowanceTemplatesNavigation> {
+            AllowanceTemplatesScreen(
                 onNavigate = { route, navOptions ->
                     navController.navigate(route, navOptions = navOptions)
                 },
