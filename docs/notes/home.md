@@ -1,0 +1,33 @@
+# Home dashboard (how it works)
+
+- **Home is a read-only dashboard.** It has no add/edit buttons and nothing that writes, so Home itself costs 0 writes. Every card is a shortcut to the screen that owns that data. Mockup / design source: https://claude.ai/artifact/FEFUYjSNcX3edgcxxHEXGy (final hybrid section). Goals is not designed yet and isn't on Home.
+- **Sections, top to bottom**, one file each in `ui/home/components/`:
+  - `TodayLeftCard` (`primaryContainer`, Today icon): "Left to spend today" / "Over today" in red, spent of allowance, bar. → Add tab.
+  - `TodayCategoryChips`: one chip per category with allowance or spending today, in dropdown order. An over chip uses `errorContainer`. Hidden when empty. → Insights(category).
+  - `MonthCard` (`tertiaryContainer`, CalendarMonth): month name, "Day X of Y", spent of allowance, bar with an even-pace tick, "₱X left · ₱Y/day to stay on plan" or "₱X over". → Budget tab.
+  - `BalanceCard` (`inverseSurface`, Wallet icon): total of all wallets plus a private `MiniWalletCard` per wallet (`WalletStyle` colors, `formatBalance`). Card → Wallet tab, mini card → WalletDetails(id).
+  - `LastAddedCard` (neutral `surfaceContainerLow`): today's newest 3 via the shared `TransactionItem`, with no `onClick` so taps reach the card. → History.
+- **One color per section** so they're easy to tell apart. Plans (today, month) use container colors. Real money is the dark card, so balances don't look like allowances.
+- **Tab switches go through `onNavigateToTab`**, which is `MainScreen`'s `navigateToTab` passed down `AppNavigation` → `addMainNavGraph` → `HomeScreen`. That gives the same `popUpTo(start){saveState}` + `launchSingleTop` + `restoreState` as the bottom bar. A plain `navigate(MainScreens.AddNavigation)` would push a second Add on top of Home and break the selected tab and Back. Pushes (Insights, wallet details, History) are VM `OnNavigate` events to existing routes, and Back returns to Home.
+- **Insights opens on its default range, This month**, not just today. The chip is a way into the category's story.
+- **Three listeners in `HomeViewmodel`**, one Job each, started on ON_START with **no ON_STOP stop** (tab rule):
+  - `todayJob` = `getTodayOverview` (daily doc + today's transactions). Restarts when `todayDate != LocalDate.now()`, the same midnight check as Add's overview.
+  - `monthJob` = `BudgetRepository.getMonthlyHistory(YearMonth)`. Restarts when `monthOf` changes.
+  - `walletsJob` = `getWallets`.
+  - The `stop*Listener()` functions exist for the pattern but nothing calls them.
+- **Shared listeners:** today and wallets are the exact queries Add and Wallet run, so the SDK serves both from one listener (about 0 extra reads when both tabs are open). Only the monthly doc is new.
+- **`getMonthlyHistory`** (`FirebaseBudgetServiceImpl`) listens to `monthly_history/{uid}_yyyyMM` by id. It needs no index, costs 1 read, and emits null before anything is added that month (shown as an empty `MonthlyHistoryModel`).
+- **Rules gotcha:** that missing-doc listen needs `allow get: if resource == null || isMe(resource.data.userId);` on `monthly_history`, the same as wallets. It was set in the console on 2026-11-21. Without it, a month with no data yet shows a PERMISSION_DENIED toast.
+- **Math:**
+  - Today uses the daily doc's `totalIncome` / `totalExpense`, same as Add.
+  - Month uses the **sums of the monthly doc's category maps**, so it matches Budget's This month.
+  - ₱/day = left ÷ days left including today.
+  - The tick sits at dayOfMonth ÷ daysInMonth. It's hidden when the month has no allowance, and drawn in `surface` when over so it stays visible on the red bar.
+  - Spending with no allowance shows a full bar (same as Add).
+  - A category that isn't in the dropdown gets no chip but still counts in the totals (same as Budget).
+- **Cost:** a cold open is about 5 reads + today's transaction count. A new expense is about 4 reads (daily, transaction, wallet, monthly), an allowance about 3. A typical day is ~40 reads, a heavy day ~200.
+- **Known gaps:**
+  - Staying on Home, unlocked, across midnight or a month change shows the old day/month until the next ON_START (same as Add).
+  - Dark wallet colors (slate, indigo) are low-contrast on the dark card, but the white text stays readable.
+  - Not device-tested yet: sideways scrolling with many wallets/categories, and the rollover.
+- **Adding a Home section:** new file in `components/`, its own listener Job + loading flag in `HomeViewmodel` (only-if-not-active on ON_START), strings in the `HOME SCREEN` block, and a redirect, never an action.

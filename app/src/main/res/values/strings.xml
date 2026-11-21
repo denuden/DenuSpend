@@ -333,6 +333,28 @@
     <string name="wallet_lbl_no_wallet">Don\'t deduct from a wallet</string>
     <string name="wallet_lbl_closed_wallet">Closed wallet</string>
 
+<!--    HOME SCREEN-->
+    <string name="home_lbl_left_today">Left to spend today</string>
+    <string name="home_lbl_over_today">Over today</string>
+    <string name="home_lbl_spent_of_allowance">%1$s spent of %2$s allowance</string>
+    <string name="home_lbl_no_allowance_today">No allowance set for today</string>
+    <string name="home_lbl_amount_left">%1$s left</string>
+    <string name="home_lbl_amount_over">%1$s over</string>
+    <!-- month card -->
+    <string name="home_lbl_month_day">Day %1$d of %2$d</string>
+    <string name="home_lbl_month_of">of %1$s</string>
+    <string name="home_lbl_month_per_day">%1$s/day to stay on plan</string>
+    <string name="home_lbl_month_no_allowance">No allowance this month yet</string>
+    <!-- balance card -->
+    <plurals name="home_lbl_total_balance">
+        <item quantity="one">Total balance · %1$d wallet</item>
+        <item quantity="other">Total balance · %1$d wallets</item>
+    </plurals>
+    <!-- last added -->
+    <string name="home_lbl_last_added">Last added</string>
+    <string name="home_btn_see_all">See all</string>
+    <string name="home_lbl_nothing_today">Nothing added today yet</string>
+
 <!--    ERROR-->
     <string name="error_error">Error</string>
     <string name="error_email_required">Please enter your email</string>
@@ -370,7 +392,6 @@
     <string name="lbl_re_enter_new_password">Re-enter new password</string>
     <string name="hint_password">Password</string>
     <string name="lbl_enter_your_new_password">Enter your new password</string>
-    <string name="home_lbl_total_spent_this_month">Total spent this month</string>
 
 
 </resources>

@@ -198,6 +198,7 @@ fun MainScreen(
             AppNavigation(
                 navController,
                 startDestination = RootGraphs.MainGraph,
+                onNavigateToTab = navigateToTab,
             )
         }
     }

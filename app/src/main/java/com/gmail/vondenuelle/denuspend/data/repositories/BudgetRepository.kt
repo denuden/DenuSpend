@@ -16,6 +16,7 @@ import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.TH
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.THIS_YEAR
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetInsightsModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
+import com.gmail.vondenuelle.denuspend.domain.models.budget.MonthlyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetInsights
 import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetInsightsFromMonths
 import com.gmail.vondenuelle.denuspend.domain.models.budget.toLocalDate
@@ -32,6 +33,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import javax.inject.Inject
 
@@ -48,6 +50,12 @@ class BudgetRepository @Inject constructor(
     ) : Flow<BudgetTotalSummaryModel> {
         val (firstDay, lastDay) = rangeFor(filter, customStartMillis, customEndMillis)
         return budgetService.getBudgetSummary(requestFor(firstDay, lastDay))
+            .flowOn(dispatcher)
+    }
+
+    // Home's month card: this month's monthly_history doc (device time zone, same as the doc id the batch writes)
+    fun getMonthlyHistory(month: YearMonth): Flow<MonthlyHistoryModel?> {
+        return budgetService.getMonthlyHistory(month.format(DateTimeFormatter.ofPattern("yyyyMM")))
             .flowOn(dispatcher)
     }
 
