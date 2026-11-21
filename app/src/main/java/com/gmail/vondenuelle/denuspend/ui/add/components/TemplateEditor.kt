@@ -163,7 +163,7 @@ fun TemplateEditor(
     }
 }
 
-// Small "Food ▾" picker for the editor rows; the form's CategoryDropdownButton is too big for a one-line row.
+// Small "Food ▾" picker for the editor rows; the form's CategoryGrid is too big for a one-line row.
 // The whole row stays tappable even when the name is cut with an ellipsis.
 @Composable
 private fun CategoryPicker(selected: String, onSelected: (String) -> Unit, modifier: Modifier = Modifier) {

@@ -64,6 +64,7 @@ class AddViewModel @Inject constructor(
     private var perDayJob : Job? = null
     private var templatesJob : Job? = null
     private var walletsJob : Job? = null // "Paid from" choices on the expense form
+    private var todayJob : Job? = null // today's daily doc for the form's "left today" line
 
     // History grows by one page per load-more; the listener is restarted with the bigger limit.
     private var historyLimit = HISTORY_PAGE_SIZE
@@ -90,6 +91,10 @@ class AddViewModel @Inject constructor(
         templatesJob?.cancel()
         templatesJob = null
     }
+    fun stopTodayListener() {
+        todayJob?.cancel()
+        todayJob = null
+    }
     fun stopWalletsListener() {
         walletsJob?.cancel()
         walletsJob = null
@@ -115,6 +120,20 @@ class AddViewModel @Inject constructor(
                             is ResultState.Success -> _stateFlow.update {
                                 it.copy(allowanceTemplates = res.data, hasLoadedTemplates = true)
                             }
+                        }
+                    }.collect()
+                }
+            }
+
+            // Fills dailyHistory on the form's own VM (the tab's overview isn't running there). No loading flag: it's one line of text.
+            AddScreenEvents.OnGetTodayTotals -> {
+                if (todayJob?.isActive == true) return
+                todayJob = viewModelScope.launch {
+                    transactionRepository.getTodayDailyHistory().asResult().onEach { res ->
+                        when (res) {
+                            is ResultState.Success -> _stateFlow.update { it.copy(dailyHistory = res.data ?: DailyHistoryModel()) }
+                            is ResultState.Error -> onError(res.exception)
+                            else -> Unit
                         }
                     }.collect()
                 }

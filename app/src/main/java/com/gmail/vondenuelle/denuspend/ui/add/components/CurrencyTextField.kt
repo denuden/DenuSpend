@@ -15,11 +15,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
@@ -31,6 +35,8 @@ fun CurrencyTextField(
     onAmountChange: (Long) -> Unit,
     maxDigits: Int = 12,
     prefixText : String = "₱",
+    // true = the prefix is drawn as part of the text, so a centered amount and its "₱" stay together
+    inlinePrefix : Boolean = false,
     colors : TextFieldColors =  TextFieldDefaults.colors().copy(
         focusedContainerColor = Color.Transparent,
         errorContainerColor = Color.Transparent,
@@ -89,10 +95,22 @@ fun CurrencyTextField(
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         placeholder = { Text ("00.00", style = textStyle, modifier = Modifier.fillMaxWidth())},
-        prefix = { Text(prefixText, fontSize = textStyle.fontSize) },
+        prefix = if (inlinePrefix) null else { { Text(prefixText, fontSize = textStyle.fontSize) } },
+        visualTransformation = if (inlinePrefix) prefixTransformation(prefixText) else VisualTransformation.None,
         singleLine = singleLine,
         colors = colors,
         textStyle = textStyle,
         modifier = modifier
+    )
+}
+
+// Shows "prefix + text" while the real value stays digits only; the cursor offsets skip the prefix
+private fun prefixTransformation(prefix: String) = VisualTransformation { text ->
+    TransformedText(
+        AnnotatedString(prefix + text.text),
+        object : OffsetMapping {
+            override fun originalToTransformed(offset: Int) = offset + prefix.length
+            override fun transformedToOriginal(offset: Int) = (offset - prefix.length).coerceIn(0, text.length)
+        }
     )
 }

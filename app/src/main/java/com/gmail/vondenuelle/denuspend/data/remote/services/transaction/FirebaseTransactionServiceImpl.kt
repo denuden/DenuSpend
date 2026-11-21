@@ -429,6 +429,30 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    // Only today's daily doc, for the expense/allowance form's "left today" line. It's the same doc the Add tab's
+    // getTodayOverview listens to, so the SDK shares that listener and the form usually costs no extra reads.
+    override fun getTodayDailyHistory(): Flow<DailyHistoryModel?> = flow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+        val todayId = LocalDate
+            .now(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+        val dailyDocRef = firebaseFireStore
+            .collection(DAILY_HISTORY)
+            .document("${currentUser.uid}_$todayId")
+
+        emitAll(callbackFlow {
+            val listener = dailyDocRef.addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.toObject<DailyHistoryModel>()?.copy(docId = snapshot.id))
+            }
+            awaitClose { listener.remove() }
+        })
+    }
+
     // Wrapped in flow {} so a missing user throws inside the flow and reaches asResult()'s catch instead of crashing the caller.
     override fun getTodayOverview(): Flow<TransactionOverviewModel> = flow {
         val currentUser = firebaseAuth.currentUser

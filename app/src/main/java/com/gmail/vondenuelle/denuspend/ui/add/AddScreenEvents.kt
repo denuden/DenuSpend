@@ -13,6 +13,7 @@ sealed class AddScreenEvents {
     data class OnCategoryChanged(val value : String) : AddScreenEvents()
     data class OnWalletChanged(val walletId : String) : AddScreenEvents() // "" = no wallet
     object OnGetWallets : AddScreenEvents()
+    object OnGetTodayTotals : AddScreenEvents() // the form's "left today" line
 
     data class OnAddTransaction(val request : TransactionRequest) : AddScreenEvents()
     object OnGetTransactionOverview: AddScreenEvents()
