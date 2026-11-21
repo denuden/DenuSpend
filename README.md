@@ -16,7 +16,7 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
   <img src="docs/media/wallet.png" width="24%" alt="Wallets" />
 </p>
 
-🎬 [Watch a short demo: adding an expense](docs/media/demo-add-expense.mp4)
+🎬 [Watch a 1-minute demo](docs/media/demo.mp4): add a wallet, apply an allowance template, log an expense, then explore Budget and Food insights.
 
 ## Features
 - **Home dashboard.** One glance answers "how much can I still spend today?", with a chip per category, how the month is pacing ("₱277/day to stay on plan"), your total balance across wallets, and what you added last. Every card opens the screen with the details.
