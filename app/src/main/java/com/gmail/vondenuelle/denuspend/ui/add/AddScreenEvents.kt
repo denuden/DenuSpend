@@ -11,6 +11,8 @@ sealed class AddScreenEvents {
     data class OnDescriptionChanged(val value : String) : AddScreenEvents()
     data class OnAmountChanged(val value : Long) : AddScreenEvents()
     data class OnCategoryChanged(val value : String) : AddScreenEvents()
+    data class OnWalletChanged(val walletId : String) : AddScreenEvents() // "" = no wallet
+    object OnGetWallets : AddScreenEvents()
 
     data class OnAddTransaction(val request : TransactionRequest) : AddScreenEvents()
     object OnGetTransactionOverview: AddScreenEvents()

@@ -64,6 +64,7 @@ import com.gmail.vondenuelle.denuspend.navigation.MainScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.navigation.ProfileScreens
 import com.gmail.vondenuelle.denuspend.navigation.RootGraphs
+import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.AsyncImageWithErrorHandler
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
@@ -80,7 +81,7 @@ private data class BottomTab(
 
 private val bottomTabs = listOf(
     BottomTab(MainScreens.HomeNavigation, R.string.main_tab_home, Icons.Filled.Home, Icons.Outlined.Home),
-    BottomTab(null, R.string.main_tab_wallet, Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet),
+    BottomTab(MainScreens.WalletNavigation, R.string.main_tab_wallet, Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet),
     BottomTab(MainScreens.AddNavigation, R.string.main_tab_add, Icons.Filled.AddCircle, Icons.Outlined.AddCircleOutline),
     BottomTab(null, R.string.main_tab_goals, Icons.Filled.Flag, Icons.Outlined.Flag),
     BottomTab(MainScreens.BudgetNavigation, R.string.main_tab_budget, Icons.Filled.Savings, Icons.Outlined.Savings),
@@ -100,9 +101,10 @@ fun MainScreen(
     val currentDestination = navBackStackEntry?.destination
     val showTopBar = currentDestination.isIn<RootGraphs.MainGraph>() ||
             currentDestination.isIn<RootGraphs.AddGraph>() ||
-            currentDestination.isIn<RootGraphs.BudgetGraph>()
+            currentDestination.isIn<RootGraphs.BudgetGraph>() ||
+            currentDestination.isIn<RootGraphs.WalletGraph>()
     val showBottomBar = currentDestination.isIn<RootGraphs.MainGraph>()
-    // Tab screens (Home, Add, Budget) are first screens: no back arrow, and hardware back goes Home (see BackHandler below)
+    // Tab screens (Home, Wallet, Add, Budget) are first screens: no back arrow, and hardware back goes Home (see BackHandler below)
     val isOnTabScreen = bottomTabs.any { tab -> tab.route != null && currentDestination?.hasRoute(tab.route::class) == true }
     val isOnHome = currentDestination?.hasRoute(MainScreens.HomeNavigation::class) == true
     val canNavigateBack = navController.previousBackStackEntry != null && !isOnTabScreen
@@ -118,7 +120,7 @@ fun MainScreen(
         }
     }
 
-    // Back on Add/Budget acts like tapping Home: the tab is saved, not popped, so its ViewModel, data and listeners stay.
+    // Back on Wallet/Add/Budget acts like tapping Home: the tab is saved, not popped, so its ViewModel, data and listeners stay.
     // A plain popBackStack() would destroy the tab and reload everything next time. Back on Home exits as usual.
     BackHandler(enabled = isOnTabScreen && !isOnHome) {
         navigateToTab(MainScreens.HomeNavigation)
@@ -213,6 +215,8 @@ private fun topBarTitle(destination: NavDestination?, entry: NavBackStackEntry?,
         destination.hasRoute<MainScreens.HomeNavigation>() -> stringResource(R.string.main_title_home, firstName)
         destination.hasRoute<MainScreens.AddNavigation>() -> stringResource(R.string.main_title_transaction)
         destination.hasRoute<MainScreens.BudgetNavigation>() -> stringResource(R.string.main_title_budget)
+        destination.hasRoute<MainScreens.WalletNavigation>() -> stringResource(R.string.main_title_wallet)
+        destination.hasRoute<WalletScreens.WalletDetailsNavigation>() -> stringResource(R.string.main_title_wallet_details)
         // A docId in the route args means the form is editing an existing transaction
         destination.hasRoute<AddScreens.AddIncomeScreenNavigation>() ->
             if (entry?.toRoute<AddScreens.AddIncomeScreenNavigation>()?.docId != null) stringResource(R.string.main_title_edit_income)

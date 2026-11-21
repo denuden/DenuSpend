@@ -17,4 +17,5 @@ data class DailyHistoryModel(
     val expenseByCategory : Map<String, Long> = emptyMap(),
     val allowanceByCategory : Map<String, Long> = emptyMap(),
     val countByCategory : Map<String, Long> = emptyMap(),
+    val inMonthly : Boolean = false, // read only by edit/delete in the service; here so toObject() stops warning about it
     )

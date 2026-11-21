@@ -25,3 +25,6 @@ annotation class FirebaseSample
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class RetrofitSample
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class FirebaseWallet

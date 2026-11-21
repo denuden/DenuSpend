@@ -11,6 +11,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.EditTransactionRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.TransactionRepository
+import com.gmail.vondenuelle.denuspend.data.repositories.WalletRepository
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionOverviewModel
 import com.gmail.vondenuelle.denuspend.navigation.AddScreens
@@ -46,7 +47,8 @@ import java.util.UUID
 class AddViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val profileRepository: ProfileRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val walletRepository: WalletRepository,
 ) : ViewModel() {
     private val TAG = AddViewModel::class.java.simpleName
 
@@ -61,6 +63,7 @@ class AddViewModel @Inject constructor(
     private var historyJob: Job? = null
     private var perDayJob : Job? = null
     private var templatesJob : Job? = null
+    private var walletsJob : Job? = null // "Paid from" choices on the expense form
 
     // History grows by one page per load-more; the listener is restarted with the bigger limit.
     private var historyLimit = HISTORY_PAGE_SIZE
@@ -87,6 +90,10 @@ class AddViewModel @Inject constructor(
         templatesJob?.cancel()
         templatesJob = null
     }
+    fun stopWalletsListener() {
+        walletsJob?.cancel()
+        walletsJob = null
+    }
 
     fun onEvent(event: AddScreenEvents) {
         when (event) {
@@ -111,6 +118,28 @@ class AddViewModel @Inject constructor(
                         }
                     }.collect()
                 }
+            }
+
+            AddScreenEvents.OnGetWallets -> {
+                if (walletsJob?.isActive == true) return
+                walletsJob = viewModelScope.launch {
+                    walletRepository.getWallets().asResult().onEach { res ->
+                        when (res) {
+                            ResultState.Completed, ResultState.Loading -> Unit
+                            is ResultState.Error -> onError(res.exception)
+                            // A new expense starts on the physical wallet, until the user picks something else
+                            is ResultState.Success -> _stateFlow.update { state ->
+                                val default = if (state.walletPicked) state.transactionWalletId
+                                    else res.data.firstOrNull { it.isPhysical }?.docId.orEmpty()
+                                state.copy(wallets = res.data, hasLoadedWallets = true, transactionWalletId = default)
+                            }
+                        }
+                    }.collect()
+                }
+            }
+
+            is AddScreenEvents.OnWalletChanged -> _stateFlow.update {
+                it.copy(transactionWalletId = event.walletId, walletPicked = true)
             }
 
             is AddScreenEvents.OnOpenTemplateEditor -> _stateFlow.update {
@@ -204,7 +233,9 @@ class AddViewModel @Inject constructor(
                                 transactionTitle = transaction.title,
                                 transactionDescription = if (transaction.description == "---") "" else transaction.description,
                                 transactionAmount = abs(transaction.amount),
-                                transactionCategory = transaction.category
+                                transactionCategory = transaction.category,
+                                transactionWalletId = transaction.walletId,
+                                walletPicked = true
                             )
                         }
                     } catch (e: Exception) {
@@ -231,7 +262,9 @@ class AddViewModel @Inject constructor(
                                 description = current.transactionDescription,
                                 // keep the original sign, the form only holds the positive amount
                                 amount = if (original.amount < 0) -current.transactionAmount else current.transactionAmount,
-                                category = current.transactionCategory
+                                category = current.transactionCategory,
+                                walletId = current.transactionWalletId,
+                                oldWalletId = original.walletId
                             )
                         )
                         _stateFlow.update { it.copy(isLoading = false) }

@@ -5,6 +5,9 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.EditTransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
+import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl.Companion.BALANCE
+import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl.Companion.WALLETS
+import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl.Companion.WALLET_ID
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.AllowanceTemplateModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.AllowanceTemplatesDoc
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
@@ -112,7 +115,9 @@ class FirebaseTransactionServiceImpl @Inject constructor(
                 description = transactionRequest.description,
                 amount = transactionRequest.amount,
                 category = transactionRequest.category,
-                date = timestamp
+                date = timestamp,
+                // Only expenses come out of a wallet; an allowance is a plan, not real money moving
+                walletId = if (transactionRequest.amount < 0) transactionRequest.walletId else ""
             )
 
             // 1. Write to top-level transactions
@@ -158,6 +163,11 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             }
         }
         batch.set(monthlyDocRef, monthlyFields, SetOptions.merge())
+
+        // 5. Take the expenses off the wallets they were paid from. update() fails if a wallet was closed meanwhile, so nothing half-saves.
+        transactions.filter { it.walletId.isNotEmpty() }.groupBy { it.walletId }.forEach { (walletId, list) ->
+            batch.update(walletRef(walletId), BALANCE, FieldValue.increment(-list.sumOf { abs(it.amount) }))
+        }
 
 
         // Commit all at once (atomic)
@@ -215,11 +225,13 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         val dailyDocRef = firebaseFireStore.collection(DAILY_HISTORY).document(request.dailyDocId)
         val dailyTransactionRef = dailyDocRef.collection(TRANSACTION).document(request.docId)
 
+        val newWalletId = if (request.amount < 0) request.walletId else ""
         val fields = mapOf(
             TITLE to request.title,
             DESCRIPTION to request.description,
             AMOUNT to request.amount,
-            CATEGORY to request.category
+            CATEGORY to request.category,
+            WALLET_ID to newWalletId
         )
 
         // Income stays income on edit, so only one total moves, by the difference.
@@ -270,6 +282,15 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             }
             batch.set(monthlyDocRef(currentUser.uid, dayDate), monthlyFields, SetOptions.merge())
         }
+        // Wallet balances: same wallet moves by the difference; a changed wallet refunds the old one and charges the new one.
+        // A closed old wallet is skipped (1 read to check), so this never brings it back.
+        val oldWalletOpen = request.oldWalletId.isNotEmpty() && walletRef(request.oldWalletId).get().await().exists()
+        if (newWalletId.isNotEmpty() && newWalletId == request.oldWalletId) {
+            if (oldWalletOpen) batch.update(walletRef(newWalletId), BALANCE, FieldValue.increment(-delta))
+        } else {
+            if (oldWalletOpen) batch.update(walletRef(request.oldWalletId), BALANCE, FieldValue.increment(abs(request.oldAmount)))
+            if (newWalletId.isNotEmpty()) batch.update(walletRef(newWalletId), BALANCE, FieldValue.increment(-abs(request.amount)))
+        }
         batch.commit().await()
     }
 
@@ -311,8 +332,18 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             }
             batch.set(monthlyDocRef(currentUser.uid, dayDate), monthlyFields, SetOptions.merge())
         }
+        // Give the money back to the wallet it was paid from, unless that wallet was closed (1 read to check)
+        if (transaction.amount < 0 && transaction.walletId.isNotEmpty()) {
+            val wallet = walletRef(transaction.walletId)
+            if (wallet.get().await().exists()) {
+                batch.update(wallet, BALANCE, FieldValue.increment(abs(transaction.amount)))
+            }
+        }
         batch.commit().await()
     }
+
+    private fun walletRef(walletId: String): DocumentReference =
+        firebaseFireStore.collection(WALLETS).document(walletId)
 
     // Days saved before the per-category fields existed don't have them. Changing those days would create
     // negative category values, so edit and delete only touch the per-category fields when the day already has them.

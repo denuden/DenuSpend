@@ -5,4 +5,5 @@ data class TransactionRequest(
     val description : String,
     val amount : Long = 0L,
     val category : String,
+    val walletId : String = "", // "" = not paid from a wallet
 )

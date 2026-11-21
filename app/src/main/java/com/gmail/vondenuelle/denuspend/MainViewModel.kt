@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
+import com.gmail.vondenuelle.denuspend.data.repositories.WalletRepository
 import com.gmail.vondenuelle.denuspend.data.storage.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,15 +19,18 @@ sealed interface SessionState {
     data object Loading : SessionState
     data object LoggedIn : SessionState
     data object LoggedOut : SessionState
+    // Signed in, but the mandatory physical wallet isn't set up yet
+    data object NeedsWalletSetup : SessionState
 }
 
 /**
  * Lives for the whole Activity (created in AppRoot, outside any NavHost).
- * Decides which "world" is shown (Splash / Auth / Main) and feeds the shared top bar.
+ * Decides which "world" is shown (Splash / Auth / Wallet setup / Main) and feeds the shared top bar.
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val walletRepository: WalletRepository,
 ) : ViewModel() {
 
     private val _session = MutableStateFlow<SessionState>(SessionState.Loading)
@@ -43,14 +47,29 @@ class MainViewModel @Inject constructor(
 
     // Called by the auth screens only after login/register fully finished (incl. saving the display name)
     fun onLoginOrRegisterCompleted() {
+        viewModelScope.launch {
+            _session.value = loggedInOrSetup()
+        }
+    }
+
+    // Called by the setup screen's Finish button
+    fun onWalletSetupCompleted() {
         _session.value = SessionState.LoggedIn
+    }
+
+    // Main, unless the physical wallet isn't there yet. If the check itself fails (e.g. offline), let them into Main
+    // instead of blocking the app; setup shows on the next start that can reach Firestore.
+    private suspend fun loggedInOrSetup(): SessionState = try {
+        if (walletRepository.needsWalletSetup()) SessionState.NeedsWalletSetup else SessionState.LoggedIn
+    } catch (e: Exception) {
+        SessionState.LoggedIn
     }
 
     private fun checkCurrentUser() {
         viewModelScope.launch {
             _session.value = try {
                 authRepository.getCurrentUser() // also refreshes the cached user in DataStore
-                SessionState.LoggedIn
+                loggedInOrSetup()
             } catch (e: NoUserException) {
                 SessionState.LoggedOut
             } catch (e: Exception) {

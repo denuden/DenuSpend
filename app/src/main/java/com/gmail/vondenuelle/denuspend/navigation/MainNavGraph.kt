@@ -7,6 +7,7 @@ import androidx.navigation.compose.navigation
 import com.gmail.vondenuelle.denuspend.ui.add.screen.AddScreen
 import com.gmail.vondenuelle.denuspend.ui.budget.screen.BudgetScreen
 import com.gmail.vondenuelle.denuspend.ui.home.screen.HomeScreen
+import com.gmail.vondenuelle.denuspend.ui.wallet.screen.WalletScreen
 
 fun NavGraphBuilder.addMainNavGraph(
     navController: NavController,
@@ -25,6 +26,17 @@ fun NavGraphBuilder.addMainNavGraph(
 
         composable<MainScreens.AddNavigation> {
             AddScreen(
+                onNavigate = { route, navOptions ->
+                    navController.navigate(route, navOptions = navOptions)
+                },
+                onPopBackStack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable<MainScreens.WalletNavigation> {
+            WalletScreen(
                 onNavigate = { route, navOptions ->
                     navController.navigate(route, navOptions = navOptions)
                 },

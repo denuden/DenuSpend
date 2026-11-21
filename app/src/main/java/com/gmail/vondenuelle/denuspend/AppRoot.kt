@@ -11,9 +11,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.gmail.vondenuelle.denuspend.navigation.AppRootScreens
 import com.gmail.vondenuelle.denuspend.navigation.AuthNavHost
+import com.gmail.vondenuelle.denuspend.ui.wallet.screen.WalletSetupScreen
 
 /**
- * Top level: Splash -> Auth or Main. The session decides, this file is the only place that switches.
+ * Top level: Splash -> Auth, Wallet setup or Main. The session decides, this file is the only place that switches.
  * Each world is its own back stack entry, so popping it clears all ViewModels (and their Firestore listeners) inside it.
  */
 @Composable
@@ -34,6 +35,9 @@ fun AppRoot(
         composable<AppRootScreens.MainTopLevel> {
             MainScreen(viewModel = viewModel)
         }
+        composable<AppRootScreens.WalletSetupTopLevel> {
+            WalletSetupScreen(onSetupCompleted = viewModel::onWalletSetupCompleted)
+        }
     }
 
     // Runs every time the session changes and moves to the matching world, removing everything before it.
@@ -42,6 +46,7 @@ fun AppRoot(
             SessionState.Loading -> return@LaunchedEffect // stay on splash
             SessionState.LoggedOut -> AppRootScreens.AuthTopLevel
             SessionState.LoggedIn -> AppRootScreens.MainTopLevel
+            SessionState.NeedsWalletSetup -> AppRootScreens.WalletSetupTopLevel
         }
         // Already there (e.g. after rotation), don't recreate it
         if (navController.currentDestination?.hasRoute(target::class) == true) return@LaunchedEffect

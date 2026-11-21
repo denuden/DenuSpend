@@ -5,11 +5,13 @@ import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotSendEmailVerification
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.remote.error.WeakPasswordException
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.EmailRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.LoginRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterRequest
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 import com.gmail.vondenuelle.denuspend.utils.orDefault
+import com.google.firebase.FirebaseException
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
@@ -69,9 +71,14 @@ class FirebaseAuthServiceImpl @Inject constructor(
                 photo = user.photoUrl?.toString().orEmpty(),
 
                 )
-        } catch (e: FirebaseAuthException) {
+        } catch (e: FirebaseException) {
+            // The project's password policy fails with a raw "PASSWORD_DOES_NOT_MEET_REQUIREMENTS" message, so it gets a readable one
+            if (e.localizedMessage?.contains("PASSWORD_DOES_NOT_MEET_REQUIREMENTS") == true) {
+                throw WeakPasswordException("Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a symbol.")
+            }
             // Firebase-specific errors
-            throw InvalidCredentialsException(e.localizedMessage ?: "Invalid credentials")
+            if (e is FirebaseAuthException) throw InvalidCredentialsException(e.localizedMessage ?: "Invalid credentials")
+            throw e
         } catch (e: Exception) {
             // rethrow error for custom exceptions
             throw e
