@@ -57,7 +57,6 @@
 <!--    ADD SCREEN (edit / delete transaction)-->
     <string name="add_btn_edit">Edit</string>
     <string name="add_btn_delete">Delete</string>
-    <string name="add_btn_update_transaction">Update Transaction</string>
     <string name="add_lbl_category">Category: %1$s</string>
     <string name="add_dialog_delete_title">Delete transaction?</string>
     <string name="add_dialog_delete_text">This removes \"%1$s\" and updates that day\'s totals. This can\'t be undone.</string>
@@ -125,7 +124,28 @@
     <string name="add_snackbar_template_applied">%1$s allowances added for today</string>
     <string name="add_cd_remove_row">Remove</string>
     <string name="add_cd_delete_template">Delete template</string>
-    <string name="add_tooltip_allowance_text">Set how much you\'re giving yourself for a category today. E.G. Lunch money, Bus fare</string>
+<!--    ADD SCREEN (expense / allowance form)-->
+    <string name="add_lbl_amount">Amount</string>
+    <string name="add_lbl_quick_amount">+₱%1$s</string>
+    <string name="add_lbl_title">Title</string>
+    <string name="add_hint_title">Enter a title for this transaction</string>
+    <string name="add_lbl_note">Note (optional)</string>
+    <string name="add_hint_note">Enter a short description of your transaction</string>
+    <string name="add_btn_add_note">Add a note (optional)</string>
+    <string name="add_lbl_char_counter">%1$d/%2$d</string>
+    <string name="add_lbl_expense_category">Category</string>
+    <string name="add_lbl_wallet_after">%1$s → %2$s after</string>
+    <string name="add_lbl_left_today">%1$s left today: %2$s</string>
+    <string name="add_lbl_left_today_after">%1$s left today: %2$s → %3$s</string>
+    <string name="add_btn_save_expense">Save expense · %1$s</string>
+    <string name="add_lbl_allowance_today">%1$s today: %2$s</string>
+    <string name="add_lbl_allowance_today_after">%1$s today: %2$s → %3$s</string>
+    <string name="add_btn_save_allowance">Save allowance · %1$s</string>
+    <string name="add_btn_update_expense">Update expense · %1$s</string>
+    <string name="add_btn_update_allowance">Update allowance · %1$s</string>
+    <string name="add_tooltip_expense_title">Adding Expense Transaction</string>
+    <string name="add_tooltip_expense_text">Add the amount of the expense transaction. You can input a title and description (e.g. Subscription for movies, From entertainment savings)</string>
+    <string name="add_tooltip_allowance_text">Set how much you\'re giving yourself for a category today, e.g. Lunch money, Bus fare</string>
 
 <!--    PROFILE SCREEN-->
     <string name="profile_dialog_delete_title">Delete your account?</string>

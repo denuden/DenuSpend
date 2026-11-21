@@ -20,6 +20,7 @@ interface TransactionService {
     fun getTransactionsForDay(request: TransactionsForDayRequest): Flow<List<TransactionModel>>
 
     fun getTodayOverview(): Flow<TransactionOverviewModel>
+    fun getTodayDailyHistory(): Flow<DailyHistoryModel?>
 
     fun getAllowanceTemplates(): Flow<List<AllowanceTemplateModel>>
     suspend fun saveAllowanceTemplates(templates: List<AllowanceTemplateModel>)

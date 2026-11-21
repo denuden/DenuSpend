@@ -18,6 +18,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +68,9 @@ fun ErrorDialog(
                                 text,
                             textAlign = TextAlign.Center,
                         )
+                        TextButton(onClick = onDismissRequest, modifier = Modifier.padding(top = 8.dp)) {
+                            Text(stringResource(R.string.lbl_ok), color = Color(0xFFB71C1C))
+                        }
                     }
                 }
             }

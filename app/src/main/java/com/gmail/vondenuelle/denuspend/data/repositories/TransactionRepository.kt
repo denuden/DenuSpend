@@ -24,13 +24,24 @@ class TransactionRepository @Inject constructor(
     @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) {
     suspend fun addTransaction(transactionRequest: TransactionRequest) {
-        if (transactionRequest.amount == 0L ||
-            transactionRequest.category.isEmpty() ||
-            transactionRequest.title.isEmpty()) {
-            throw CannotCreateTransactionException("Input fields are empty or invalid. Please make sure your inputs are correct")
+        val missing = missingFieldsMessage(transactionRequest.amount, transactionRequest.category, transactionRequest.title)
+        if (missing != null) {
+            throw CannotCreateTransactionException(missing)
         } else {
             transactionService.addTransaction(transactionRequest.copy(description = transactionRequest.description.ifEmpty { "---" }))
         }
+    }
+
+    // Names what's missing, in form order, e.g. "Please add an amount and a category"; null = all filled
+    private fun missingFieldsMessage(amount: Long, category: String, title: String): String? {
+        val missing = listOfNotNull(
+            "an amount".takeIf { amount == 0L },
+            "a category".takeIf { category.isEmpty() },
+            "a title".takeIf { title.isEmpty() },
+        )
+        if (missing.isEmpty()) return null
+        val list = if (missing.size == 1) missing[0] else missing.dropLast(1).joinToString(", ") + " and " + missing.last()
+        return "Please add $list"
     }
 
     suspend fun getTransactionById(docId: String): TransactionModel {
@@ -38,10 +49,9 @@ class TransactionRepository @Inject constructor(
     }
 
     suspend fun updateTransaction(request: EditTransactionRequest) {
-        if (request.amount == 0L ||
-            request.category.isEmpty() ||
-            request.title.isEmpty()) {
-            throw CannotUpdateTransactionException("Input fields are empty or invalid. Please make sure your inputs are correct")
+        val missing = missingFieldsMessage(request.amount, request.category, request.title)
+        if (missing != null) {
+            throw CannotUpdateTransactionException(missing)
         } else {
             transactionService.updateTransaction(request.copy(description = request.description.ifEmpty { "---" }))
         }
@@ -62,6 +72,11 @@ class TransactionRepository @Inject constructor(
 //    suspend fun getSummaryOfDailyTransactions() : TransactionSummaryModel {
 //        return transactionService.getSummaryOfDailyTransactions()
 //    }
+
+    fun getTodayDailyHistory(): Flow<DailyHistoryModel?> {
+        return transactionService.getTodayDailyHistory()
+            .flowOn(dispatcher)
+    }
 
     fun getTodayOverview(): Flow<TransactionOverviewModel> {
         return transactionService.getTodayOverview()

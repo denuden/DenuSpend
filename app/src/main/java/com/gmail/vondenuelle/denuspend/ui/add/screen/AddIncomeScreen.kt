@@ -1,24 +1,14 @@
 package com.gmail.vondenuelle.denuspend.ui.add.screen
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,15 +18,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
@@ -46,16 +35,24 @@ import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenState
 import com.gmail.vondenuelle.denuspend.ui.add.AddViewModel
-import com.gmail.vondenuelle.denuspend.ui.add.components.CategoryDropdownButton
-import com.gmail.vondenuelle.denuspend.ui.common.components.InformationTooltip
+import com.gmail.vondenuelle.denuspend.ui.add.components.AmountInputSection
+import com.gmail.vondenuelle.denuspend.ui.add.components.CategoryGrid
+import com.gmail.vondenuelle.denuspend.ui.add.components.FormSaveBar
+import com.gmail.vondenuelle.denuspend.ui.add.components.FormSectionHeader
+import com.gmail.vondenuelle.denuspend.ui.add.components.TitleNoteFields
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
-import com.gmail.vondenuelle.denuspend.ui.add.components.CurrencyTextField
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
+import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
+import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
+import kotlin.math.abs
 
 @Composable
 fun AddIncomeScreen(
@@ -104,6 +101,15 @@ fun AddIncomeScreen(
         showDialog = error.isNotEmpty()
     ) { error = "" }
 
+    // Pushed screen, so today's-doc listener stops when it's left (shares the Add tab's listener, ~0 reads)
+    ComposableLifecycle { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_START -> viewModel.onEvent(AddScreenEvents.OnGetTodayTotals)
+            Lifecycle.Event.ON_STOP -> viewModel.stopTodayListener()
+            else -> Unit
+        }
+    }
+
     LaunchedEffect(docId) {
         if (docId != null && dailyDocId != null) {
             viewModel.onEvent(AddScreenEvents.OnLoadTransactionForEdit(docId, dailyDocId))
@@ -125,133 +131,56 @@ fun AddIncomeScreenContent(
     onEvent: (AddScreenEvents) -> Unit
 ) {
     val scrollState = rememberScrollState()
-    Column(
-        modifier = modifier
-            .verticalScroll(scrollState)
-            .padding(16.dp)
-    ) {
-        ElevatedCard(
-            colors = CardDefaults.cardColors()
-                .copy(containerColor = colorResource(R.color.verified_green_container)),
-            shape = MaterialTheme.shapes.extraLarge,
+
+    // Only the form scrolls; the Save bar stays pinned at the bottom (and rides above the keyboard)
+    Column(modifier = modifier.imePadding()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier
-                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(scrollState)
+                .padding(vertical = 16.dp)
         ) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.TopEnd
-            ) {
-                InformationTooltip(
-                    richTooltipSubheadText = stringResource(R.string.add_tooltip_allowance_title),
-                    richTooltipText = stringResource(R.string.add_tooltip_allowance_text),
-                    modifier = Modifier.padding(8.dp)
-                )
+            AmountInputSection(
+                amountInCents = state.transactionAmount,
+                onAmountChange = { onEvent(AddScreenEvents.OnAmountChanged(it)) },
+                prefixText = "+₱",
+                amountColor = colorResource(R.color.verified_green_text),
+                tooltipTitle = stringResource(R.string.add_tooltip_allowance_title),
+                tooltipText = stringResource(R.string.add_tooltip_allowance_text),
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 32.dp)
-                ) {
-                    Text("Enter Amount", style = MaterialTheme.typography.titleSmall)
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Box(contentAlignment = Alignment.Center) {
-                        CurrencyTextField(
-                            amountInCents = state.transactionAmount,
-                            onAmountChange = {
-                                onEvent(AddScreenEvents.OnAmountChanged(it))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(end = 16.dp)
-                        )
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            modifier = Modifier
-                                .padding(top = 32.dp)
-                                .fillMaxWidth(0.75f),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+                FormSectionHeader(title = stringResource(R.string.add_lbl_allowance_for))
+                CategoryGrid(selected = state.transactionCategory) {
+                    onEvent(AddScreenEvents.OnCategoryChanged(it))
+                }
+                allowanceTodayText(state)?.let {
+                    Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+
+            TitleNoteFields(
+                title = state.transactionTitle,
+                note = state.transactionDescription,
+                onTitleChange = { onEvent(AddScreenEvents.OnTitleChanged(it)) },
+                onNoteChange = { onEvent(AddScreenEvents.OnDescriptionChanged(it)) },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
 
-        val outlinedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-
-        Text(
-            "Title (20 characters)",
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-
-        OutlinedTextField(
-            value = state.transactionTitle,
-            onValueChange = {
-                if (it.length <= 20) {
-                    onEvent(AddScreenEvents.OnTitleChanged(it))
-                }
-            },
-            placeholder = { Text("Enter a title for this transaction") },
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = OutlinedTextFieldDefaults.colors().copy(
-                unfocusedIndicatorColor = outlinedColor,
-                disabledIndicatorColor = outlinedColor,
-                errorIndicatorColor = outlinedColor
+        FormSaveBar(
+            text = stringResource(
+                if (isEditMode) R.string.add_btn_update_allowance else R.string.add_btn_save_allowance,
+                "₱" + CurrencyUtils.formatCents(state.transactionAmount)
             ),
-            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold),
-
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            "Description (50 characters | optional)",
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-
-        OutlinedTextField(
-            value = state.transactionDescription,
-            onValueChange = {
-                if (it.length <= 50) {
-                    onEvent(AddScreenEvents.OnDescriptionChanged(it))
-                }
-            },
-            placeholder = { Text("Enter a short description of your transaction") },
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = OutlinedTextFieldDefaults.colors().copy(
-                unfocusedIndicatorColor = outlinedColor,
-                disabledIndicatorColor = outlinedColor,
-                errorIndicatorColor = outlinedColor
-            ),
-            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            stringResource(R.string.add_lbl_allowance_for),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        CategoryDropdownButton(modifier = Modifier.fillMaxWidth(), selected = state.transactionCategory){
-            onEvent(AddScreenEvents.OnCategoryChanged(it))
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        FilledTonalButton(
-            shape = MaterialTheme.shapes.extraLarge,
             // Edit mode waits for the original to load, so it can't be saved as a new one by mistake
             enabled = !isEditMode || state.editingTransaction != null,
             onClick = {
                 if (isEditMode) {
                     onEvent(AddScreenEvents.OnUpdateTransaction)
-                    return@FilledTonalButton
+                    return@FormSaveBar
                 }
                 onEvent(AddScreenEvents.OnAddTransaction(
                     TransactionRequest(
@@ -262,13 +191,28 @@ fun AddIncomeScreenContent(
                     )
                 ))
             },
-            contentPadding = PaddingValues(vertical = 16.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(if (isEditMode) stringResource(R.string.add_btn_update_transaction) else "Save Transaction")
-        }
+        )
     }
+}
 
+// "Food today: ₱200.00 → ₱500.00" from today's daily doc (the category's allowance so far, then with this one).
+// Editing today's allowance in the same category swaps its original amount for the new one; editing another day's hides it.
+@Composable
+private fun allowanceTodayText(state: AddScreenState): String? {
+    val category = state.transactionCategory.ifEmpty { return null }
+    val editing = state.editingTransaction
+    val isEditingToday = editing != null &&
+        editing.date.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate() == LocalDate.now()
+    if (editing != null && !isEditingToday) return null
+
+    val today = state.dailyHistory.allowanceByCategory[category] ?: 0L
+    val original = if (editing != null && editing.category == category) abs(editing.amount) else 0L
+    val after = today - original + state.transactionAmount
+    return if (state.transactionAmount == 0L) {
+        stringResource(R.string.add_lbl_allowance_today, category, formatBalance(today))
+    } else {
+        stringResource(R.string.add_lbl_allowance_today_after, category, formatBalance(today), formatBalance(after))
+    }
 }
 
 @Preview
