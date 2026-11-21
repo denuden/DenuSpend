@@ -29,6 +29,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
+import com.gmail.vondenuelle.denuspend.utils.network.awaitWrite
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -43,7 +46,8 @@ import kotlin.math.abs
 @Singleton
 class FirebaseTransactionServiceImpl @Inject constructor(
     private val firebaseAuth : FirebaseAuth,
-    private val firebaseFireStore : FirebaseFirestore
+    private val firebaseFireStore : FirebaseFirestore,
+    @ApplicationContext private val context : Context, // only to check the connection before waiting on a write
 ) : TransactionService {
     companion object {
         //Transaction collection
@@ -171,7 +175,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
 
 
         // Commit all at once (atomic)
-        batch.commit().await()
+        batch.commit().awaitWrite(context)
 
         return transactions
     }
@@ -200,7 +204,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
 
         firebaseFireStore.collection(ALLOWANCE_TEMPLATES_COLLECTION).document(currentUser.uid)
             .set(mapOf(USER_ID to currentUser.uid, TEMPLATES to templates), SetOptions.merge())
-            .await()
+            .awaitWrite(context)
     }
 
     override suspend fun getTransactionById(docId: String): TransactionModel {
@@ -291,7 +295,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             if (oldWalletOpen) batch.update(walletRef(request.oldWalletId), BALANCE, FieldValue.increment(abs(request.oldAmount)))
             if (newWalletId.isNotEmpty()) batch.update(walletRef(newWalletId), BALANCE, FieldValue.increment(-abs(request.amount)))
         }
-        batch.commit().await()
+        batch.commit().awaitWrite(context)
     }
 
     override suspend fun deleteTransaction(transaction: TransactionModel, dailyDocId: String) {
@@ -339,7 +343,7 @@ class FirebaseTransactionServiceImpl @Inject constructor(
                 batch.update(wallet, BALANCE, FieldValue.increment(abs(transaction.amount)))
             }
         }
-        batch.commit().await()
+        batch.commit().awaitWrite(context)
     }
 
     private fun walletRef(walletId: String): DocumentReference =

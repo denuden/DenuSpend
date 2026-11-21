@@ -22,6 +22,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.gmail.vondenuelle.denuspend.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +67,7 @@ fun InformationTooltip(
             Icon(
                 imageVector = Icons.Outlined.Info,
 
-                contentDescription = "Show more information"
+                contentDescription = stringResource(R.string.cd_show_more_info)
             )
         }
     }

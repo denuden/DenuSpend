@@ -16,13 +16,17 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import com.gmail.vondenuelle.denuspend.utils.network.awaitWrite
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class FirebaseWalletServiceImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
-    private val firebaseFireStore: FirebaseFirestore
+    private val firebaseFireStore: FirebaseFirestore,
+    @ApplicationContext private val context: Context, // only to check the connection before waiting on a write
 ) : WalletService {
     companion object {
         const val WALLETS = "wallets"
@@ -62,7 +66,7 @@ class FirebaseWalletServiceImpl @Inject constructor(
             balance = request.balance,
             createdAt = Timestamp.now()
         )
-        firebaseFireStore.collection(WALLETS).document(physicalWalletId(currentUser.uid)).set(wallet).await()
+        firebaseFireStore.collection(WALLETS).document(physicalWalletId(currentUser.uid)).set(wallet).awaitWrite(context)
     }
 
     // New wallet (empty docId) or an edit. An edit only touches the editable fields, so createdAt stays.
@@ -79,7 +83,7 @@ class FirebaseWalletServiceImpl @Inject constructor(
                 balance = request.balance,
                 createdAt = Timestamp.now()
             )
-            firebaseFireStore.collection(WALLETS).document().set(wallet).await()
+            firebaseFireStore.collection(WALLETS).document().set(wallet).awaitWrite(context)
         } else {
             firebaseFireStore.collection(WALLETS).document(request.docId).update(
                 mapOf(
@@ -88,7 +92,7 @@ class FirebaseWalletServiceImpl @Inject constructor(
                     ICON_KEY to request.iconKey,
                     BALANCE to request.balance
                 )
-            ).await()
+            ).awaitWrite(context)
         }
     }
 
@@ -98,7 +102,7 @@ class FirebaseWalletServiceImpl @Inject constructor(
             ?: throw NoUserException("User not logged in")
         if (docId == physicalWalletId(currentUser.uid)) throw IllegalArgumentException("The physical wallet can't be closed")
 
-        firebaseFireStore.collection(WALLETS).document(docId).delete().await()
+        firebaseFireStore.collection(WALLETS).document(docId).delete().awaitWrite(context)
     }
 
     // Small list, so it's sorted on the device: physical wallet first, then oldest first (no composite index needed)

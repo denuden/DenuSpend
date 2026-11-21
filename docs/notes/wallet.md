@@ -6,6 +6,10 @@
 - **Setup is 2 steps** (`WalletSetupScreen`, its own Scaffold, no snackbar host). Step 1: the physical wallet (₱0 is fine) is saved with `set()` on the fixed id, so Back → Next just saves over it. Step 2: add more wallets → Finish → `onWalletSetupCompleted()`. `OnSetupStepBack` reloads step 1 from the live list, because the step 2 sheet can edit the physical wallet. A Sign out button is there too.
 - **Reads:** `getWallets()` is a live listener on `userId ==`, sorted on the device (physical first, then `createdAt`), so it needs no index. The Wallet tab follows the tab rule (no ON_STOP stop). Details and the expense form stop on ON_STOP. `getWalletTransactions(walletId, limit)` = `transactions` where userId + walletId, `date` desc, growing limit of 20. **It needs a composite index** (userId ASC, walletId ASC, date DESC). The details list is display-only; edit or delete through Add/History, which know the day doc.
 - **"Paid from" on Add Expense** (`ui/add/components/WalletPickerRow.kt`, mini wallet cards): it defaults to the physical wallet unless the user picked one or is editing (`walletPicked`), and also offers "Don't deduct" (`walletId = ""`). An id that's no longer in the list shows "Closed wallet". Old expenses have `""`.
+- **"Paid from" waits for the list.** Until `hasLoadedWallets`, it shows two grey placeholders and Save is disabled, so an expense is never saved as "Don't deduct" just because the list was late.
+  - In the 1.2.0 release test, the first list sometimes never arrived on a fresh form (twice in ~10 opens, right after applying a template, on a fresh account). The cause wasn't found, and re-adding the listener fixed it.
+  - So `OnGetWallets` runs `collectWallets()` as a child of `walletsJob`. If nothing arrives in `WALLETS_RETRY_MS` (3s), it cancels that try and starts one more. `stopWalletsListener()` stops both.
+  - Accepted: if the retry also gets nothing, Save stays disabled until the form is reopened.
 - **Balance math is in the same batch as the transaction** (`FirebaseTransactionServiceImpl`):
   - Add: `increment(-sum)` per wallet. A wallet closed elsewhere while the form is open fails the whole batch with NOT_FOUND, on purpose, so nothing half-saves.
   - Edit: one `get()` checks that the old wallet still exists. Same wallet: it moves by the delta. Otherwise the old wallet is refunded (if open) and the new one charged.
@@ -24,7 +28,7 @@
   }
   ```
 - **Known gaps:**
-  - Wallet saves `await()`, so offline the loading dialog stays up (app-wide pattern), and on the setup screen that also blocks Sign out.
+  - Wallet saves use `awaitWrite` (`add-transactions.md`), so offline they close at once and sync later.
   - Tab listeners log one `PERMISSION_DENIED` on sign-out or delete. Nothing shows on screen.
   - "Load more" hasn't been tested on a device yet.
   - Editing a wallet writes its balance as an absolute value, so an expense saved on another device while the sheet is open gets overwritten (accepted for v1).
