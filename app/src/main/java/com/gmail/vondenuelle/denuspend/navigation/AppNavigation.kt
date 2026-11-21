@@ -7,10 +7,11 @@ import androidx.navigation.compose.NavHost
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    startDestination: RootGraphs
+    startDestination: RootGraphs,
+    onNavigateToTab: (NavigationScreens) -> Unit,
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
-        addMainNavGraph(navController)
+        addMainNavGraph(navController, onNavigateToTab)
         addProfileGraph(navController)
         addNavGraph(navController)
         addBudgetNavGraph(navController)

@@ -121,6 +121,25 @@ class FirebaseBudgetServiceImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    // Read by id ("{uid}_yyyyMM", the same id the transaction batch writes), so it needs no index and costs 1 read
+    override fun getMonthlyHistory(yearMonth: String): Flow<MonthlyHistoryModel?> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+        val docRef = firebaseFireStore
+            .collection(MONTHLY_HISTORY)
+            .document("${currentUser.uid}_$yearMonth")
+
+        val listener = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            trySend(snapshot?.toObject(MonthlyHistoryModel::class.java)?.copy(docId = snapshot.id))
+        }
+
+        awaitClose { listener.remove() }
+    }
+
     private fun sumByCategory(maps: List<Map<String, Long>>): Map<String, Long> =
         maps.flatMap { it.entries }
             .groupBy({ it.key }, { it.value })

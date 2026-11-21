@@ -11,6 +11,7 @@ import com.gmail.vondenuelle.denuspend.ui.wallet.screen.WalletScreen
 
 fun NavGraphBuilder.addMainNavGraph(
     navController: NavController,
+    onNavigateToTab: (NavigationScreens) -> Unit, // MainScreen's navigateToTab, so Home's cards switch tabs like the bottom bar does
 ) {
     navigation<RootGraphs.MainGraph>(startDestination = MainScreens.HomeNavigation) {
         composable<MainScreens.HomeNavigation> {
@@ -20,7 +21,8 @@ fun NavGraphBuilder.addMainNavGraph(
                 },
                 onPopBackStack = {
                     navController.popBackStack()
-                }
+                },
+                onNavigateToTab = onNavigateToTab,
             )
         }
 

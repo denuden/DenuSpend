@@ -11,4 +11,6 @@ interface BudgetService {
     // Insights: the raw docs of a range, added up on the device (daily for up to 31 days, monthly for longer)
     fun getDailyHistoryInRange(request : GetBudgetSummaryRequest) : Flow<List<DailyHistoryModel>>
     fun getMonthlyHistoryInRange(request : GetBudgetSummaryRequest) : Flow<List<MonthlyHistoryModel>>
+    // Home: one month's doc by id ([yearMonth] = "yyyyMM"). Emits null when nothing was added that month yet.
+    fun getMonthlyHistory(yearMonth : String) : Flow<MonthlyHistoryModel?>
 }
