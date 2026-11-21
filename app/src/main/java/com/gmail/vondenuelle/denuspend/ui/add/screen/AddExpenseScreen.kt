@@ -93,7 +93,7 @@ fun AddExpenseScreen(
 
     LoadingDialog(
         showDialog = state.isLoading,
-        text = "Loading...",
+        text = stringResource(R.string.lbl_loading),
     ) { }
 
     ErrorDialog(
@@ -195,8 +195,9 @@ fun AddExpenseScreenContent(
                 if (isEditMode) R.string.add_btn_update_expense else R.string.add_btn_save_expense,
                 "₱" + CurrencyUtils.formatCents(state.transactionAmount)
             ),
-            // Edit mode waits for the original to load, so it can't be saved as a new one by mistake
-            enabled = !isEditMode || state.editingTransaction != null,
+            // Edit mode waits for the original to load, so it can't be saved as a new one by mistake.
+            // Both modes wait for the wallet list, so an expense is never saved as "Don't deduct" just because it hadn't arrived yet.
+            enabled = state.hasLoadedWallets && (!isEditMode || state.editingTransaction != null),
             onClick = {
                 if (isEditMode) {
                     onEvent(AddScreenEvents.OnUpdateTransaction)
@@ -216,7 +217,7 @@ fun AddExpenseScreenContent(
     }
 }
 
-// "Food left today: ₱400.00 → ₱250.00" from today's daily doc (allowance minus spent for that category).
+// "Food left today: ₱400.00 → ₱250.00" (or "Food overspent today: …") from today's daily doc (allowance minus spent for that category).
 // Editing today's expense in the same category adds its original amount back first; editing another day's hides it.
 @Composable
 private fun leftTodayText(state: AddScreenState): String? {
@@ -229,10 +230,14 @@ private fun leftTodayText(state: AddScreenState): String? {
     val daily = state.dailyHistory
     val original = if (editing != null && editing.category == category) abs(editing.amount) else 0L
     val left = (daily.allowanceByCategory[category] ?: 0L) - (daily.expenseByCategory[category] ?: 0L) + original
-    return if (state.transactionAmount == 0L) {
-        stringResource(R.string.add_lbl_left_today, category, formatBalance(left))
-    } else {
-        stringResource(R.string.add_lbl_left_today_after, category, formatBalance(left), formatBalance(left - state.transactionAmount))
+    val after = left - state.transactionAmount
+    // Below zero reads as "overspent" with positive amounts, not "-₱40.00 left"
+    return when {
+        state.transactionAmount == 0L && left < 0 -> stringResource(R.string.add_lbl_overspent_today, category, formatBalance(-left))
+        state.transactionAmount == 0L -> stringResource(R.string.add_lbl_left_today, category, formatBalance(left))
+        left < 0 -> stringResource(R.string.add_lbl_overspent_today_after, category, formatBalance(-left), formatBalance(-after))
+        after < 0 -> stringResource(R.string.add_lbl_left_today_then_overspent, category, formatBalance(left), formatBalance(-after))
+        else -> stringResource(R.string.add_lbl_left_today_after, category, formatBalance(left), formatBalance(after))
     }
 }
 

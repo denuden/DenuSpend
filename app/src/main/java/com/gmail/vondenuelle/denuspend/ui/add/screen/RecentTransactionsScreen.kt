@@ -71,6 +71,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import com.gmail.vondenuelle.denuspend.ui.add.components.TransactionDialogContent
+import androidx.compose.ui.res.stringResource
+import com.gmail.vondenuelle.denuspend.R
 
 @Composable
 fun RecentTransactions(
@@ -136,7 +138,7 @@ fun RecentTransactions(
 
     LoadingDialog(
         showDialog = state.isLoading,
-        text = "Loading...",
+        text = stringResource(R.string.lbl_loading),
     ) { }
     ErrorDialog(
         text = error,
@@ -357,7 +359,7 @@ fun RecentTransactionsContent(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Spacer(modifier = Modifier.height(24.dp))
-                            Text("Nothing to show", fontWeight = FontWeight.W300)
+                            Text(stringResource(R.string.add_lbl_nothing_to_show), fontWeight = FontWeight.W300)
                         }
                     }
                 }

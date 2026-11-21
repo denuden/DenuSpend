@@ -71,6 +71,7 @@ class AddViewModel @Inject constructor(
 
     companion object {
         private const val HISTORY_PAGE_SIZE = 20L
+        private const val WALLETS_RETRY_MS = 3_000L
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -141,19 +142,16 @@ class AddViewModel @Inject constructor(
 
             AddScreenEvents.OnGetWallets -> {
                 if (walletsJob?.isActive == true) return
+                // Rare: in release testing (2026-11-21) the first wallet list never arrived on a freshly opened form, cause not found.
+                // Re-adding the listener fixed it on the device, so if nothing came after WALLETS_RETRY_MS it restarts once.
+                // The children live inside walletsJob, so stopWalletsListener() still stops both.
                 walletsJob = viewModelScope.launch {
-                    walletRepository.getWallets().asResult().onEach { res ->
-                        when (res) {
-                            ResultState.Completed, ResultState.Loading -> Unit
-                            is ResultState.Error -> onError(res.exception)
-                            // A new expense starts on the physical wallet, until the user picks something else
-                            is ResultState.Success -> _stateFlow.update { state ->
-                                val default = if (state.walletPicked) state.transactionWalletId
-                                    else res.data.firstOrNull { it.isPhysical }?.docId.orEmpty()
-                                state.copy(wallets = res.data, hasLoadedWallets = true, transactionWalletId = default)
-                            }
-                        }
-                    }.collect()
+                    val firstTry = launch { collectWallets() }
+                    delay(WALLETS_RETRY_MS)
+                    if (!_stateFlow.value.hasLoadedWallets) {
+                        firstTry.cancel()
+                        launch { collectWallets() }
+                    }
                 }
             }
 
@@ -467,11 +465,26 @@ class AddViewModel @Inject constructor(
         }
     }
 
+    private suspend fun collectWallets() {
+        walletRepository.getWallets().asResult().onEach { res ->
+            when (res) {
+                ResultState.Completed, ResultState.Loading -> Unit
+                is ResultState.Error -> onError(res.exception)
+                // A new expense starts on the physical wallet, until the user picks something else
+                is ResultState.Success -> _stateFlow.update { state ->
+                    val default = if (state.walletPicked) state.transactionWalletId
+                        else res.data.firstOrNull { it.isPhysical }?.docId.orEmpty()
+                    state.copy(wallets = res.data, hasLoadedWallets = true, transactionWalletId = default)
+                }
+            }
+        }.collect()
+    }
+
     private fun onError(e: Throwable?) {
         when (e) {
             is NoUserException -> {
                 // Signing out is enough. AppRoot swaps to the auth screens on its own.
-                sendEvent(OneTimeEvents.ShowToast("No user is signed in"))
+                sendEvent(OneTimeEvents.ShowToast(context.getString(R.string.error_no_user_signed_in)))
                 logout()
             }
 

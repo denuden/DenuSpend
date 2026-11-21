@@ -5,17 +5,23 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
 **[⬇️ Download the latest APK](https://github.com/denuden/DenuSpend/releases/latest)** (Android 10+). Every version is on the [Releases](https://github.com/denuden/DenuSpend/releases) page.
 
 <p align="center">
-  <img src="docs/media/add-dashboard.png" width="19%" alt="Today's dashboard" />
-  <img src="docs/media/add-expense.png" width="19%" alt="Add expense" />
-  <img src="docs/media/add-allowance.png" width="19%" alt="Add allowance" />
-  <img src="docs/media/budget.png" width="19%" alt="Budget breakdown" />
-  <img src="docs/media/wallet.png" width="19%" alt="Wallets" />
+  <img src="docs/media/home.png" width="24%" alt="Home dashboard" />
+  <img src="docs/media/add-dashboard.png" width="24%" alt="Today's transactions" />
+  <img src="docs/media/add-expense.png" width="24%" alt="Add expense" />
+  <img src="docs/media/add-allowance.png" width="24%" alt="Add allowance" />
+</p>
+<p align="center">
+  <img src="docs/media/budget.png" width="24%" alt="Budget breakdown" />
+  <img src="docs/media/budget-insights.png" width="24%" alt="Category insights" />
+  <img src="docs/media/wallet.png" width="24%" alt="Wallets" />
 </p>
 
 🎬 [Watch a short demo: adding an expense](docs/media/demo-add-expense.mp4)
 
 ## Features
+- **Home dashboard.** One glance answers "how much can I still spend today?", with a chip per category, how the month is pacing ("₱277/day to stay on plan"), your total balance across wallets, and what you added last. Every card opens the screen with the details.
 - **Daily allowance per category.** Set how much you give yourself today for Food, Transportation, Entertainment… and see how much is left as you spend. Save allowances you use often as templates and add them in one tap.
+- **Works offline.** Saves go through right away without a connection and sync when you're back online.
 - **Fast expense entry.** A big amount with quick +₱50 to +₱1,000 chips, a category grid, and live hints like "Food left today: ₱315 → ₱165" and "GCash ₱1,800 → ₱1,551 after".
 - **Wallets.** Track real money across cash, bank, e-wallet and cards. Each expense says which wallet paid, and the balance updates automatically (edits and deletes refund correctly).
 - **Budget insights.** Spending vs. allowance for any range (last 7 days, this month, last 6 months, a custom range…), a category donut chart, a per-category breakdown, and a comparison with the period before.

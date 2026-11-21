@@ -27,7 +27,7 @@ fun CustomAlertDialog(
     if(showDialog) {
         androidx.compose.material3.AlertDialog(
             icon = {
-                Icon(icon, contentDescription = icon.name, tint = MaterialTheme.colorScheme.primary)
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             },
             title = {
                 Text(text = dialogTitle)

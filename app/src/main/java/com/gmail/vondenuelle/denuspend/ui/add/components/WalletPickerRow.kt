@@ -57,6 +57,17 @@ fun WalletPickerRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         modifier = modifier
     ) {
+        // Grey placeholders until the list arrives, so "Don't deduct" never looks picked before the wallets load
+        if (!hasLoadedWallets) {
+            items(2) {
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.width(140.dp).height(80.dp)
+                ) {}
+            }
+            return@LazyRow
+        }
         if (isClosedWallet) {
             item {
                 PlainWalletOption(

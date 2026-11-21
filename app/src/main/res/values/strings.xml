@@ -65,6 +65,7 @@
     <string name="add_snackbar_allowance_added">Allowance Added</string>
     <string name="add_snackbar_expense_added">Expense Added</string>
     <string name="add_btn_add_allowance">Add Allowance</string>
+    <string name="add_btn_add_expense">Add Expense</string>
     <string name="add_lbl_allowance">Allowance</string>
     <string name="add_lbl_expense">Expense</string>
     <string name="add_lbl_allowance_for">What is this allowance for?</string>
@@ -137,6 +138,9 @@
     <string name="add_lbl_wallet_after">%1$s → %2$s after</string>
     <string name="add_lbl_left_today">%1$s left today: %2$s</string>
     <string name="add_lbl_left_today_after">%1$s left today: %2$s → %3$s</string>
+    <string name="add_lbl_overspent_today">%1$s overspent today: %2$s</string>
+    <string name="add_lbl_overspent_today_after">%1$s overspent today: %2$s → %3$s</string>
+    <string name="add_lbl_left_today_then_overspent">%1$s left today: %2$s → overspent by %3$s</string>
     <string name="add_btn_save_expense">Save expense · %1$s</string>
     <string name="add_lbl_allowance_today">%1$s today: %2$s</string>
     <string name="add_lbl_allowance_today_after">%1$s today: %2$s → %3$s</string>
@@ -373,6 +377,7 @@
     <string name="lbl_coming_soon">Coming soon</string>
     <string name="cd_show_password">Show password</string>
     <string name="cd_hide_password">Hide password</string>
+    <string name="cd_show_more_info">Show more information</string>
     <string name="lbl_google">Google</string>
     <string name="lbl_facebook">Facebook</string>
     <string name="lbl_contact_number">Phone number</string>

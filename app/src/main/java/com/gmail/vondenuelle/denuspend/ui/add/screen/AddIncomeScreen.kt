@@ -94,7 +94,7 @@ fun AddIncomeScreen(
 
     LoadingDialog(
         showDialog = state.isLoading,
-        text = "Loading...",
+        text = stringResource(R.string.lbl_loading),
     ) { }
     ErrorDialog(
         text = error,

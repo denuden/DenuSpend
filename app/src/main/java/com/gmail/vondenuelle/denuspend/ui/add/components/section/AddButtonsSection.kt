@@ -52,7 +52,7 @@ fun AddButtonsSection(
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    "Add Expense",
+                    stringResource(R.string.add_btn_add_expense),
                     modifier = Modifier.padding(start = 8.dp),
                     fontSize = 13.sp,
                     maxLines = 1,
