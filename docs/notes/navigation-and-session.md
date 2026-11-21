@@ -9,6 +9,7 @@
 - **Startup:** `MainViewModel.checkCurrentUser()`. A network error still means LoggedIn if Firebase has a cached user. A signed-in user without a physical wallet goes to NeedsWalletSetup first (`loggedInOrSetup()`, `wallet.md`), also after login/register.
 - **Inner navigation:** screens get `onNavigate(route, NavOptions?)` / `onPopBackStack`. VMs send `OnNavigate(route, NavBehavior)`, and screens call `event.behavior.toNavOptions()` (`navigation/NavBehavior.kt`). `NavBehavior` = `None | PopUpTo(dest, inclusive)`.
 - **Shell (`MainScreen.kt`):** one Scaffold. The top/bottom bar visibility, the title and the selected tab are all derived from `currentBackStackEntry` with `hasRoute`/`hierarchy`. Never keep a separate "selected tab" variable. Tabs use the standard `popUpTo(start){saveState}` + `restoreState`. The name/photo come from `MainViewModel.user` (a DataStore flow).
+- **A screen that switches tabs** (e.g. Home's cards) gets `onNavigateToTab` = `MainScreen`'s `navigateToTab`, passed through `AppNavigation` → `addMainNavGraph`. Never `navigate()` to a tab route directly (`home.md`).
 - **Adding a screen with a title:** add a branch in `topBarTitle()` plus a string under `<!-- MAIN SCREEN -->`. If it's in a new graph and needs the top bar, add it to `showTopBar`.
 
 ## Details from the navigation refactor (PR #1, 2026-11-18)
