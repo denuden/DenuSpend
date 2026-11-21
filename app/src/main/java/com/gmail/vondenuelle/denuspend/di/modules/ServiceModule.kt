@@ -11,11 +11,14 @@ import com.gmail.vondenuelle.denuspend.data.remote.services.sample.RetrofitSampl
 import com.gmail.vondenuelle.denuspend.data.remote.services.sample.SampleService
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.TransactionService
+import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl
+import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.WalletService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseAuth
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseBudget
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseProfile
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseSample
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseTransaction
+import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseWallet
 import com.gmail.vondenuelle.denuspend.di.qualifiers.RetrofitSample
 import dagger.Binds
 import dagger.Module
@@ -45,6 +48,10 @@ abstract class ServiceModule {
     @Binds
     @FirebaseBudget
     abstract fun bindBudgetService(firebaseBudgetServiceImpl: FirebaseBudgetServiceImpl): BudgetService
+
+    @Binds
+    @FirebaseWallet
+    abstract fun bindWalletService(firebaseWalletServiceImpl: FirebaseWalletServiceImpl): WalletService
 
 
 

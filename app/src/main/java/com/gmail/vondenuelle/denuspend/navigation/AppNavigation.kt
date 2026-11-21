@@ -14,5 +14,6 @@ fun AppNavigation(
         addProfileGraph(navController)
         addNavGraph(navController)
         addBudgetNavGraph(navController)
+        addWalletNavGraph(navController)
     }
 }

@@ -11,10 +11,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MoneyOff
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -37,10 +45,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionRequest
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.navigation.toNavOptions
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.ui.add.AddScreenEvents
@@ -52,6 +62,9 @@ import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.add.components.CurrencyTextField
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletStyle
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
+import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
@@ -103,6 +116,15 @@ fun AddExpenseScreen(
         text = error,
         showDialog = error.isNotEmpty()
     ) { error = "" }
+
+    // Pushed screen, so the wallet list listener stops when it's left
+    ComposableLifecycle { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_START -> viewModel.onEvent(AddScreenEvents.OnGetWallets)
+            Lifecycle.Event.ON_STOP -> viewModel.stopWalletsListener()
+            else -> Unit
+        }
+    }
 
     LaunchedEffect(docId) {
         if (docId != null && dailyDocId != null) {
@@ -246,6 +268,20 @@ fun AddExpenseScreenContent(
         }
 
         Spacer( modifier = Modifier. height(16.dp))
+        Text(
+            stringResource(R.string.wallet_lbl_paid_from),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        WalletDropdownButton(
+            wallets = state.wallets,
+            hasLoadedWallets = state.hasLoadedWallets,
+            selectedId = state.transactionWalletId,
+            onSelected = { onEvent(AddScreenEvents.OnWalletChanged(it)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer( modifier = Modifier. height(16.dp))
         FilledTonalButton(
             shape = MaterialTheme.shapes.extraLarge,
             // Edit mode waits for the original to load, so it can't be saved as a new one by mistake
@@ -260,7 +296,8 @@ fun AddExpenseScreenContent(
                         title = state.transactionTitle,
                         description = state.transactionDescription,
                         amount = -state.transactionAmount, //Make it negative
-                        category = state.transactionCategory
+                        category = state.transactionCategory,
+                        walletId = state.transactionWalletId
                     )
                 ))
             },
@@ -272,6 +309,92 @@ fun AddExpenseScreenContent(
     }
 
 
+}
+
+/**
+ * "Paid from" picker: the user's wallets plus "Don't deduct from a wallet".
+ * An id that's no longer in the list (after the list loaded) is a closed wallet, so it's named that instead of showing blank.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WalletDropdownButton(
+    modifier: Modifier = Modifier,
+    wallets: List<WalletModel>,
+    hasLoadedWallets: Boolean,
+    selectedId: String,
+    onSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val outlinedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+    val selected = wallets.find { it.docId == selectedId }
+    val label = when {
+        selectedId.isEmpty() -> stringResource(R.string.wallet_lbl_no_wallet)
+        selected != null -> selected.name
+        hasLoadedWallets -> stringResource(R.string.wallet_lbl_closed_wallet)
+        else -> ""
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            leadingIcon = selected?.let {
+                { Icon(WalletStyle.icon(it.iconKey), contentDescription = null, tint = WalletStyle.color(it.colorIndex)) }
+            },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = OutlinedTextFieldDefaults.colors().copy(
+                unfocusedIndicatorColor = outlinedColor,
+                disabledIndicatorColor = outlinedColor,
+                errorIndicatorColor = outlinedColor
+            ),
+            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            wallets.forEach { wallet ->
+                DropdownMenuItem(
+                    text = { Text(wallet.name, style = MaterialTheme.typography.bodyLarge) },
+                    leadingIcon = {
+                        Icon(WalletStyle.icon(wallet.iconKey), contentDescription = null, tint = WalletStyle.color(wallet.colorIndex))
+                    },
+                    trailingIcon = {
+                        Text(
+                            formatBalance(wallet.balance),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (wallet.balance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelected(wallet.docId)
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                )
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.wallet_lbl_no_wallet), style = MaterialTheme.typography.bodyLarge) },
+                leadingIcon = { Icon(Icons.Outlined.MoneyOff, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    onSelected("")
+                },
+                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+            )
+        }
+    }
 }
 
 @Preview

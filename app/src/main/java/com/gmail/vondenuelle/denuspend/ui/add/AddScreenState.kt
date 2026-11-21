@@ -3,6 +3,7 @@ package com.gmail.vondenuelle.denuspend.ui.add
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.AllowanceTemplateModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 
 data class AddScreenState(
     val isLoading : Boolean = false,
@@ -18,6 +19,11 @@ data class AddScreenState(
     val transactionDescription : String = "",
     val transactionCategory : String = "",
     val transactionAmount : Long = 0L,
+    // Expense form "Paid from" ("" = no wallet). walletPicked stops the physical-wallet default from overriding a choice or an edit.
+    val transactionWalletId : String = "",
+    val walletPicked : Boolean = false,
+    val wallets : List<WalletModel> = emptyList(),
+    val hasLoadedWallets : Boolean = false,
 
 //    Edit mode: the original transaction (null = adding a new one)
     val editingTransaction : TransactionModel? = null,

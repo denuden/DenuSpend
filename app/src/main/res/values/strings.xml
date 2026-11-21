@@ -20,7 +20,7 @@
     <string name="register_lbl_password">Password</string>
     <string name="register_lbl_name">Name</string>
     <string name="register_hint_name">Enter your name</string>
-    <string name="register_hint_password">At least 6 characters</string>
+    <string name="register_hint_password">8+ chars with Aa, 0-9 and !@#</string>
     <string name="register_loading">Signing you up…</string>
     <string name="register_toast_created">Account created. Welcome, %1$s</string>
 
@@ -44,6 +44,8 @@
     <string name="main_title_allowance_templates">Allowance Templates</string>
     <string name="main_title_budget">Budget</string>
     <string name="main_title_budget_insights">Budget Insights</string>
+    <string name="main_title_wallet">Wallet</string>
+    <string name="main_title_wallet_details">Wallet Details</string>
     <string name="main_tab_home">Home</string>
     <string name="main_tab_wallet">Wallet</string>
     <string name="main_tab_add">Add</string>
@@ -127,7 +129,7 @@
 
 <!--    PROFILE SCREEN-->
     <string name="profile_dialog_delete_title">Delete your account?</string>
-    <string name="profile_dialog_delete_text">This permanently deletes your account and all of your transactions and history. This can\'t be undone.</string>
+    <string name="profile_dialog_delete_text">This permanently deletes your account and all of your transactions, wallets and history. This can\'t be undone.</string>
     <string name="profile_btn_continue">Continue</string>
     <string name="profile_btn_cancel">Cancel</string>
     <string name="profile_delete_sheet_title">Delete account</string>
@@ -261,12 +263,62 @@
     <string name="insights_empty_title">No %1$s spending in this range</string>
     <string name="insights_empty_text">Try a longer range, or add an expense in the Add tab. Charts and insights show up once there\'s spending.</string>
 
+<!--    WALLET SCREEN (tab, details, add/edit sheet)-->
+    <string name="wallet_default_physical_name">Physical Wallet</string>
+    <string name="wallet_lbl_physical">Physical wallet</string>
+    <string name="wallet_lbl_balance">Balance</string>
+    <string name="wallet_lbl_negative">Negative</string>
+    <string name="wallet_lbl_total">Total balance</string>
+    <plurals name="wallet_lbl_wallet_count">
+        <item quantity="one">Across %1$d wallet</item>
+        <item quantity="other">Across %1$d wallets</item>
+    </plurals>
+    <string name="wallet_lbl_my_wallets">My wallets</string>
+    <string name="wallet_lbl_empty">No wallets yet. Add your cash, bank accounts, e-wallets or cards.</string>
+    <string name="wallet_btn_add_wallet">Add wallet</string>
+    <string name="wallet_btn_edit">Edit wallet</string>
+    <string name="wallet_btn_save">Save wallet</string>
+    <string name="wallet_btn_load_more">Load more</string>
+    <string name="wallet_title_add">New wallet</string>
+    <string name="wallet_title_edit">Edit wallet</string>
+    <string name="wallet_lbl_name">Name (20 characters)</string>
+    <string name="wallet_hint_name">E.g. GCash, BPI Savings, Credit Card</string>
+    <string name="wallet_lbl_current_balance">Current balance</string>
+    <string name="wallet_lbl_negative_switch">Balance is negative (overspent or owed)</string>
+    <string name="wallet_lbl_color">Color</string>
+    <string name="wallet_lbl_icon">Icon</string>
+    <string name="wallet_lbl_paid_from_this">Paid from this wallet</string>
+    <string name="wallet_empty_title">No expenses yet</string>
+    <string name="wallet_empty_text">When you add an expense, pick %1$s under \"Paid from\" and it shows up here.</string>
+    <string name="wallet_empty_error_title">Couldn\'t load expenses</string>
+    <string name="wallet_lbl_transactions_error">Go back and open the wallet again.</string>
+    <string name="wallet_snackbar_saved">Wallet saved</string>
+    <string name="wallet_snackbar_closed">%1$s was closed</string>
+    <!-- closing (deleting) a wallet -->
+    <string name="wallet_btn_close_wallet">Close wallet</string>
+    <string name="wallet_dialog_close_title">Close this wallet?</string>
+    <string name="wallet_dialog_close_text">%1$s and its balance will be removed. Expenses paid from it stay in your history. They just won\'t be linked to a wallet anymore. This can\'t be undone.</string>
+    <!-- first-time setup -->
+    <string name="wallet_setup_step">Step %1$d of %2$d</string>
+    <string name="wallet_setup_btn_sign_out">Sign out</string>
+    <string name="wallet_setup_title_physical">Your physical wallet</string>
+    <string name="wallet_setup_text_physical">Everyone carries a wallet, a purse, or even just a pocket. How much cash is in it right now? ₱0 is fine.</string>
+    <string name="wallet_setup_btn_next">Next</string>
+    <string name="wallet_setup_title_more">Add your other wallets</string>
+    <string name="wallet_setup_text_more">Bank accounts, e-wallets, credit cards… You can skip this and add them later in the Wallet tab.</string>
+    <string name="wallet_setup_btn_finish">Finish</string>
+    <string name="wallet_setup_btn_back">Back</string>
+    <!-- "Paid from" on the expense form -->
+    <string name="wallet_lbl_paid_from">Paid from</string>
+    <string name="wallet_lbl_no_wallet">Don\'t deduct from a wallet</string>
+    <string name="wallet_lbl_closed_wallet">Closed wallet</string>
+
 <!--    ERROR-->
     <string name="error_error">Error</string>
     <string name="error_email_required">Please enter your email</string>
     <string name="error_email_invalid">Please enter a valid email</string>
     <string name="error_password_required">Please enter your password</string>
-    <string name="error_password_short">Password must be at least 6 characters</string>
+    <string name="error_password_short">Password must be at least 8 characters</string>
     <string name="error_name_required">Please enter your name</string>
     <string name="error_user_not_existing">User does not exist</string>
     <string name="error_invalid_inputs">Input fields are empty or invalid. Please make sure your inputs are correct</string>

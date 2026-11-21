@@ -151,10 +151,10 @@ class AuthViewModel @Inject constructor(
         else -> ""
     }
 
-    // checkLength is only for Register: Firebase requires 6+ characters, but existing logins shouldn't be blocked by it
+    // checkLength is only for Register: the Firebase password policy needs 8+ characters (the rest is checked by Firebase), but existing logins shouldn't be blocked by it
     private fun passwordError(password: String, checkLength: Boolean): String = when {
         password.isBlank() -> context.getString(R.string.error_password_required)
-        checkLength && password.trim().length < 6 -> context.getString(R.string.error_password_short)
+        checkLength && password.trim().length < 8 -> context.getString(R.string.error_password_short)
         else -> ""
     }
 

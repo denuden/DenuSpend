@@ -17,7 +17,7 @@
   - It's locked while the password is blank or while loading.
   - It springs back when `isLoading` returns to false, for example after a wrong password.
 - **Delete order matters** (`FirebaseProfileServiceImpl.deleteAccount`): reauth → `deleteUserData(uid)` → `user.delete()`. Data goes first, because once the user is gone the security rules block the deletes.
-  - `deleteUserData` deletes `daily_history` where `userId == uid`, each day's `transactions` subcollection, top-level `transactions` where `userId == uid`, `monthly_history` where `userId == uid`, `allowance_templates/{uid}`, and `users/{uid}`. A new per-user collection must be added here.
+  - `deleteUserData` deletes `daily_history` where `userId == uid`, each day's `transactions` subcollection, top-level `transactions` where `userId == uid`, `monthly_history` where `userId == uid`, `allowance_templates/{uid}`, `wallets` where `userId == uid`, and `users/{uid}`. A new per-user collection must be added here.
   - It uses batches of ≤500.
   - It isn't atomic: if `user.delete()` fails afterwards, the account remains with no data, and a retry is safe.
   - The rules must allow the owner to delete `daily_history` docs and their subdocs.

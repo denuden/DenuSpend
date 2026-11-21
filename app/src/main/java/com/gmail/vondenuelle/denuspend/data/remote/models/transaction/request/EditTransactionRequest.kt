@@ -9,4 +9,6 @@ data class EditTransactionRequest(
     val description : String,
     val amount : Long = 0L,
     val category : String,
+    val walletId : String = "",
+    val oldWalletId : String = "", // needed to refund the old wallet when the wallet changes
 )

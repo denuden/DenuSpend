@@ -14,4 +14,5 @@ data class TransactionModel(
     val date: Timestamp = Timestamp.Companion.now(),
     val amount : Long = 0L,
     val category : String = "",
+    val walletId : String = "", // the wallet an expense was paid from, "" = none (allowances never have one)
 )

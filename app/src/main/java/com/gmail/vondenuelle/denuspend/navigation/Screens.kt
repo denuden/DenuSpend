@@ -52,6 +52,8 @@ sealed class RootGraphs {
     data object AddGraph : RootGraphs()
     @Serializable
     data object BudgetGraph : RootGraphs()
+    @Serializable
+    data object WalletGraph : RootGraphs()
 }
 
 
@@ -75,6 +77,9 @@ sealed class AppRootScreens {
     data object AuthTopLevel : AppRootScreens()
     @Serializable
     data object MainTopLevel : AppRootScreens()
+    // First-time setup of the mandatory physical wallet, shown between Auth and Main
+    @Serializable
+    data object WalletSetupTopLevel : AppRootScreens()
 }
 
 @Serializable
@@ -104,6 +109,8 @@ sealed class MainScreens : NavigationScreens {
     data object AddNavigation : MainScreens()
     @Serializable
     data object BudgetNavigation : MainScreens()
+    @Serializable
+    data object WalletNavigation : MainScreens()
 }
 
 @Serializable
@@ -132,3 +139,8 @@ sealed class BudgetScreens : NavigationScreens {
     data class BudgetInsightsScreenNavigation(val category : String) : BudgetScreens()
 }
 
+@Serializable
+sealed class WalletScreens : NavigationScreens {
+    @Serializable
+    data class WalletDetailsNavigation(val walletId : String) : WalletScreens()
+}
