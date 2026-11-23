@@ -8,7 +8,5 @@ sealed class HomeScreenEvents {
     object OnGetToday : HomeScreenEvents()
     object OnGetMonth : HomeScreenEvents()
     object OnGetWallets : HomeScreenEvents()
-    data class OnOpenCategoryInsights(val category : String) : HomeScreenEvents()
     data class OnOpenWalletDetails(val walletId : String) : HomeScreenEvents()
-    object OnOpenHistory : HomeScreenEvents()
 }

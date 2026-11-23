@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coin Drop logo for the splash: a ring coin dropped to the right of a line. 240dp splash icon area, the mark stays inside its 160dp circle.
+     The named groups and coin paths are animated by ic_splash_coin_drop.xml; this file is the final (still) frame. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <!-- Mark is drawn in a 100x100 box, scaled and centered here -->
+    <group
+        android:scaleX="1.1"
+        android:scaleY="1.1"
+        android:translateX="65"
+        android:translateY="65">
+        <!-- Pivot = bottom of the coin, so the squash happens where it lands -->
+        <group
+            android:name="coin"
+            android:pivotX="64"
+            android:pivotY="54">
+            <path
+                android:name="ringPath"
+                android:strokeColor="@color/splash_mark"
+                android:strokeWidth="6"
+                android:pathData="M49,36a15,15 0,1 0,30 0a15,15 0,1 0,-30 0z" />
+            <path
+                android:name="coinPath"
+                android:fillColor="@color/splash_mark"
+                android:pathData="M59,36a5,5 0,1 0,10 0a5,5 0,1 0,-10 0z" />
+        </group>
+        <group
+            android:name="bar"
+            android:pivotX="50"
+            android:pivotY="75">
+            <path
+                android:fillColor="@color/splash_mark"
+                android:pathData="M21,68h58a7,7 0,0 1,0 14h-58a7,7 0,0 1,0 -14z" />
+        </group>
+    </group>
+</vector>

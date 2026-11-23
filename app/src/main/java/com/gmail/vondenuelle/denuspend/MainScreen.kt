@@ -3,6 +3,7 @@ package com.gmail.vondenuelle.denuspend
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -193,8 +194,9 @@ fun MainScreen(
             }
         }
     ) { padding ->
-        // Screen content
-        Box(modifier = Modifier.padding(padding)) {
+        // Screen content. consumeWindowInsets: the bars' insets are already applied here, so a form's imePadding()
+        // only adds what the keyboard covers beyond them (otherwise the nav bar height shows as a gap above the keyboard).
+        Box(modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
             AppNavigation(
                 navController,
                 startDestination = RootGraphs.MainGraph,

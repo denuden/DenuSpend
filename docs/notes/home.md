@@ -2,14 +2,13 @@
 
 - **Home is a read-only dashboard.** It has no add/edit buttons and nothing that writes, so Home itself costs 0 writes. Every card is a shortcut to the screen that owns that data. Mockup / design source: https://claude.ai/artifact/FEFUYjSNcX3edgcxxHEXGy (final hybrid section). Goals is not designed yet and isn't on Home.
 - **Sections, top to bottom**, one file each in `ui/home/components/`:
-  - `TodayLeftCard` (`primaryContainer`, Today icon): "Left to spend today" / "Over today" in red, spent of allowance, bar. → Add tab.
-  - `TodayCategoryChips`: one chip per category with allowance or spending today, in dropdown order. An over chip uses `errorContainer`. Hidden when empty. → Insights(category).
-  - `MonthCard` (`tertiaryContainer`, CalendarMonth): month name, "Day X of Y", spent of allowance, bar with an even-pace tick, "₱X left · ₱Y/day to stay on plan" or "₱X over". → Budget tab.
-  - `BalanceCard` (`inverseSurface`, Wallet icon): total of all wallets plus a private `MiniWalletCard` per wallet (`WalletStyle` colors, `formatBalance`). Card → Wallet tab, mini card → WalletDetails(id).
-  - `LastAddedCard` (neutral `surfaceContainerLow`): today's newest 3 via the shared `TransactionItem`, with no `onClick` so taps reach the card. → History.
+  - `TodayLeftCard` (`primaryContainer`, Today icon): bold "Left to spend today" / "Overspent today" in red, the amount, "₱X spent of ₱Y allowance" (`bodyMedium`), bar. → Add tab.
+  - `TodayCategoryChips`: one chip per category with allowance or spending today, in dropdown order. An over chip uses `errorContainer`. Hidden when empty. → Add tab (its "Today by category" card has the full numbers).
+  - `MonthCard` (`tertiaryContainer`, CalendarMonth): month name, "Day X of Y", "₱X spent of ₱Y allowance", bar, then "₱X unspent allowance" + "Lasts until Nov 30 at ₱Y/day", or "₱X overspent this month". → Budget tab. **There is no monthly plan:** the month's allowance is the daily allowances added so far, so it never says "plan" or "left" and has no even-pace tick (it was removed in 1.2.1 for that reason).
+  - `BalanceCard` (`inverseSurface`, Wallet icon): total of all wallets plus a private `MiniWalletCard` per wallet (`WalletStyle` colors, `formatBalance`). A negative mini card shows `NegativeBadge` ("!"). The header has the ⓘ "Wallets vs allowance" tooltip (shared string with the Wallet tab). Card → Wallet tab, mini card → WalletDetails(id).
+  - `LastAddedCard` (neutral `surfaceContainerLow`): today's newest 3 via the shared `TransactionItem`, with no `onClick` so taps reach the card. → Add tab (it lists all of today).
 - **One color per section** so they're easy to tell apart. Plans (today, month) use container colors. Real money is the dark card, so balances don't look like allowances.
-- **Tab switches go through `onNavigateToTab`**, which is `MainScreen`'s `navigateToTab` passed down `AppNavigation` → `addMainNavGraph` → `HomeScreen`. That gives the same `popUpTo(start){saveState}` + `launchSingleTop` + `restoreState` as the bottom bar. A plain `navigate(MainScreens.AddNavigation)` would push a second Add on top of Home and break the selected tab and Back. Pushes (Insights, wallet details, History) are VM `OnNavigate` events to existing routes, and Back returns to Home.
-- **Insights opens on its default range, This month**, not just today. The chip is a way into the category's story.
+- **Tab switches go through `onNavigateToTab`**, which is `MainScreen`'s `navigateToTab` passed down `AppNavigation` → `addMainNavGraph` → `HomeScreen`. That gives the same `popUpTo(start){saveState}` + `launchSingleTop` + `restoreState` as the bottom bar. A plain `navigate(MainScreens.AddNavigation)` would push a second Add on top of Home and break the selected tab and Back. The only push is wallet details, a VM `OnNavigate` event, and Back returns to Home. Known: the tab restores its saved stack, so if the Add tab was last left on History, Last added/chips land on History.
 - **Three listeners in `HomeViewmodel`**, one Job each, started on ON_START with **no ON_STOP stop** (tab rule):
   - `todayJob` = `getTodayOverview` (daily doc + today's transactions). Restarts when `todayDate != LocalDate.now()`, the same midnight check as Add's overview.
   - `monthJob` = `BudgetRepository.getMonthlyHistory(YearMonth)`. Restarts when `monthOf` changes.
@@ -21,8 +20,7 @@
 - **Math:**
   - Today uses the daily doc's `totalIncome` / `totalExpense`, same as Add.
   - Month uses the **sums of the monthly doc's category maps**, so it matches Budget's This month.
-  - ₱/day = left ÷ days left including today.
-  - The tick sits at dayOfMonth ÷ daysInMonth. It's hidden when the month has no allowance, and drawn in `surface` when over so it stays visible on the red bar.
+  - "Lasts until … at ₱/day" = unspent ÷ days left including today.
   - Spending with no allowance shows a full bar (same as Add).
   - A category that isn't in the dropdown gets no chip but still counts in the totals (same as Budget).
 - **Cost:** a cold open is about 5 reads + today's transaction count. A new expense is about 4 reads (daily, transaction, wallet, monthly), an allowance about 3. A typical day is ~40 reads, a heavy day ~200.

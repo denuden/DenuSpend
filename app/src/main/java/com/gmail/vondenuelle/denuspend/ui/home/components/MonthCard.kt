@@ -3,15 +3,12 @@ package com.gmail.vondenuelle.denuspend.ui.home.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -36,11 +33,13 @@ import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
 // This month's spending vs this month's allowance, from the monthly doc. Tapping it opens the Budget tab.
-// The tick on the bar is where spending would be if it were spread evenly (day 21 of 30 = 70%), so a bar past it means spending fast.
+// The month's allowance is only the daily allowances added so far (there's no monthly plan), so what's left is shown as
+// "unspent allowance" plus how long it lasts if only that is spent.
 @Composable
 fun MonthCard(
     modifier: Modifier = Modifier,
@@ -53,7 +52,7 @@ fun MonthCard(
     val today = LocalDate.now()
     val daysInMonth = today.lengthOfMonth()
     val daysLeft = daysInMonth - today.dayOfMonth + 1 // today counts as a day you can still spend
-    val evenPace = today.dayOfMonth / daysInMonth.toFloat()
+    val lastDay = today.withDayOfMonth(daysInMonth).format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()))
 
     val isOver = spent > allowance
     val progress = when {
@@ -108,42 +107,32 @@ fun MonthCard(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Medium,
                 )
-                if (!isLoading && allowance > 0) {
+                if (!isLoading) {
                     Text(
-                        stringResource(R.string.home_lbl_month_of, "₱${CurrencyUtils.formatCents(allowance)}"),
+                        if (allowance > 0) {
+                            stringResource(R.string.home_lbl_month_spent_of, "₱${CurrencyUtils.formatCents(allowance)}")
+                        } else {
+                            stringResource(R.string.home_lbl_month_spent)
+                        },
                         style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 3.dp)
                     )
                 }
             }
 
-            // Bar + even-pace tick. The tick is drawn over the bar at the same fraction of its width.
-            BoxWithConstraints(
-                contentAlignment = Alignment.CenterStart,
+            LinearProgressIndicator(
+                progress = { if (isLoading) 0f else progress },
+                color = if (isOver) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                trackColor = onContainer.copy(alpha = 0.16f),
+                strokeCap = StrokeCap.Round,
+                gapSize = 0.dp,
+                drawStopIndicator = {},
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 10.dp)
-            ) {
-                LinearProgressIndicator(
-                    progress = { if (isLoading) 0f else progress },
-                    color = if (isOver) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
-                    trackColor = onContainer.copy(alpha = 0.16f),
-                    strokeCap = StrokeCap.Round,
-                    gapSize = 0.dp,
-                    drawStopIndicator = {},
-                    modifier = Modifier.fillMaxWidth().height(8.dp)
-                )
-                if (allowance > 0) {
-                    Box(
-                        modifier = Modifier
-                            .offset(x = maxWidth * evenPace - 1.dp)
-                            .width(2.dp)
-                            .height(16.dp)
-                            // A dark tick disappears into the red bar when over, so it switches to the light surface color
-                            .background(if (isOver) MaterialTheme.colorScheme.surface else onContainer)
-                    )
-                }
-            }
+                    .height(8.dp)
+            )
 
             when {
                 isLoading -> Text(stringResource(R.string.lbl_loading), style = MaterialTheme.typography.bodySmall)
@@ -152,21 +141,21 @@ fun MonthCard(
                     style = MaterialTheme.typography.bodySmall
                 )
                 isOver -> Text(
-                    stringResource(R.string.home_lbl_amount_over, "₱${CurrencyUtils.formatCents(spent - allowance)}"),
-                    style = MaterialTheme.typography.bodySmall,
+                    stringResource(R.string.home_lbl_month_overspent, "₱${CurrencyUtils.formatCents(spent - allowance)}"),
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
                 )
-                else -> Row {
+                else -> {
                     val left = allowance - spent
                     Text(
-                        stringResource(R.string.home_lbl_amount_left, "₱${CurrencyUtils.formatCents(left)}"),
-                        style = MaterialTheme.typography.bodySmall,
+                        stringResource(R.string.home_lbl_month_unspent, "₱${CurrencyUtils.formatCents(left)}"),
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = colorResource(R.color.verified_green_text)
                     )
                     Text(
-                        " · " + stringResource(R.string.home_lbl_month_per_day, "₱${CurrencyUtils.formatCents(left / daysLeft)}"),
+                        stringResource(R.string.home_lbl_month_lasts_until, lastDay, "₱${CurrencyUtils.formatCents(left / daysLeft)}"),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }

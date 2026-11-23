@@ -4,4 +4,14 @@
     <style name="Theme.DenuSpend" parent="android:Theme.Material.Light.NoActionBar" >
 
     </style>
+
+    <!-- MainActivity's launch theme. Android 12+ uses the animated icon from values-v31; older versions show the still logo -->
+    <style name="Theme.DenuSpend.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_coin</item>
+        <item name="postSplashScreenTheme">@style/Theme.DenuSpend</item>
+        <!-- Dark status/nav bar icons, otherwise they're white on the light splash (seen on API 30) -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
 </resources>

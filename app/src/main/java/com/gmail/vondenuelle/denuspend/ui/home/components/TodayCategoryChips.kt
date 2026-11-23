@@ -30,14 +30,14 @@ import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
 
 private data class TodayCategory(val name: String, val color: Color, val allowance: Long, val spent: Long)
 
-// One chip per category that has an allowance or spending today, in dropdown order. Tapping one opens its Insights.
+// One chip per category that has an allowance or spending today, in dropdown order. Tapping one opens the Add tab (its "Today by category" card).
 // A category that isn't in the dropdown list gets no chip, but still counts in the card's totals (same as Budget).
 @Composable
 fun TodayCategoryChips(
     modifier: Modifier = Modifier,
     allowanceByCategory: Map<String, Long>,
     expenseByCategory: Map<String, Long>,
-    onCategoryClick: (String) -> Unit,
+    onClick: () -> Unit,
 ) {
     val categories = remember(allowanceByCategory, expenseByCategory) {
         CategoryDropdownButtonModel.list.drop(1).mapIndexedNotNull { index, name ->
@@ -55,7 +55,7 @@ fun TodayCategoryChips(
         modifier = modifier
     ) {
         items(categories, key = { it.name }) { category ->
-            CategoryChip(category = category, onClick = { onCategoryClick(category.name) })
+            CategoryChip(category = category, onClick = onClick)
         }
     }
 }
@@ -98,7 +98,7 @@ private fun TodayCategoryChipsPreview() {
             TodayCategoryChips(
                 allowanceByCategory = mapOf("Food" to 40000L, "Transportation" to 20000L, "Personal" to 30000L),
                 expenseByCategory = mapOf("Food" to 28000L, "Transportation" to 23000L),
-                onCategoryClick = {}
+                onClick = {}
             )
         }
     }

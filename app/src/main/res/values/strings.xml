@@ -73,9 +73,12 @@
     <string name="add_lbl_last_added">Last Added</string>
     <string name="add_lbl_today_date">TODAY · %1$s</string>
     <string name="add_lbl_amount_spent">%1$s spent</string>
-    <string name="add_lbl_of_total">of %1$s</string>
+    <string name="add_lbl_of_total">of %1$s allowance</string>
     <string name="add_lbl_amount_left">%1$s left</string>
     <string name="add_lbl_amount_over">%1$s over</string>
+    <string name="add_lbl_today_by_category">Today by category</string>
+    <string name="add_lbl_spent_of_allowance">%1$s spent of %2$s allowance</string>
+    <string name="add_lbl_spent_no_allowance">%1$s spent · no allowance</string>
     <string name="add_lbl_nothing_to_show">Nothing to show</string>
     <string name="add_lbl_over">Over</string>
     <string name="add_lbl_left">Left</string>
@@ -306,7 +309,7 @@
     <string name="wallet_title_add">New wallet</string>
     <string name="wallet_title_edit">Edit wallet</string>
     <string name="wallet_lbl_name">Name (20 characters)</string>
-    <string name="wallet_hint_name">E.g. GCash, BPI Savings, Credit Card</string>
+    <string name="wallet_hint_name">E.g. Savings, E-wallet, Credit card</string>
     <string name="wallet_lbl_current_balance">Current balance</string>
     <string name="wallet_lbl_negative_switch">Balance is negative (overspent or owed)</string>
     <string name="wallet_lbl_color">Color</string>
@@ -339,15 +342,19 @@
 
 <!--    HOME SCREEN-->
     <string name="home_lbl_left_today">Left to spend today</string>
-    <string name="home_lbl_over_today">Over today</string>
+    <string name="home_lbl_over_today">Overspent today</string>
     <string name="home_lbl_spent_of_allowance">%1$s spent of %2$s allowance</string>
     <string name="home_lbl_no_allowance_today">No allowance set for today</string>
     <string name="home_lbl_amount_left">%1$s left</string>
     <string name="home_lbl_amount_over">%1$s over</string>
     <!-- month card -->
     <string name="home_lbl_month_day">Day %1$d of %2$d</string>
-    <string name="home_lbl_month_of">of %1$s</string>
-    <string name="home_lbl_month_per_day">%1$s/day to stay on plan</string>
+    <string name="home_lbl_month_spent_of">spent of %1$s allowance</string>
+    <string name="home_lbl_month_spent">spent</string>
+    <!-- Month allowance = the daily allowances added so far, so the leftover is "unspent", not a monthly plan -->
+    <string name="home_lbl_month_unspent">%1$s unspent allowance</string>
+    <string name="home_lbl_month_lasts_until">Lasts until %1$s at %2$s/day</string>
+    <string name="home_lbl_month_overspent">%1$s overspent this month</string>
     <string name="home_lbl_month_no_allowance">No allowance this month yet</string>
     <!-- balance card -->
     <plurals name="home_lbl_total_balance">
@@ -375,6 +382,9 @@
     <string name="lbl_ok">OK</string>
     <string name="lbl_cancel">Cancel</string>
     <string name="lbl_coming_soon">Coming soon</string>
+    <!-- ⓘ on the Wallet tab and Home's balance card -->
+    <string name="lbl_wallet_vs_allowance_title">Wallets vs allowance</string>
+    <string name="lbl_wallet_vs_allowance_text">Wallets are the real money you have, and expenses come out of them. Allowance is a daily limit you set for yourself, no matter how much money is in your wallets. It\'s imaginary: it just shows when you\'re overspending.</string>
     <string name="cd_show_password">Show password</string>
     <string name="cd_hide_password">Hide password</string>
     <string name="cd_show_more_info">Show more information</string>

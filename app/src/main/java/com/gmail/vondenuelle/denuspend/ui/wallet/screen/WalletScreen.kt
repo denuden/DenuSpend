@@ -40,6 +40,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.ui.common.components.InformationTooltip
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.navigation.toNavOptions
@@ -137,7 +138,17 @@ fun WalletScreenContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text(stringResource(R.string.wallet_lbl_total), style = MaterialTheme.typography.titleSmall)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.wallet_lbl_total),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        InformationTooltip(
+                            richTooltipSubheadText = stringResource(R.string.lbl_wallet_vs_allowance_title),
+                            richTooltipText = stringResource(R.string.lbl_wallet_vs_allowance_text)
+                        )
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             formatBalance(total),

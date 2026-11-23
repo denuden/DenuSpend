@@ -9,9 +9,7 @@ import com.gmail.vondenuelle.denuspend.data.repositories.WalletRepository
 import com.gmail.vondenuelle.denuspend.di.modules.TokenProvider
 import com.gmail.vondenuelle.denuspend.domain.models.budget.MonthlyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
-import com.gmail.vondenuelle.denuspend.navigation.AddScreens
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
-import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
@@ -145,16 +143,8 @@ class HomeViewmodel @Inject constructor(
                 }
             }
 
-            is HomeScreenEvents.OnOpenCategoryInsights -> {
-                sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetInsightsScreenNavigation(event.category)))
-            }
-
             is HomeScreenEvents.OnOpenWalletDetails -> {
                 sendEvent(OneTimeEvents.OnNavigate(WalletScreens.WalletDetailsNavigation(event.walletId)))
-            }
-
-            HomeScreenEvents.OnOpenHistory -> {
-                sendEvent(OneTimeEvents.OnNavigate(AddScreens.AllRecentTransactionsNavigation))
             }
 
             else -> Unit

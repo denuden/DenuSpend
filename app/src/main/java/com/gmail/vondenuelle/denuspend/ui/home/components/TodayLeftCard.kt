@@ -76,7 +76,8 @@ fun TodayLeftCard(
                 }
                 Text(
                     stringResource(if (isOver) R.string.home_lbl_over_today else R.string.home_lbl_left_today),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
                     color = if (isOver) MaterialTheme.colorScheme.error else onContainer,
                     modifier = Modifier.weight(1f)
                 )
@@ -102,7 +103,8 @@ fun TodayLeftCard(
                         "₱${CurrencyUtils.formatCents(allowance)}"
                     )
                 },
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
             )
 

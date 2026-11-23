@@ -35,3 +35,6 @@ google-services.json
 # Signed release outputs (APK, metadata, baseline profiles): built locally, attached to GitHub Releases
 app/release/
 app/release-debuggable/
+
+# Kotlin compiler daemon session files
+.kotlin/

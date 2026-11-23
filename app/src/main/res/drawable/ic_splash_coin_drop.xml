@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash animation (Android 12+), 800ms: the coin falls onto the line, squashes, bounces once and settles.
+     The line dips when the coin lands. Ends on ic_splash_coin's still frame, which stays while the session loads. -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:drawable="@drawable/ic_splash_coin">
+
+    <!-- Coin (ring + center dot) fades in during the first part of the fall -->
+    <target android:name="ringPath">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="250"
+                android:propertyName="strokeAlpha"
+                android:valueFrom="0"
+                android:valueTo="1"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+    <target android:name="coinPath">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="250"
+                android:propertyName="fillAlpha"
+                android:valueFrom="0"
+                android:valueTo="1"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="coin">
+        <aapt:attr name="android:animation">
+            <set>
+                <!-- Fall 0-500ms, bounce up 500-650ms, settle 650-800ms -->
+                <set android:ordering="sequentially">
+                    <objectAnimator
+                        android:duration="500"
+                        android:interpolator="@android:interpolator/accelerate_quad"
+                        android:propertyName="translateY"
+                        android:valueFrom="-40"
+                        android:valueTo="0"
+                        android:valueType="floatType" />
+                    <objectAnimator
+                        android:duration="150"
+                        android:interpolator="@android:interpolator/decelerate_quad"
+                        android:propertyName="translateY"
+                        android:valueFrom="0"
+                        android:valueTo="-5"
+                        android:valueType="floatType" />
+                    <objectAnimator
+                        android:duration="150"
+                        android:interpolator="@android:interpolator/accelerate_decelerate"
+                        android:propertyName="translateY"
+                        android:valueFrom="-5"
+                        android:valueTo="0"
+                        android:valueType="floatType" />
+                </set>
+                <!-- Squash on landing (420-500ms), stretch on the bounce, back to round -->
+                <set android:ordering="sequentially">
+                    <objectAnimator
+                        android:duration="80"
+                        android:propertyName="scaleX"
+                        android:startOffset="420"
+                        android:valueFrom="1"
+                        android:valueTo="1.1"
+                        android:valueType="floatType" />
+                    <objectAnimator
+                        android:duration="150"
+                        android:propertyName="scaleX"
+                        android:valueFrom="1.1"
+                        android:valueTo="0.96"
+                        android:valueType="floatType" />
+                    <objectAnimator
+                        android:duration="150"
+                        android:propertyName="scaleX"
+                        android:valueFrom="0.96"
+                        android:valueTo="1"
+                        android:valueType="floatType" />
+                </set>
+                <set android:ordering="sequentially">
+                    <objectAnimator
+                        android:duration="80"
+                        android:propertyName="scaleY"
+                        android:startOffset="420"
+                        android:valueFrom="1"
+                        android:valueTo="0.84"
+                        android:valueType="floatType" />
+                    <objectAnimator
+                        android:duration="150"
+                        android:propertyName="scaleY"
+                        android:valueFrom="0.84"
+                        android:valueTo="1.05"
+                        android:valueType="floatType" />
+                    <objectAnimator
+                        android:duration="150"
+                        android:propertyName="scaleY"
+                        android:valueFrom="1.05"
+                        android:valueTo="1"
+                        android:valueType="floatType" />
+                </set>
+            </set>
+        </aapt:attr>
+    </target>
+
+    <!-- Line dips and widens a little when the coin lands (500ms), then springs back -->
+    <target android:name="bar">
+        <aapt:attr name="android:animation">
+            <set>
+                <set android:ordering="sequentially">
+                    <objectAnimator
+                        android:duration="80"
+                        android:propertyName="translateY"
+                        android:startOffset="500"
+                        android:valueFrom="0"
+                        android:valueTo="3"
+                        android:valueType="floatType" />
+                    <objectAnimator
+                        android:duration="170"
+                        android:interpolator="@android:interpolator/decelerate_quad"
+                        android:propertyName="translateY"
+                        android:valueFrom="3"
+                        android:valueTo="0"
+                        android:valueType="floatType" />
+                </set>
+                <set android:ordering="sequentially">
+                    <objectAnimator
+                        android:duration="80"
+                        android:propertyName="scaleX"
+                        android:startOffset="500"
+                        android:valueFrom="1"
+                        android:valueTo="1.05"
+                        android:valueType="floatType" />
+                    <objectAnimator
+                        android:duration="170"
+                        android:interpolator="@android:interpolator/decelerate_quad"
+                        android:propertyName="scaleX"
+                        android:valueFrom="1.05"
+                        android:valueTo="1"
+                        android:valueType="floatType" />
+                </set>
+            </set>
+        </aapt:attr>
+    </target>
+</animated-vector>

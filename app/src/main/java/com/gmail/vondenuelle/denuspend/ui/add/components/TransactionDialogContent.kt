@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +45,7 @@ fun TransactionDialogContent(
     list: List<TransactionModel>,
     isLoading: Boolean,
     onTransactionClick: (TransactionModel) -> Unit = {},
+    listState: LazyListState = rememberLazyListState(), // hoisted by History so the scroll survives Edit → Back
 ) {
     // Display-only choices for this day's list, same controls as "Last Added" on the Add tab
     var typeFilter by rememberSaveable { mutableStateOf(TransactionTypeFilter.ALL) }
@@ -50,7 +53,7 @@ fun TransactionDialogContent(
     var groupByCategory by rememberSaveable { mutableStateOf(false) }
     val shownTransactions = remember(list, typeFilter, sort) { arrangeTransactions(list, typeFilter, sort) }
 
-    LazyColumn(modifier = modifier.fillMaxWidth().padding(16.dp)) {
+    LazyColumn(state = listState, modifier = modifier.fillMaxWidth().padding(16.dp)) {
         item {
             val isOverspent = day.totalExpense > day.totalIncome
             Text(

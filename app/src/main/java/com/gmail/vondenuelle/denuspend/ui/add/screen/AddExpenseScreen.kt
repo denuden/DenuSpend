@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.ui.add.screen
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -40,7 +41,6 @@ import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.imePadding
 import com.gmail.vondenuelle.denuspend.ui.add.components.AmountInputSection
 import com.gmail.vondenuelle.denuspend.ui.add.components.CategoryGrid
 import com.gmail.vondenuelle.denuspend.ui.add.components.FormSaveBar
@@ -154,6 +154,7 @@ fun AddExpenseScreenContent(
                 amountColor = MaterialTheme.colorScheme.error,
                 tooltipTitle = stringResource(R.string.add_tooltip_expense_title),
                 tooltipText = stringResource(R.string.add_tooltip_expense_text),
+                todayLine = leftTodayText(state),
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
@@ -161,9 +162,6 @@ fun AddExpenseScreenContent(
                 FormSectionHeader(title = stringResource(R.string.add_lbl_expense_category))
                 CategoryGrid(selected = state.transactionCategory) {
                     onEvent(AddScreenEvents.OnCategoryChanged(it))
-                }
-                leftTodayText(state)?.let {
-                    Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 

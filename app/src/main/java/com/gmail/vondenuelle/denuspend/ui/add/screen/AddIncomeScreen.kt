@@ -3,8 +3,8 @@ package com.gmail.vondenuelle.denuspend.ui.add.screen
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -148,6 +148,7 @@ fun AddIncomeScreenContent(
                 amountColor = colorResource(R.color.verified_green_text),
                 tooltipTitle = stringResource(R.string.add_tooltip_allowance_title),
                 tooltipText = stringResource(R.string.add_tooltip_allowance_text),
+                todayLine = allowanceTodayText(state),
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
@@ -155,9 +156,6 @@ fun AddIncomeScreenContent(
                 FormSectionHeader(title = stringResource(R.string.add_lbl_allowance_for))
                 CategoryGrid(selected = state.transactionCategory) {
                     onEvent(AddScreenEvents.OnCategoryChanged(it))
-                }
-                allowanceTodayText(state)?.let {
-                    Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
