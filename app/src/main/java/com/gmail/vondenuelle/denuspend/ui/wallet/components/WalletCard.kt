@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -26,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
@@ -72,6 +76,7 @@ fun WalletCard(
                         )
                     }
                 }
+                if (wallet.balance < 0) NegativeBadge()
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -92,6 +97,24 @@ fun WalletCard(
                 }
             }
         }
+    }
+}
+
+// The "!" in a negative wallet's top-right corner, so it stands out before reading the balance
+@Composable
+fun NegativeBadge(modifier: Modifier = Modifier, size: Dp = 24.dp) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(size)
+            .background(MaterialTheme.colorScheme.errorContainer, CircleShape)
+    ) {
+        Icon(
+            Icons.Filled.PriorityHigh,
+            contentDescription = stringResource(R.string.wallet_lbl_negative),
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.size(size * 0.7f)
+        )
     }
 }
 

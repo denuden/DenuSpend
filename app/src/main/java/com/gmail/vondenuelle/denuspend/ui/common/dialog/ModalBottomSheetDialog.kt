@@ -10,6 +10,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.dp
 fun ModalBottomSheetDialog(
     showDialog: Boolean,
     onDismissRequest: () -> Unit,
+    skipPartiallyExpanded: Boolean = false, // true = opens at full height, never half
     rightSideHeaderContent : @Composable (Modifier) -> Unit = {} ,
     leftSideHeaderContent : @Composable (Modifier) -> Unit = {},
     content: @Composable () -> Unit
@@ -28,6 +30,7 @@ fun ModalBottomSheetDialog(
     if (showDialog) {
         ModalBottomSheet(
             onDismissRequest = onDismissRequest,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = skipPartiallyExpanded),
             properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true),
             dragHandle = {
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 16.dp)) {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,13 +29,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.ui.common.components.InformationTooltip
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.NegativeBadge
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletStyle
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
 
@@ -78,6 +82,10 @@ fun BalanceCard(
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.weight(1f)
                 )
+                InformationTooltip(
+                    richTooltipSubheadText = stringResource(R.string.lbl_wallet_vs_allowance_title),
+                    richTooltipText = stringResource(R.string.lbl_wallet_vs_allowance_text)
+                )
                 Icon(Icons.Filled.ChevronRight, contentDescription = null)
             }
 
@@ -119,7 +127,11 @@ private fun MiniWalletCard(wallet: WalletModel, onClick: () -> Unit) {
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.padding(10.dp)
         ) {
-            Icon(WalletStyle.icon(wallet.iconKey), contentDescription = null, modifier = Modifier.size(18.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Icon(WalletStyle.icon(wallet.iconKey), contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.weight(1f))
+                if (wallet.balance < 0) NegativeBadge(size = 18.dp)
+            }
             Column {
                 Text(
                     wallet.name,

@@ -23,7 +23,7 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 
 private const val LAST_ADDED_COUNT = 3
 
-// Today's newest few transactions, display only (editing stays in the Add tab). The whole card opens History.
+// Today's newest few transactions, display only (editing stays in the Add tab). The whole card opens the Add tab, which lists all of today.
 @Composable
 fun LastAddedCard(
     modifier: Modifier = Modifier,

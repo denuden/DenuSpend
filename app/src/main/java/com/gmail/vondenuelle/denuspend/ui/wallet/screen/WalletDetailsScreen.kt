@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -197,23 +198,26 @@ fun WalletDetailsScreenContent(
                 FilledTonalButton(
                     onClick = { onEvent(WalletScreenEvents.OnOpenWalletEditor(wallet)) },
                     shape = MaterialTheme.shapes.extraLarge,
+                    contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Filled.Edit, contentDescription = null)
-                    Text(stringResource(R.string.wallet_btn_edit), modifier = Modifier.padding(start = 8.dp))
+                    Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Text(stringResource(R.string.wallet_btn_edit), maxLines = 1, modifier = Modifier.padding(start = ButtonDefaults.IconSpacing))
                 }
                 if (!wallet.isPhysical) {
                     OutlinedButton(
                         onClick = onCloseWalletClick,
                         shape = MaterialTheme.shapes.extraLarge,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Filled.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Filled.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(ButtonDefaults.IconSize))
                         Text(
                             stringResource(R.string.wallet_btn_close_wallet),
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(start = 8.dp)
+                            maxLines = 1,
+                            modifier = Modifier.padding(start = ButtonDefaults.IconSpacing)
                         )
                     }
                 }

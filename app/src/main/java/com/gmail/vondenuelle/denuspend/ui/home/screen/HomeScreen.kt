@@ -111,7 +111,7 @@ fun HomeScreenContent(
             TodayCategoryChips(
                 allowanceByCategory = state.todayHistory.allowanceByCategory,
                 expenseByCategory = state.todayHistory.expenseByCategory,
-                onCategoryClick = { onEvent(HomeScreenEvents.OnOpenCategoryInsights(it)) },
+                onClick = { onNavigateToTab(MainScreens.AddNavigation) },
                 modifier = Modifier.fillMaxWidth()
             )
             MonthCard(
@@ -131,7 +131,7 @@ fun HomeScreenContent(
             LastAddedCard(
                 transactions = state.todayTransactions,
                 isLoading = state.isTodayLoading,
-                onClick = { onEvent(HomeScreenEvents.OnOpenHistory) },
+                onClick = { onNavigateToTab(MainScreens.AddNavigation) },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         }

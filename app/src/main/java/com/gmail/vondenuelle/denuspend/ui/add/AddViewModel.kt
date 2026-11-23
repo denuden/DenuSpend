@@ -84,6 +84,7 @@ class AddViewModel @Inject constructor(
         historyJob?.cancel()
         historyJob = null
     }
+    private var perDayDocId: String? = null // the day perDayJob is (or was last) listening to
     fun stopPerDayListener() {
         perDayJob?.cancel()
         perDayJob = null
@@ -335,11 +336,16 @@ class AddViewModel @Inject constructor(
                     return
                 } // prevent duplicate when doing ux reloading
 
+                // Back from a pushed screen (e.g. Edit) the old rows are still here: keep them instead of the skeleton,
+                // so the list and its scroll position stay. The skeleton is only for the first load.
+                val hasRows = _stateFlow.value.dailyHistoryList.isNotEmpty()
                 historyJob =
                 viewModelScope.launch {
-                    _stateFlow.update { it.copy(isListLoading = true) }
-                    delay(500)
-                    collectDailyHistory(isLoadMore = false)
+                    if (!hasRows) {
+                        _stateFlow.update { it.copy(isListLoading = true) }
+                        delay(500)
+                    }
+                    collectDailyHistory(keepRows = hasRows)
                 }
             }
 
@@ -351,7 +357,7 @@ class AddViewModel @Inject constructor(
                 stopHistoryListener()
                 historyJob = viewModelScope.launch {
                     _stateFlow.update { it.copy(isLoadingMoreHistory = true) }
-                    collectDailyHistory(isLoadMore = true)
+                    collectDailyHistory(keepRows = true)
                 }
             }
 
@@ -399,14 +405,17 @@ class AddViewModel @Inject constructor(
 
             is AddScreenEvents.OnGetTransactionsForDay -> {
                 stopPerDayListener() // drop the previous day's listener before starting a new one
+                // Restarting the same day (back from Edit, rotation) keeps its rows, so the sheet keeps its scroll; a new day starts empty
+                val keepRows = event.request.dailyDocId == perDayDocId && _stateFlow.value.perDayTransactionList.isNotEmpty()
+                perDayDocId = event.request.dailyDocId
                 perDayJob = viewModelScope.launch {
-                    _stateFlow.update { it.copy(isSheetLoading = true, perDayTransactionList = emptyList()) }
+                    if (!keepRows) _stateFlow.update { it.copy(isSheetLoading = true, perDayTransactionList = emptyList()) }
 
                     transactionRepository.getTransactionsForDay(event.request).asResult().onEach { res ->
                         when (res) {
                             ResultState.Completed -> _stateFlow.update { it.copy(isSheetLoading = false) }
                             is ResultState.Error -> onError(res.exception)
-                            ResultState.Loading -> _stateFlow.update { it.copy(isSheetLoading = true) }
+                            ResultState.Loading -> if (!keepRows) _stateFlow.update { it.copy(isSheetLoading = true) }
                             is ResultState.Success -> _stateFlow.update {
                                 it.copy(
                                     perDayTransactionList = res.data,
@@ -434,13 +443,13 @@ class AddViewModel @Inject constructor(
      * Collects the daily history listener with the current [historyLimit].
      * Load-more skips the full skeleton (isListLoading) so the list and scroll position stay on screen.
      */
-    private suspend fun collectDailyHistory(isLoadMore: Boolean) {
+    private suspend fun collectDailyHistory(keepRows: Boolean) { // true = no skeleton (load more, or rows already on screen)
         transactionRepository.getDailyTransactionHistory(historyLimit).asResult()
             .onEach { res ->
                 when (res) {
                     ResultState.Completed -> _stateFlow.update { it.copy(isListLoading = false, isLoadingMoreHistory = false) }
                     is ResultState.Error -> onError(res.exception)
-                    ResultState.Loading -> if (!isLoadMore) _stateFlow.update { it.copy(isListLoading = true) }
+                    ResultState.Loading -> if (!keepRows) _stateFlow.update { it.copy(isListLoading = true) }
                     is ResultState.Success -> _stateFlow.update {
                         it.copy(
                             dailyHistoryList = res.data,

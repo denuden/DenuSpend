@@ -21,4 +21,9 @@
 <!-- Chart color-->
     <color name="chart_solid_color">#23af92 </color>
     <color name="chart_gradient_fill_color">#2BC0A1 </color>
+
+<!-- Logo and splash. For an indigo splash, swap: background = logo_indigo, mark = white -->
+    <color name="logo_indigo">#5A5892</color>
+    <color name="splash_background">#FCF8FF</color>
+    <color name="splash_mark">@color/logo_indigo</color>
 </resources>

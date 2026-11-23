@@ -61,6 +61,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
@@ -86,8 +88,14 @@ fun RecentTransactions(
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
-    // The day the sheet is showing; null means the sheet is closed.
-    var selectedDay by remember { mutableStateOf<DailyHistoryModel?>(null) }
+    // The docId of the day the sheet is showing; null means the sheet is closed. Saveable, so the sheet is still open
+    // when coming back from Edit (or after rotation). The day itself is read from the live list.
+    var selectedDayId by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedDay = state.dailyHistoryList.find { it.docId == selectedDayId }
+    // Hoisted (and saveable) so the day sheet reopens at the same scroll after Edit → Back
+    val daySheetListState = rememberLazyListState()
+    // The lifecycle observer below is created once, so it reads the latest open day through this
+    val openDayId by rememberUpdatedState(selectedDayId)
     // The transaction tapped inside the day sheet; null means the actions sheet is closed.
     var selectedTransaction by remember { mutableStateOf<TransactionModel?>(null) }
 
@@ -126,6 +134,10 @@ fun RecentTransactions(
         when (event) {
             Lifecycle.Event.ON_START -> {
                 viewModel.onEvent(AddScreenEvents.OnGetDailyTransactionHistory)
+                // The per-day listener stopped when this screen left (Edit, rotation), so restart it for the open sheet
+                openDayId?.let {
+                    viewModel.onEvent(AddScreenEvents.OnGetTransactionsForDay(TransactionsForDayRequest(dailyDocId = it, limit = null)))
+                }
             }
 
             Lifecycle.Event.ON_STOP -> {
@@ -146,20 +158,21 @@ fun RecentTransactions(
     ) { error = "" }
 
     ModalBottomSheetDialog(
-        showDialog = selectedDay != null,
+        showDialog = selectedDayId != null,
+        skipPartiallyExpanded = true,
         onDismissRequest = {
-            selectedDay = null
+            selectedDayId = null
             viewModel.stopPerDayListener()
         },
     ) {
-        selectedDay?.let { selected ->
-            // Read the live copy so the header totals update while the sheet is open.
-            val day = state.dailyHistoryList.find { it.docId == selected.docId } ?: selected
+        selectedDay?.let { day ->
+            // The live copy, so the header totals update while the sheet is open
             TransactionDialogContent(
                 modifier = Modifier.fillMaxWidth(),
                 day = day,
                 list = state.perDayTransactionList,
                 isLoading = state.isSheetLoading,
+                listState = daySheetListState,
                 onTransactionClick = { selectedTransaction = it }
             )
         }
@@ -177,10 +190,9 @@ fun RecentTransactions(
                 modifier = Modifier.fillMaxWidth(),
                 transaction = selected,
                 onEdit = {
-                    // Close both sheets before leaving; the per-day listener isn't needed on the form
+                    // Only the actions sheet closes, so the day sheet is still open on Back. The per-day listener
+                    // stops when this screen leaves composition and restarts on ON_START.
                     selectedTransaction = null
-                    selectedDay = null
-                    viewModel.stopPerDayListener()
                     viewModel.onEvent(AddScreenEvents.OnNavigateToEditTransaction(selected, day.docId))
                 },
                 onDelete = {
@@ -195,7 +207,8 @@ fun RecentTransactions(
         state = state,
         onEvent = viewModel::onEvent,
         onDayClick = { day ->
-            selectedDay = day
+            if (day.docId != selectedDayId) scope.launch { daySheetListState.scrollToItem(0) }
+            selectedDayId = day.docId
             viewModel.onEvent(
                 AddScreenEvents.OnGetTransactionsForDay(
                     TransactionsForDayRequest(dailyDocId = day.docId, limit = null)

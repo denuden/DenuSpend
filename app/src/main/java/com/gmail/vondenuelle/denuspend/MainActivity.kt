@@ -5,11 +5,13 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -29,7 +31,15 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    // Same instance AppRoot gets from hiltViewModel(), since both are scoped to this Activity
+    private val mainViewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Must run before super.onCreate. Keeps the system splash up until the session check
+        // decides Auth / Wallet setup / Main, so AppRoot's Splash destination is never really seen.
+        installSplashScreen().setKeepOnScreenCondition {
+            mainViewModel.session.value == SessionState.Loading
+        }
         super.onCreate(savedInstanceState)
         handleIntent(intent)
         setContent {

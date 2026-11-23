@@ -59,6 +59,7 @@ import com.gmail.vondenuelle.denuspend.ui.add.components.AddAllowanceSheetConten
 import com.gmail.vondenuelle.denuspend.ui.add.components.transactionItems
 import com.gmail.vondenuelle.denuspend.ui.add.components.section.AddButtonsSection
 import com.gmail.vondenuelle.denuspend.ui.add.components.section.TodayIncomeAndExpensesSection
+import com.gmail.vondenuelle.denuspend.ui.add.components.TodayByCategoryCard
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.CustomAlertDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
@@ -281,6 +282,12 @@ fun AddScreenContent(
                     // Opens the sheet (custom allowance or a template) instead of going straight to the form
                     onAddAllowanceClick()
                 })
+
+                TodayByCategoryCard(
+                    allowanceByCategory = state.dailyHistory.allowanceByCategory,
+                    expenseByCategory = state.dailyHistory.expenseByCategory,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
 
                 // Space goes above the section, so "Last Added" reads as its own section
                 Spacer(modifier = Modifier.height(16.dp))
