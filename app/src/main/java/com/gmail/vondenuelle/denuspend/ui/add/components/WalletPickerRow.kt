@@ -35,7 +35,8 @@ import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletStyle
-import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.MiniOwedLabel
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.miniBalanceText
 
 /**
  * "Paid from" as a sideways row of mini wallet cards, then "Don't deduct" ("" = no wallet) unless showNoWalletOption is false.
@@ -117,6 +118,7 @@ private fun MiniWalletCard(wallet: WalletModel, isSelected: Boolean, onClick: ()
             Row(modifier = Modifier.fillMaxWidth()) {
                 Icon(WalletStyle.icon(wallet.iconKey), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.weight(1f))
+                MiniOwedLabel(wallet, modifier = Modifier.padding(end = 4.dp))
                 if (isSelected) Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
             }
             Column {
@@ -128,7 +130,7 @@ private fun MiniWalletCard(wallet: WalletModel, isSelected: Boolean, onClick: ()
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    formatBalance(wallet.balance),
+                    miniBalanceText(wallet),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1

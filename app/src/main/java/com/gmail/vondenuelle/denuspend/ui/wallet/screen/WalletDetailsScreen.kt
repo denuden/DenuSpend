@@ -24,6 +24,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.ui.draw.alpha
@@ -44,6 +46,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,12 +73,14 @@ import com.gmail.vondenuelle.denuspend.ui.wallet.MovementType
 import com.gmail.vondenuelle.denuspend.ui.wallet.WalletScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.wallet.WalletScreenState
 import com.gmail.vondenuelle.denuspend.ui.wallet.WalletViewModel
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.CardStatementSummaries
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.CloseWalletDialog
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.DeleteMovementDialog
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletCard
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletEditorSheet
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletMovementItem
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletMovementSheet
+import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
@@ -115,18 +120,29 @@ fun WalletDetailsScreen(
         }
     }
 
-    // Pushed screen, so all three listeners stop on ON_STOP
+    // A card's statements listen from the open cycle's first day. It's only known once the wallet has loaded,
+    // so it starts from here when it changes, and again on ON_START after the screen was stopped.
+    val statementSince = wallet?.takeIf { it.isCreditCard && it.statementDay in 1..31 }
+        ?.let { CardStatementHelper.cycle(it.statementDay, 0).start }
+    val currentStatementSince by rememberUpdatedState(statementSince)
+    LaunchedEffect(statementSince) {
+        statementSince?.let { viewModel.onEvent(WalletScreenEvents.OnGetStatement(walletId, it)) }
+    }
+
+    // Pushed screen, so all the listeners stop on ON_STOP
     ComposableLifecycle { _, event ->
         when (event) {
             Lifecycle.Event.ON_START -> {
                 viewModel.onEvent(WalletScreenEvents.OnGetWallets)
                 viewModel.onEvent(WalletScreenEvents.OnGetWalletTransactions(walletId))
                 viewModel.onEvent(WalletScreenEvents.OnGetWalletMovements(walletId))
+                currentStatementSince?.let { viewModel.onEvent(WalletScreenEvents.OnGetStatement(walletId, it)) }
             }
             Lifecycle.Event.ON_STOP -> {
                 viewModel.stopWalletsListener()
                 viewModel.stopTransactionsListener()
                 viewModel.stopMovementsListener()
+                viewModel.stopStatementListener()
             }
             else -> Unit
         }
@@ -263,31 +279,47 @@ fun WalletDetailsScreenContent(
         item {
             WalletCard(wallet = wallet)
             // Money that isn't an expense. A transfer needs a second wallet to move to.
+            // A card has "Pay card" (its "Paid from" covers what a transfer did) and "Other charge" (fees) instead.
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
             ) {
-                MoneyActionButton(
-                    icon = Icons.Filled.Add,
-                    label = stringResource(R.string.wallet_btn_add_money),
-                    onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.IN)) },
-                    modifier = Modifier.weight(1f)
-                )
-                MoneyActionButton(
-                    icon = Icons.Filled.Remove,
-                    label = stringResource(R.string.wallet_btn_take_out),
-                    onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.OUT)) },
-                    modifier = Modifier.weight(1f)
-                )
-                MoneyActionButton(
-                    icon = Icons.Filled.SwapHoriz,
-                    label = stringResource(R.string.wallet_btn_transfer),
-                    enabled = state.wallets.size > 1,
-                    onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.TRANSFER)) },
-                    modifier = Modifier.weight(1f)
-                )
+                if (wallet.isCreditCard) {
+                    MoneyActionButton(
+                        icon = Icons.Filled.Payments,
+                        label = stringResource(R.string.wallet_btn_pay_card),
+                        onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.IN, isCreditCard = true)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    MoneyActionButton(
+                        icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                        label = stringResource(R.string.wallet_btn_other_charge),
+                        onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.OUT, isCreditCard = true)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    MoneyActionButton(
+                        icon = Icons.Filled.Add,
+                        label = stringResource(R.string.wallet_btn_add_money),
+                        onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.IN)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    MoneyActionButton(
+                        icon = Icons.Filled.Remove,
+                        label = stringResource(R.string.wallet_btn_take_out),
+                        onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.OUT)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    MoneyActionButton(
+                        icon = Icons.Filled.SwapHoriz,
+                        label = stringResource(R.string.wallet_btn_transfer),
+                        enabled = state.wallets.count { !it.isCreditCard } > 1, // cards can't be transferred to
+                        onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.TRANSFER)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
             // The physical wallet can't be closed, so Edit takes the full width there
             Row(
@@ -324,6 +356,18 @@ fun WalletDetailsScreenContent(
                 }
             }
 
+            if (wallet.isCreditCard && wallet.statementDay in 1..31) {
+                CardStatementSummaries(
+                    card = wallet,
+                    transactions = state.statementTransactions,
+                    movements = state.statementMovements,
+                    hasLoaded = state.hasLoadedStatement,
+                    hasError = state.hasStatementError,
+                    onOpenStatement = { onEvent(WalletScreenEvents.OnNavigateToStatement(wallet.docId, it)) },
+                    modifier = Modifier.padding(top = 24.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 stringResource(R.string.wallet_lbl_history),
@@ -357,7 +401,7 @@ fun WalletDetailsScreenContent(
                     WalletExpensesPlaceholder(
                         icon = Icons.AutoMirrored.Outlined.ReceiptLong,
                         title = stringResource(R.string.wallet_empty_title),
-                        text = stringResource(R.string.wallet_empty_text, wallet.name)
+                        text = stringResource(if (wallet.isCreditCard) R.string.wallet_empty_text_card else R.string.wallet_empty_text, wallet.name)
                     )
                 }
             }

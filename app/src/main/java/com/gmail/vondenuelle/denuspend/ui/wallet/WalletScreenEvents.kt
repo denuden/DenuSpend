@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.ui.wallet
 
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
+import java.time.LocalDate
 
 sealed class WalletScreenEvents {
     data object OnGetWallets : WalletScreenEvents()
@@ -19,8 +20,12 @@ sealed class WalletScreenEvents {
     data class OnGetWalletMovements(val walletId : String) : WalletScreenEvents()
     data class OnLoadMoreWalletTransactions(val walletId : String) : WalletScreenEvents() // loads more of both lists
 
+    //Credit card statements
+    data class OnGetStatement(val walletId : String, val since : LocalDate) : WalletScreenEvents() // since = first day of the oldest cycle needed
+    data class OnNavigateToStatement(val walletId : String, val monthsBack : Int) : WalletScreenEvents()
+
     //Money in / out sheet
-    data class OnOpenMovementSheet(val type : MovementType) : WalletScreenEvents()
+    data class OnOpenMovementSheet(val type : MovementType, val isCreditCard : Boolean = false) : WalletScreenEvents()
     data object OnCloseMovementSheet : WalletScreenEvents()
     data class OnMovementDraftChanged(val draft : MovementDraft) : WalletScreenEvents()
     data class OnSaveMovement(val wallet : WalletModel) : WalletScreenEvents()

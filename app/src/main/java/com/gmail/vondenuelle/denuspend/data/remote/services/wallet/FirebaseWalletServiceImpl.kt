@@ -11,6 +11,7 @@ import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -18,6 +19,9 @@ import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import com.gmail.vondenuelle.denuspend.utils.network.awaitWrite
 import android.content.Context
@@ -41,6 +45,8 @@ class FirebaseWalletServiceImpl @Inject constructor(
         const val ICON_KEY = "iconKey"
         const val BALANCE = "balance"
         const val CREATED_AT = "createdAt"
+        const val CREDIT_LIMIT = "creditLimit"
+        const val STATEMENT_DAY = "statementDay"
         const val WALLET_ID = "walletId" // on transactions and wallet_movements
         const val WALLET_MOVEMENTS = "wallet_movements"
 
@@ -86,17 +92,23 @@ class FirebaseWalletServiceImpl @Inject constructor(
                 colorIndex = request.colorIndex,
                 iconKey = request.iconKey,
                 balance = request.balance,
-                createdAt = Timestamp.now()
+                createdAt = Timestamp.now(),
+                type = request.type,
+                creditLimit = request.creditLimit,
+                statementDay = request.statementDay,
             )
             firebaseFireStore.collection(WALLETS).document().set(wallet).awaitWrite(context)
         } else {
             // The balance moves by what the user changed since the sheet opened, so an expense saved meanwhile isn't overwritten.
             // That change is also logged as a "Balance correction" entry, in the same batch.
+            // The type (wallet or card) is set when the wallet is added and never written here, so a card's history always starts as a card.
             val delta = request.balance - request.originalBalance
             val fields = mutableMapOf<String, Any>(
                 NAME to request.name,
                 COLOR_INDEX to request.colorIndex,
                 ICON_KEY to request.iconKey,
+                CREDIT_LIMIT to request.creditLimit,
+                STATEMENT_DAY to request.statementDay,
             )
             val batch = firebaseFireStore.batch()
             if (delta != 0L) {
@@ -205,6 +217,44 @@ class FirebaseWalletServiceImpl @Inject constructor(
                 } ?: emptyList()
 
                 trySend(data)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    // Everything on one wallet dated on or after `since`, from both collections, for the card statements. No limit, since it's a month or a few of one card.
+    // Uses the same (userId, walletId, date DESC) indexes as the two lists, so no new index.
+    override fun getWalletActivitySince(walletId: String, since: Timestamp): Flow<Pair<List<TransactionModel>, List<WalletMovementModel>>> = flow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        val transactions = rangeListener(TRANSACTION, currentUser.uid, walletId, since) { doc ->
+            doc.toObject<TransactionModel>()?.copy(docId = doc.id)
+        }
+        val movements = rangeListener(WALLET_MOVEMENTS, currentUser.uid, walletId, since) { doc ->
+            doc.toObject<WalletMovementModel>()?.copy(docId = doc.id)
+        }
+        emitAll(combine(transactions, movements) { t, m -> t to m })
+    }
+
+    private fun <T> rangeListener(
+        collection: String,
+        uid: String,
+        walletId: String,
+        since: Timestamp,
+        map: (DocumentSnapshot) -> T?,
+    ): Flow<List<T>> = callbackFlow {
+        val listener = firebaseFireStore.collection(collection)
+            .whereEqualTo(USER_ID, uid)
+            .whereEqualTo(WALLET_ID, walletId)
+            .whereGreaterThanOrEqualTo(DATE, since)
+            .orderBy(DATE, Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                trySend(snapshot?.documents?.mapNotNull(map) ?: emptyList())
             }
 
         awaitClose { listener.remove() }

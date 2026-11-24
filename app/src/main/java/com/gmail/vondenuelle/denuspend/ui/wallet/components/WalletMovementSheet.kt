@@ -87,12 +87,14 @@ private fun WalletMovementSheetContent(
         errorIndicatorColor = outlinedColor
     )
     val isIn = draft.type == MovementType.IN
+    val isCard = wallet.isCreditCard
     val presets = when (draft.type) {
-        MovementType.IN -> WalletMovementPresets.moneyIn
-        MovementType.OUT -> WalletMovementPresets.moneyOut
+        MovementType.IN -> if (isCard) WalletMovementPresets.cardIn else WalletMovementPresets.moneyIn
+        MovementType.OUT -> if (isCard) WalletMovementPresets.cardOut else WalletMovementPresets.moneyOut
         MovementType.TRANSFER -> emptyList()
     }
-    val otherWallets = wallets.filter { it.docId != wallet.docId }
+    // Cards are never a transfer target or source: money only goes into a card through Pay card, so it shows on the statement as a payment
+    val otherWallets = wallets.filter { it.docId != wallet.docId && !it.isCreditCard }
     val canSave = draft.amount > 0 && draft.title.isNotBlank() &&
         (draft.type != MovementType.TRANSFER || otherWallets.any { it.docId == draft.toWalletId })
     val after = if (isIn) wallet.balance + draft.amount else wallet.balance - draft.amount
@@ -108,8 +110,13 @@ private fun WalletMovementSheetContent(
                 Text(
                     stringResource(
                         when (draft.type) {
-                            MovementType.IN -> R.string.wallet_title_add_money
-                            MovementType.OUT -> R.string.wallet_title_take_out
+                            MovementType.IN -> when {
+                                // A refund or cashback isn't a payment, so "Pay Visa card" would read wrong
+                                isCard && WalletMovementPresets.isFromBank(draft.presetKey) -> R.string.wallet_title_card_credit
+                                isCard -> R.string.wallet_title_pay_card
+                                else -> R.string.wallet_title_add_money
+                            }
+                            MovementType.OUT -> if (isCard) R.string.wallet_title_other_charge else R.string.wallet_title_take_out
                             MovementType.TRANSFER -> R.string.wallet_title_transfer
                         },
                         wallet.name
@@ -132,11 +139,25 @@ private fun WalletMovementSheetContent(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 )
                 Text(
-                    stringResource(R.string.wallet_lbl_movement_after, formatBalance(wallet.balance), formatBalance(after)),
+                    // A card reads as what's owed ("Owed ₱12,340.00 → ₱4,520.00 after"), so the numbers go down when you pay
+                    if (isCard) stringResource(R.string.wallet_lbl_owed_after, formatBalance(-wallet.balance), formatBalance(-after))
+                    else stringResource(R.string.wallet_lbl_movement_after, formatBalance(wallet.balance), formatBalance(after)),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // "Pay card": optionally take the payment out of another wallet (cards can't pay cards).
+            // A refund or cashback comes from the bank, so it has no "Paid from".
+            if (isCard && isIn && !WalletMovementPresets.isFromBank(draft.presetKey)) {
+                FieldLabel(stringResource(R.string.wallet_lbl_paid_from_optional), modifier = Modifier.padding(start = 16.dp, top = 16.dp))
+                WalletPickerRow(
+                    wallets = otherWallets,
+                    hasLoadedWallets = hasLoadedWallets,
+                    selectedId = draft.fromWalletId,
+                    onSelected = { onDraftChange(draft.copy(fromWalletId = it)) },
                 )
             }
 

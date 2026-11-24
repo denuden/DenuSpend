@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ import kotlin.math.abs
 /**
  * Name, balance, color and icon of a wallet. Used inline on the setup screen and inside the add/edit sheet.
  * The balance field only takes positive numbers, so the "negative" switch holds the sign.
+ * A credit card swaps the balance for its own fields (CreditCardFields), where the amount owed is stored as a negative balance.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -52,10 +54,16 @@ fun WalletEditorFields(
     modifier: Modifier = Modifier,
     draft: WalletModel,
     onDraftChange: (WalletModel) -> Unit,
+    // Only when adding (and never on setup's physical step): the type is locked once saved, since switching a wallet with history
+    // to or from a card would rewrite its balance and statements
+    showCreditCardOption: Boolean = draft.docId.isEmpty() && !draft.isPhysical,
 ) {
     val outlinedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
     // Keyed on the doc so opening another wallet resets it. A ₱0 balance has no sign, so the switch keeps it here.
     var isNegative by rememberSaveable(draft.docId) { mutableStateOf(draft.balance < 0) }
+    // What the new wallet was before the credit card switch was turned on, so turning it off puts it back
+    var negativeBeforeCard by rememberSaveable(draft.docId) { mutableStateOf<Boolean?>(null) }
+    var iconBeforeCard by rememberSaveable(draft.docId) { mutableStateOf<String?>(null) }
 
     Column(modifier = modifier) {
         // Live preview of the card
@@ -78,28 +86,80 @@ fun WalletEditorFields(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-        FieldLabel(stringResource(R.string.wallet_lbl_current_balance))
-        CurrencyTextField(
-            amountInCents = abs(draft.balance),
-            onAmountChange = { onDraftChange(draft.copy(balance = if (isNegative) -it else it)) },
-            prefixText = if (isNegative) "-₱" else "₱",
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(R.string.wallet_lbl_negative_switch),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(
-                checked = isNegative,
-                onCheckedChange = {
-                    isNegative = it
-                    onDraftChange(draft.copy(balance = if (it) -abs(draft.balance) else abs(draft.balance)))
+        if (showCreditCardOption) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 12.dp)) {
+                Icon(
+                    Icons.Filled.CreditCard,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 12.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.wallet_lbl_credit_card_switch), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(R.string.wallet_lbl_credit_card_switch_sub),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+                // Turning it on keeps the typed amount as what's owed. Turning it off puts back the sign and icon from before it was
+                // turned on (so an accidental on/off leaves ₱20,000 as ₱20,000).
+                Switch(
+                    checked = draft.isCreditCard,
+                    onCheckedChange = { on ->
+                        if (on) {
+                            negativeBeforeCard = isNegative
+                            iconBeforeCard = draft.iconKey
+                            onDraftChange(
+                                draft.copy(
+                                    type = WalletModel.TYPE_CREDIT_CARD,
+                                    balance = -abs(draft.balance),
+                                    iconKey = if (draft.iconKey.isEmpty() || draft.iconKey == "wallet") "card" else draft.iconKey
+                                )
+                            )
+                        } else {
+                            val restoreNegative = negativeBeforeCard ?: (draft.balance < 0)
+                            isNegative = restoreNegative
+                            onDraftChange(
+                                draft.copy(
+                                    type = "",
+                                    balance = if (restoreNegative) -abs(draft.balance) else abs(draft.balance),
+                                    // Only undo the automatic "card" icon, not one the user picked while it was on
+                                    iconKey = iconBeforeCard?.takeIf { draft.iconKey == "card" } ?: draft.iconKey
+                                )
+                            )
+                        }
+                    }
+                )
+            }
+        }
+
+        if (draft.isCreditCard) {
+            CreditCardFields(draft = draft, onDraftChange = onDraftChange)
+        } else {
+            Spacer(modifier = Modifier.height(16.dp))
+            FieldLabel(stringResource(R.string.wallet_lbl_current_balance))
+            CurrencyTextField(
+                amountInCents = abs(draft.balance),
+                onAmountChange = { onDraftChange(draft.copy(balance = if (isNegative) -it else it)) },
+                prefixText = if (isNegative) "-₱" else "₱",
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.wallet_lbl_negative_switch),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = isNegative,
+                    onCheckedChange = {
+                        isNegative = it
+                        onDraftChange(draft.copy(balance = if (it) -abs(draft.balance) else abs(draft.balance)))
+                    }
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

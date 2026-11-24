@@ -12,9 +12,11 @@ import com.gmail.vondenuelle.denuspend.data.repositories.WalletRepository
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletMovementPresets
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
+import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 import com.gmail.vondenuelle.denuspend.utils.SnackbarEvent
 import com.gmail.vondenuelle.denuspend.utils.network.ResultState
 import com.gmail.vondenuelle.denuspend.utils.network.asResult
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.time.LocalDate
 
 /**
  * One ViewModel for the wallet module: the Wallet tab, wallet details and the first-time setup.
@@ -53,6 +56,8 @@ class WalletViewModel @Inject constructor(
     private var walletsJob: Job? = null
     private var transactionsJob: Job? = null
     private var movementsJob: Job? = null
+    private var statementJob: Job? = null
+    private var statementSince: LocalDate? = null // the range the statement listener runs for, so the same range isn't restarted
 
     // Expenses paid from a wallet grow by one page per load-more; the listener restarts with the bigger limit
     private var transactionsLimit = TRANSACTIONS_PAGE_SIZE
@@ -75,6 +80,11 @@ class WalletViewModel @Inject constructor(
     fun stopMovementsListener() {
         movementsJob?.cancel()
         movementsJob = null
+    }
+
+    fun stopStatementListener() {
+        statementJob?.cancel()
+        statementJob = null
     }
 
     fun onEvent(event: WalletScreenEvents) {
@@ -186,17 +196,56 @@ class WalletViewModel @Inject constructor(
                 }
             }
 
-            // A transfer starts with the "Transfer" title filled in, since it rarely needs another one
+            // Restarts only when the range changes (another month picked, or the statement day was edited)
+            is WalletScreenEvents.OnGetStatement -> {
+                if (statementJob?.isActive == true && statementSince == event.since) return
+                stopStatementListener()
+                statementSince = event.since
+                statementJob = viewModelScope.launch {
+                    val since = event.since
+                    walletRepository.getWalletActivitySince(event.walletId, CardStatementHelper.startOfDay(event.since)).asResult()
+                        .onEach { res ->
+                            when (res) {
+                                ResultState.Completed -> _stateFlow.update { it.copy(isStatementLoading = false) }
+                                is ResultState.Error -> {
+                                    _stateFlow.update { it.copy(isStatementLoading = false, hasStatementError = true) }
+                                    onError(res.exception)
+                                }
+                                ResultState.Loading -> _stateFlow.update { it.copy(isStatementLoading = true, hasStatementError = false) }
+                                is ResultState.Success -> _stateFlow.update {
+                                    it.copy(
+                                        statementTransactions = res.data.first,
+                                        statementMovements = res.data.second,
+                                        hasLoadedStatement = true,
+                                        statementLoadedSince = since,
+                                        isStatementLoading = false,
+                                        hasStatementError = false
+                                    )
+                                }
+                            }
+                        }.collect()
+                }
+            }
+
+            is WalletScreenEvents.OnNavigateToStatement -> {
+                sendEvent(OnNavigate(WalletScreens.WalletStatementNavigation(event.walletId, event.monthsBack)))
+            }
+
+            // A transfer starts with the "Transfer" title filled in, since it rarely needs another one. "Pay card" starts as "Card payment" the same way.
             is WalletScreenEvents.OnOpenMovementSheet -> _stateFlow.update {
                 it.copy(
-                    movementDraft = if (event.type == MovementType.TRANSFER) {
-                        MovementDraft(
+                    movementDraft = when {
+                        event.type == MovementType.TRANSFER -> MovementDraft(
                             type = event.type,
                             title = context.getString(R.string.wallet_movement_preset_transfer),
                             presetKey = WalletMovementModel.PRESET_TRANSFER
                         )
-                    } else {
-                        MovementDraft(type = event.type)
+                        event.type == MovementType.IN && event.isCreditCard -> MovementDraft(
+                            type = event.type,
+                            title = context.getString(R.string.wallet_movement_preset_card_payment),
+                            presetKey = WalletMovementPresets.PRESET_CARD_PAYMENT
+                        )
+                        else -> MovementDraft(type = event.type)
                     }
                 )
             }
@@ -208,17 +257,31 @@ class WalletViewModel @Inject constructor(
                 val draft = current.movementDraft ?: return
                 if (current.isLoading) return // ignore double taps while saving
                 _stateFlow.update { it.copy(isLoading = true) }
+                // "Pay card" with a "Paid from" wallet is saved as a transfer from that wallet into the card, so both balances move
+                val isPaidFromWallet = event.wallet.isCreditCard && draft.type == MovementType.IN && draft.fromWalletId.isNotEmpty() &&
+                    !WalletMovementPresets.isFromBank(draft.presetKey)
                 viewModelScope.launch {
                     try {
                         walletRepository.addMovement(
-                            WalletMovementRequest(
-                                walletId = event.wallet.docId,
-                                amount = if (draft.type == MovementType.OUT) -draft.amount else draft.amount,
-                                title = draft.title,
-                                presetKey = draft.presetKey,
-                                note = draft.note,
-                                toWalletId = if (draft.type == MovementType.TRANSFER) draft.toWalletId else ""
-                            )
+                            if (isPaidFromWallet) {
+                                WalletMovementRequest(
+                                    walletId = draft.fromWalletId,
+                                    amount = draft.amount,
+                                    title = draft.title,
+                                    presetKey = draft.presetKey,
+                                    note = draft.note,
+                                    toWalletId = event.wallet.docId
+                                )
+                            } else {
+                                WalletMovementRequest(
+                                    walletId = event.wallet.docId,
+                                    amount = if (draft.type == MovementType.OUT) -draft.amount else draft.amount,
+                                    title = draft.title,
+                                    presetKey = draft.presetKey,
+                                    note = draft.note,
+                                    toWalletId = if (draft.type == MovementType.TRANSFER) draft.toWalletId else ""
+                                )
+                            }
                         )
                         _stateFlow.update { it.copy(isLoading = false, movementDraft = null) }
                         // "Moved to BDO" for a transfer, "Saved to Cash" otherwise
@@ -328,7 +391,10 @@ class WalletViewModel @Inject constructor(
         name = name,
         colorIndex = colorIndex,
         iconKey = iconKey,
-        balance = balance
+        balance = balance,
+        type = type,
+        creditLimit = if (isCreditCard) creditLimit else 0L,
+        statementDay = if (isCreditCard) statementDay else 0,
     )
 
     private fun logout() {

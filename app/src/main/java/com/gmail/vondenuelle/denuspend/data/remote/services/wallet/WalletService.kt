@@ -5,6 +5,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.wallet.request.WalletR
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.Flow
 
 interface WalletService {
@@ -19,4 +20,7 @@ interface WalletService {
     suspend fun addMovement(request: WalletMovementRequest)
     suspend fun deleteMovement(movement: WalletMovementModel)
     fun getWalletMovements(walletId: String, limit: Long): Flow<List<WalletMovementModel>>
+
+    // Credit card statements: expenses + money in/out on one wallet from `since` on
+    fun getWalletActivitySince(walletId: String, since: Timestamp): Flow<Pair<List<TransactionModel>, List<WalletMovementModel>>>
 }

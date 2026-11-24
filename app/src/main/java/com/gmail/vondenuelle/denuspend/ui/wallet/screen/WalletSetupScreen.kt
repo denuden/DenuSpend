@@ -152,7 +152,8 @@ fun WalletSetupScreenContent(
             )
             WalletEditorFields(
                 draft = state.physicalDraft,
-                onDraftChange = { onEvent(WalletScreenEvents.OnPhysicalDraftChanged(it)) }
+                onDraftChange = { onEvent(WalletScreenEvents.OnPhysicalDraftChanged(it)) },
+                showCreditCardOption = false
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(

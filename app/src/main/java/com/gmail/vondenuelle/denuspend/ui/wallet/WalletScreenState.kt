@@ -3,6 +3,7 @@ package com.gmail.vondenuelle.denuspend.ui.wallet
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
+import java.time.LocalDate
 
 data class WalletScreenState(
     val isLoading : Boolean = false, // saving / closing (full-screen LoadingDialog)
@@ -29,6 +30,14 @@ data class WalletScreenState(
     val hasMovementsError : Boolean = false,
     val movementDraft : MovementDraft? = null, // the add money / take out / transfer sheet (null = closed)
 
+//    Credit cards: every expense and money in/out on the card from the start of the statement being shown (card details + Statement screen)
+    val statementTransactions : List<TransactionModel> = emptyList(),
+    val statementMovements : List<WalletMovementModel> = emptyList(),
+    val isStatementLoading : Boolean = false,
+    val hasLoadedStatement : Boolean = false,
+    val hasStatementError : Boolean = false,
+    val statementLoadedSince : LocalDate? = null, // the range the statement lists belong to, so a new month never shows the old month's rows
+
 //    First-time setup (0 = physical wallet, 1 = add more wallets)
     val setupStep : Int = 0,
     val physicalDraft : WalletModel = WalletModel(iconKey = "wallet"),
@@ -44,4 +53,5 @@ data class MovementDraft(
     val presetKey : String = "",
     val note : String = "",
     val toWalletId : String = "", // transfers only
+    val fromWalletId : String = "", // "Pay card" only: the wallet the payment came from ("" = don't deduct from one)
 )

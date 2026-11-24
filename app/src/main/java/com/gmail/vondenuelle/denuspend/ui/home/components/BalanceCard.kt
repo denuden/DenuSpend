@@ -41,6 +41,8 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.NegativeBadge
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletStyle
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.MiniOwedLabel
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.miniBalanceText
 
 // Real money across all wallets, dark so it reads differently from the allowance (plan) cards above it.
 // The card opens the Wallet tab; each mini card opens that wallet's details.
@@ -53,6 +55,9 @@ fun BalanceCard(
     onWalletClick: (String) -> Unit,
 ) {
     val onContainer = MaterialTheme.colorScheme.inverseOnSurface
+    // Cards are debt, so they're left out of the total and shown as their own line under it
+    val (cards, cashWallets) = wallets.partition { it.isCreditCard }
+    val cardDebt = -cards.sumOf { it.balance }
 
     Card(
         onClick = onClick,
@@ -78,7 +83,7 @@ fun BalanceCard(
                     Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
                 Text(
-                    pluralStringResource(R.plurals.home_lbl_total_balance, wallets.size, wallets.size),
+                    pluralStringResource(R.plurals.home_lbl_total_balance, cashWallets.size, cashWallets.size),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.weight(1f)
                 )
@@ -90,13 +95,21 @@ fun BalanceCard(
             }
 
             Text(
-                if (isLoading) "—" else formatBalance(wallets.sumOf { it.balance }),
+                if (isLoading) "—" else formatBalance(cashWallets.sumOf { it.balance }),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 12.dp)
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = if (cards.isEmpty()) 12.dp else 2.dp)
             )
+            if (cards.isNotEmpty() && !isLoading) {
+                Text(
+                    stringResource(R.string.home_lbl_card_debt, formatBalance(cardDebt)),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = onContainer.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                )
+            }
 
             // Edge to edge inside the card so more than 3 wallets scroll sideways
             LazyRow(
@@ -130,7 +143,8 @@ private fun MiniWalletCard(wallet: WalletModel, onClick: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Icon(WalletStyle.icon(wallet.iconKey), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.weight(1f))
-                if (wallet.balance < 0) NegativeBadge(size = 18.dp)
+                MiniOwedLabel(wallet, modifier = Modifier.padding(end = 4.dp))
+                if (wallet.needsAttention) NegativeBadge(size = 18.dp, isCreditCard = wallet.isCreditCard)
             }
             Column {
                 Text(
@@ -140,7 +154,7 @@ private fun MiniWalletCard(wallet: WalletModel, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    formatBalance(wallet.balance),
+                    miniBalanceText(wallet),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,

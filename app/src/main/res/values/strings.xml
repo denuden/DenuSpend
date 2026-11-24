@@ -46,6 +46,7 @@
     <string name="main_title_budget_insights">Budget Insights</string>
     <string name="main_title_wallet">Wallet</string>
     <string name="main_title_wallet_details">Wallet Details</string>
+    <string name="main_title_statement">Statement</string>
     <string name="main_tab_home">Home</string>
     <string name="main_tab_wallet">Wallet</string>
     <string name="main_tab_add">Add</string>
@@ -375,6 +376,81 @@
     <string name="wallet_movement_preset_withdrawn">Withdrawn</string>
     <string name="wallet_movement_preset_correction">Balance correction</string>
     <string name="wallet_movement_preset_transfer">Transfer</string>
+    <!-- credit cards -->
+    <string name="wallet_lbl_credit_card_switch">This is a credit card</string>
+    <string name="wallet_lbl_credit_card_switch_sub">Its balance becomes what you owe · can\'t be changed later</string>
+    <string name="wallet_lbl_amount_owed">Amount owed</string>
+    <string name="wallet_lbl_credit_limit">Credit limit (optional)</string>
+    <string name="wallet_lbl_credit_limit_help">Shows how much you can still charge. Leave it at ₱0 to hide it. Going over it is allowed.</string>
+    <string name="wallet_lbl_statement_day">Statement day</string>
+    <string name="wallet_lbl_statement_day_value">%1$s of every month</string>
+    <string name="wallet_lbl_statement_day_pick">Pick the day your statement closes</string>
+    <string name="wallet_lbl_statement_day_help">The day your bank closes each statement. Charges made on that day go on that statement. The 29th to 31st fall on the last day in shorter months.</string>
+    <string name="wallet_lbl_card_kind">Credit card · statement on the %1$s</string>
+    <string name="wallet_lbl_card_kind_no_day">Credit card</string>
+    <string name="wallet_lbl_owed_now">Owed now</string>
+    <string name="wallet_lbl_card_credit">Credit on card</string>
+    <string name="wallet_lbl_available">%1$s available</string>
+    <string name="wallet_lbl_over_limit">%1$s over the limit</string>
+    <string name="wallet_cd_over_limit">Over the limit</string>
+    <string name="wallet_lbl_of_limit">of %1$s</string>
+    <string name="wallet_lbl_owed_short">Owed</string>
+    <string name="wallet_lbl_card_debt">Card debt · %1$s</string>
+    <plurals name="wallet_lbl_card_count">
+        <item quantity="one">%1$d card</item>
+        <item quantity="other">%1$d cards</item>
+    </plurals>
+    <string name="wallet_btn_pay_card">Pay card</string>
+    <string name="wallet_btn_other_charge">Other charge</string>
+    <string name="wallet_title_pay_card">Pay %1$s</string>
+    <string name="wallet_title_other_charge">Other charge on %1$s</string>
+    <string name="wallet_title_card_credit">Credit on %1$s</string>
+    <string name="wallet_lbl_paid_from_optional">Paid from (optional)</string>
+    <string name="wallet_lbl_owed_after">Owed %1$s → %2$s after</string>
+    <string name="wallet_empty_text_card">Use Pay card or Other charge above, or pick %1$s under \"Paid from\" when you add an expense.</string>
+    <string name="wallet_movement_preset_card_payment">Card payment</string>
+    <string name="wallet_movement_preset_cashback">Cashback</string>
+    <string name="wallet_movement_preset_annual_fee">Annual fee</string>
+    <string name="wallet_movement_preset_interest">Interest</string>
+    <string name="wallet_movement_preset_late_fee">Late fee</string>
+    <!-- credit card statements -->
+    <string name="wallet_lbl_statements">Statements</string>
+    <string name="wallet_tip_statements_title">How your card numbers work</string>
+    <string name="wallet_tip_statements_text">Owed now: everything posted to your card that you haven\'t paid yet, from all statements. It\'s the balance on the card.\n\nCurrent statement: charges posted since your last statement closed. It isn\'t billed yet, and it closes on your statement day.\n\nPrevious statement: the bill from when the last cycle closed. \"Paid since\" is what you paid after that, and \"Still unpaid\" is what\'s left of that bill.\n\nAvailable: your limit minus what you owe now.</string>
+    <string name="wallet_lbl_statement_current_tag">Current · open</string>
+    <string name="wallet_lbl_statement_previous_tag">Previous · closed</string>
+    <string name="wallet_lbl_statement_name">%1$s statement</string>
+    <string name="wallet_lbl_statement_period">%1$s – %2$s</string>
+    <string name="wallet_lbl_statement_closes_today">closes today</string>
+    <plurals name="wallet_lbl_statement_closes_in">
+        <item quantity="one">closes in %1$d day</item>
+        <item quantity="other">closes in %1$d days</item>
+    </plurals>
+    <string name="wallet_lbl_statement_period_open">%1$s · %2$s</string>
+    <plurals name="wallet_lbl_statement_charge_count">
+        <item quantity="one">%1$d charge so far</item>
+        <item quantity="other">%1$d charges so far</item>
+    </plurals>
+    <string name="wallet_lbl_statement_balance">Statement balance</string>
+    <string name="wallet_lbl_paid_since">Paid since %1$s</string>
+    <string name="wallet_lbl_still_unpaid">Still unpaid</string>
+    <string name="wallet_lbl_statement_from_entered">Worked out from the amount owed you entered, since tracking started after this statement closed.</string>
+    <string name="wallet_lbl_statement_error">Couldn\'t load this card\'s statements. Go back and open the card again.</string>
+    <!-- Statement screen -->
+    <string name="wallet_lbl_statement_state_open">%1$s · open</string>
+    <string name="wallet_lbl_statement_state_closed">%1$s · closed</string>
+    <string name="wallet_lbl_charges_so_far">Charges so far</string>
+    <string name="wallet_lbl_charges_this_period">Charges this period</string>
+    <string name="wallet_lbl_section_purchases">Purchases</string>
+    <string name="wallet_lbl_section_subscriptions">Subscriptions</string>
+    <string name="wallet_lbl_section_installments">Installments</string>
+    <string name="wallet_lbl_section_other_charges">Other charges</string>
+    <string name="wallet_lbl_section_payments">Payments &amp; credits</string>
+    <string name="wallet_lbl_section_header">%1$s · %2$d</string>
+    <string name="wallet_lbl_statement_empty">Nothing charged or paid in this period.</string>
+    <string name="wallet_lbl_tracking_started">Tracking started %1$s. Charges before that aren\'t listed, but they\'re part of the amount owed you entered.</string>
+    <string name="wallet_cd_previous_statement">Previous statement</string>
+    <string name="wallet_cd_next_statement">Next statement</string>
 
 <!--    HOME SCREEN-->
     <string name="home_lbl_left_today">Left to spend today</string>
@@ -398,6 +474,7 @@
         <item quantity="one">Total balance · %1$d wallet</item>
         <item quantity="other">Total balance · %1$d wallets</item>
     </plurals>
+    <string name="home_lbl_card_debt">Card debt %1$s</string>
     <!-- last added -->
     <string name="home_lbl_last_added">Last added</string>
     <string name="home_btn_see_all">See all</string>

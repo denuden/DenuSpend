@@ -29,5 +29,8 @@ data class WalletMovementModel(
         // Preset keys the service writes itself (the rest of the presets are UI only, see WalletMovementPresets)
         const val PRESET_CORRECTION = "correction"
         const val PRESET_TRANSFER = "transfer"
+        // Card charges the app posts on its own (subscriptions / installments, coming next). The Statement screen already groups by them.
+        const val PRESET_SUBSCRIPTION = "subscription"
+        const val PRESET_INSTALLMENT = "installment"
     }
 }

@@ -1,0 +1,28 @@
+# Credit cards and statements (how it works, 1.4.0)
+
+- **A credit card is a wallet type,** not a new collection. `wallets/{id}` gets `type` (`""` or `credit_card`), `creditLimit` (cents, 0 = none) and `statementDay` (1–31, required for a card). `type` is a String because Firestore maps a Kotlin `isX` Boolean to the field `x`. Computed `@get:Exclude`: `isCreditCard`, `owed`, `needsAttention`.
+- **Owed is stored as a negative balance,** so the existing expense/movement math works unchanged (an expense does `increment(-sum)`, so owed goes up). Going over the limit is allowed. `needsAttention` (the red "!") means a negative balance for a wallet, but over the limit for a card. TalkBack reads it as "Over the limit" on a card (`NegativeBadge(isCreditCard)`).
+- **The type is locked after adding** (user decision). The "This is a credit card" switch is only on Add wallet (`WalletEditorFields.showCreditCardOption = docId.isEmpty() && !isPhysical`, also off on setup step 1). `saveWallet` never writes `type` on edit. Switching a wallet with history would rewrite its balance and statements (a ₱40,000 phantom "charge") and strand PR 3's subscriptions. Picked wrong? Close it and add it again. While adding, switching off restores the sign and auto icon from before it was switched on.
+- **Totals:** Wallet tab and Home's "Total balance" leave cards out, and a separate "Card debt" line sums `owed`. Mini cards (Home, the Add form's "Paid from") show a small "Owed" label (`MiniOwedLabel`) plus the amount on its own line, since "Owed ₱12,340.00" doesn't fit at 120dp. The Add form's "Paid from" hint on a card reads "Owed ₱A → ₱B after".
+- **Card details buttons:** **Pay card** and **Other charge**. There's no Transfer on a card, and cards are never listed in a wallet's Transfer "Move to" (Transfer is greyed out unless there's another non-card wallet).
+  - **Pay card** opens with "Card payment" (`PRESET_CARD_PAYMENT`) filled in. Its optional "Paid from" lists non-card wallets plus "Don't deduct". With a wallet picked, it's saved as the **existing transfer** (`_out`/`_in` docs) from that wallet into the card. The row keeps the payment icon (`WalletMovementItem`). Refund and Cashback hide "Paid from" (`WalletMovementPresets.isFromBank`, money from the bank) and the title becomes "Credit on X".
+  - **Other charge** = money out with card presets: Annual fee / Interest / Late fee. It's a movement, so Budget never sees it.
+- **Statement cycle** (`utils/CardStatementHelper`): from the day after one statement day through the next statement day. A charge on the statement day belongs to the statement closing that day. Days 29–31 clamp to the month's end (`closingDate` uses `coerceIn(1, lengthOfMonth)`). `cycle(day, monthsBack, today)`.
+  - **Charges** = expenses + negative movements. **Payments** = positive movements. A balance correction counts by its sign, so the totals always match the real balance.
+  - **Statement balance** (nothing stored) = owed now − charges after it closed + payments after it closed. **Still unpaid** = statement balance − paid since, never below ₱0. Payments show **green with no minus** ("Paid since ₱3,000"), since a payment pays the balance down (user decision).
+  - Before tracking started (`createdAt` after the cycle closed), the previous statement is worked out from the amount owed that was entered, and the card says so.
+- **Reads:** `getWalletActivitySince(walletId, since)` = two range listeners (`transactions` + `wallet_movements`, userId + walletId + `date >= since`, date desc) combined inside `flow {}` with the user check. It reuses the existing `(userId, walletId, date DESC)` indexes, so no new index. VM `statementJob` restarts only when `since` changes. `statementLoadedSince` lets the Statement screen hide old numbers while a new month loads. Both screens stop it on ON_STOP.
+- **Card details "Statements ⓘ":** two separate cards that are never added together (like a bank app). **Current · open** shows the period, "closes in N days", charges so far and the count. **Previous · closed** shows the statement balance, paid since and still unpaid. Tapping either opens the Statement screen.
+- **Statement screen** (`WalletStatementNavigation(walletId, monthsBack)`): one cycle, like the bank's PDF. Sections: Purchases / Subscriptions / Installments / Other charges / Payments & credits, with empty ones hidden. Display only: edits still go through Add/History or the card's details. ‹ always reaches the latest closed statement, and older ones stop at the cycle tracking started in. `monthsBack` is `rememberSaveable`. The screen pops if the wallet stops being a valid card.
+- **Firestore:** no rule or index changes for 1.4.0 (owners can already update `wallets`).
+- **Known gaps:** staying on card details across midnight on statement day keeps the old cycle until the screen restarts. The Feb 28 clamp was checked in code only.
+- **Next (planned, not built):** PR 3 adds subscriptions and installments in one `recurring_charges` collection with `kind` (`PRESET_SUBSCRIPTION`/`PRESET_INSTALLMENT` are already grouped by the Statement screen), on its own screen behind a row on card details. PR 4 auto-charges on app open through `runTransaction` with fixed-id movements `{id}_{yyyyMMdd}`. The `wallet_movements` rule `update: if false` blocks a double charge. Planned rule:
+  ```
+  match /recurring_charges/{id} {
+    allow get:    if resource == null || isMe(resource.data.userId);
+    allow list:   if isMe(resource.data.userId);
+    allow create: if isMe(request.resource.data.userId);
+    allow update: if isMe(resource.data.userId) && isMe(request.resource.data.userId);
+    allow delete: if isMe(resource.data.userId);
+  }
+  ```

@@ -2,10 +2,15 @@ package com.gmail.vondenuelle.denuspend.ui.wallet.components
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.LocalAtm
 import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Percent
+import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -33,11 +38,27 @@ object WalletMovementPresets {
         MovementPreset("lost", R.string.wallet_movement_preset_lost, Icons.Filled.SearchOff),
         MovementPreset("withdrawn", R.string.wallet_movement_preset_withdrawn, Icons.Filled.LocalAtm),
     )
+    // Credit cards: "Pay card" and "Other charge" (fees that aren't expenses). "refund" is the same key as the regular one.
+    val cardIn = listOf(
+        MovementPreset(PRESET_CARD_PAYMENT, R.string.wallet_movement_preset_card_payment, Icons.Filled.Payments),
+        MovementPreset("refund", R.string.wallet_movement_preset_refund, Icons.Filled.Replay),
+        MovementPreset("cashback", R.string.wallet_movement_preset_cashback, Icons.Filled.Redeem),
+    )
+    val cardOut = listOf(
+        MovementPreset("annual_fee", R.string.wallet_movement_preset_annual_fee, Icons.Filled.CalendarMonth),
+        MovementPreset("interest", R.string.wallet_movement_preset_interest, Icons.Filled.Percent),
+        MovementPreset("late_fee", R.string.wallet_movement_preset_late_fee, Icons.Filled.Schedule),
+    )
+
+    const val PRESET_CARD_PAYMENT = "card_payment"
+
+    // Money in on a card that the bank gives back, so it never comes "from" another wallet
+    fun isFromBank(key: String) = key == "refund" || key == "cashback"
 
     // null = a typed title, which gets the generic in/out icon
     fun icon(key: String): ImageVector? = when (key) {
         WalletMovementModel.PRESET_CORRECTION -> Icons.Filled.Tune
         WalletMovementModel.PRESET_TRANSFER -> Icons.Filled.SwapHoriz
-        else -> (moneyIn + moneyOut).firstOrNull { it.key == key }?.icon
+        else -> (moneyIn + moneyOut + cardIn + cardOut).firstOrNull { it.key == key }?.icon
     }
 }
