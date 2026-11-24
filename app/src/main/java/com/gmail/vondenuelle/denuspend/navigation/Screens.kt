@@ -143,4 +143,7 @@ sealed class BudgetScreens : NavigationScreens {
 sealed class WalletScreens : NavigationScreens {
     @Serializable
     data class WalletDetailsNavigation(val walletId : String) : WalletScreens()
+    // monthsBack 0 = the open statement, 1 = the last closed one; the screen's arrows change it from there
+    @Serializable
+    data class WalletStatementNavigation(val walletId : String, val monthsBack : Int = 0) : WalletScreens()
 }

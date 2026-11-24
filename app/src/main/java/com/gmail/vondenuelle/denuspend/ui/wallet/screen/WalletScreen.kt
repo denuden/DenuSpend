@@ -9,13 +9,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -124,7 +127,10 @@ fun WalletScreenContent(
     state: WalletScreenState,
     onEvent: (WalletScreenEvents) -> Unit,
 ) {
-    val total = state.wallets.sumOf { it.balance }
+    // Cards are debt, not money you have, so they get their own line instead of lowering the total
+    val (cards, wallets) = state.wallets.partition { it.isCreditCard }
+    val total = wallets.sumOf { it.balance }
+    val cardDebt = -cards.sumOf { it.balance }
 
     LazyColumn(
         modifier = modifier,
@@ -159,10 +165,34 @@ fun WalletScreenContent(
                         if (total < 0) NegativeChip(modifier = Modifier.padding(start = 8.dp))
                     }
                     Text(
-                        pluralStringResource(R.plurals.wallet_lbl_wallet_count, state.wallets.size, state.wallets.size),
+                        pluralStringResource(R.plurals.wallet_lbl_wallet_count, wallets.size, wallets.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (cards.isNotEmpty()) {
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.CreditCard,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 8.dp).size(18.dp)
+                            )
+                            Text(
+                                stringResource(R.string.wallet_lbl_card_debt, pluralStringResource(R.plurals.wallet_lbl_card_count, cards.size, cards.size)),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                formatBalance(cardDebt),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -11,6 +11,7 @@ import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
@@ -60,10 +61,18 @@ class WalletRepository @Inject constructor(
             .flowOn(dispatcher)
     }
 
-    // A balance of ₱0 or below is fine (an empty pocket, or a card that's owed), only the name is required
+    fun getWalletActivitySince(walletId: String, since: Timestamp): Flow<Pair<List<TransactionModel>, List<WalletMovementModel>>> {
+        return walletService.getWalletActivitySince(walletId, since)
+            .flowOn(dispatcher)
+    }
+
+    // A balance of ₱0 or below is fine (an empty pocket, or a card that's owed). The name is required, and a card needs its statement day.
     private fun validate(request: WalletRequest): WalletRequest {
         if (request.name.isBlank()) {
             throw CannotCreateTransactionException("Give the wallet a name")
+        }
+        if (request.type == WalletModel.TYPE_CREDIT_CARD && request.statementDay !in 1..31) {
+            throw CannotCreateTransactionException("Pick the card's statement day")
         }
         return request.copy(name = request.name.trim())
     }

@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.gmail.vondenuelle.denuspend.ui.wallet.screen.WalletDetailsScreen
+import com.gmail.vondenuelle.denuspend.ui.wallet.screen.WalletStatementScreen
 
 fun NavGraphBuilder.addWalletNavGraph(
     navController: NavController,
@@ -15,6 +16,19 @@ fun NavGraphBuilder.addWalletNavGraph(
             val args = it.toRoute<WalletScreens.WalletDetailsNavigation>()
             WalletDetailsScreen(
                 walletId = args.walletId,
+                onNavigate = { route, navOptions ->
+                    navController.navigate(route, navOptions = navOptions)
+                },
+                onPopBackStack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable<WalletScreens.WalletStatementNavigation> {
+            val args = it.toRoute<WalletScreens.WalletStatementNavigation>()
+            WalletStatementScreen(
+                walletId = args.walletId,
+                initialMonthsBack = args.monthsBack,
                 onNavigate = { route, navOptions ->
                     navController.navigate(route, navOptions = navOptions)
                 },

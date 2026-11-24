@@ -40,7 +40,10 @@ fun WalletMovementItem(
     onClick: () -> Unit,
 ) {
     val isIn = movement.amount > 0
-    val icon = WalletMovementPresets.icon(if (movement.isTransfer) WalletMovementModel.PRESET_TRANSFER else movement.presetKey)
+    // A card payment made "from" another wallet is a transfer underneath, but it keeps its payment icon
+    val icon = WalletMovementPresets.icon(
+        if (movement.isTransfer && movement.presetKey != WalletMovementPresets.PRESET_CARD_PAYMENT) WalletMovementModel.PRESET_TRANSFER else movement.presetKey
+    )
     // "To BDO · rent money", or just the note
     val transferText = when {
         !movement.isTransfer -> ""

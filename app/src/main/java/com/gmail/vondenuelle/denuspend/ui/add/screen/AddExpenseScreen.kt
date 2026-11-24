@@ -247,6 +247,8 @@ private fun walletAfterText(state: AddScreenState): String? {
     if (state.transactionAmount == 0L) return null
     val original = state.editingTransaction?.takeIf { it.walletId == wallet.docId }?.amount?.let { abs(it) } ?: 0L
     val after = wallet.balance + original - state.transactionAmount
+    // A credit card reads as what's owed ("Owed ₱11,690.00 → ₱13,510.00 after"), like its money in/out sheet
+    if (wallet.isCreditCard) return stringResource(R.string.wallet_lbl_owed_after, formatBalance(-wallet.balance), formatBalance(-after))
     return stringResource(R.string.add_lbl_wallet_after, formatBalance(wallet.balance), formatBalance(after))
 }
 
