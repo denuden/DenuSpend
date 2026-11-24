@@ -148,12 +148,12 @@ fun AddIncomeScreenContent(
                 amountColor = colorResource(R.color.verified_green_text),
                 tooltipTitle = stringResource(R.string.add_tooltip_allowance_title),
                 tooltipText = stringResource(R.string.add_tooltip_allowance_text),
-                todayLine = allowanceTodayText(state),
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
-                FormSectionHeader(title = stringResource(R.string.add_lbl_allowance_for))
+                // The "today" hint sits above the grid, so it's still in view after scrolling down to pick a category
+                FormSectionHeader(title = stringResource(R.string.add_lbl_allowance_for), supportingText = allowanceTodayText(state))
                 CategoryGrid(selected = state.transactionCategory) {
                     onEvent(AddScreenEvents.OnCategoryChanged(it))
                 }
