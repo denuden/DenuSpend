@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.ui.wallet
 
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 
 data class WalletScreenState(
     val isLoading : Boolean = false, // saving / closing (full-screen LoadingDialog)
@@ -11,6 +12,7 @@ data class WalletScreenState(
     val hasLoadedWallets : Boolean = false,
     // The wallet open in the add/edit sheet (null = closed, empty docId = a new one)
     val walletDraft : WalletModel? = null,
+    val walletDraftOriginalBalance : Long = 0L, // the balance when the sheet opened, so a change is saved as a correction
 
 //    Wallet details: expenses paid from that wallet
     val walletTransactions : List<TransactionModel> = emptyList(),
@@ -19,7 +21,27 @@ data class WalletScreenState(
     val hasMoreTransactions : Boolean = false,
     val hasTransactionsError : Boolean = false, // e.g. a missing index, so the list says it failed instead of "no expenses"
 
+//    Wallet details: money in / out that isn't an expense (wallet_movements), merged with the expenses on screen
+    val walletMovements : List<WalletMovementModel> = emptyList(),
+    val isMovementsLoading : Boolean = false,
+    val isLoadingMoreMovements : Boolean = false,
+    val hasMoreMovements : Boolean = false,
+    val hasMovementsError : Boolean = false,
+    val movementDraft : MovementDraft? = null, // the add money / take out / transfer sheet (null = closed)
+
 //    First-time setup (0 = physical wallet, 1 = add more wallets)
     val setupStep : Int = 0,
     val physicalDraft : WalletModel = WalletModel(iconKey = "wallet"),
+)
+
+enum class MovementType { IN, OUT, TRANSFER }
+
+// amount is always positive here; MovementType gives the sign when it's saved
+data class MovementDraft(
+    val type : MovementType,
+    val amount : Long = 0L,
+    val title : String = "",
+    val presetKey : String = "",
+    val note : String = "",
+    val toWalletId : String = "", // transfers only
 )

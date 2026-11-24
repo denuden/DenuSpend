@@ -22,6 +22,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.Firebase
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.TRANSACTION
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.USER_ID
 import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl.Companion.WALLETS
+import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl.Companion.WALLET_MOVEMENTS
 import com.google.firebase.FirebaseException
 import com.google.firebase.Timestamp
 import com.google.firebase.FirebaseNetworkException
@@ -244,7 +245,7 @@ class FirebaseProfileServiceImpl @Inject constructor(
         }
     }
 
-    // Deletes every daily_history day (plus its transactions subcollection), every monthly_history month, every top-level transaction, every wallet, users/{uid} and allowance_templates/{uid}.
+    // Deletes every daily_history day (plus its transactions subcollection), every monthly_history month, every top-level transaction, every wallet and wallet movement, users/{uid} and allowance_templates/{uid}.
     // A Firestore batch holds at most 500 writes, so the deletes are committed in chunks.
     private suspend fun deleteUserData(uid: String) {
         val refs = mutableListOf<DocumentReference>()
@@ -272,6 +273,10 @@ class FirebaseProfileServiceImpl @Inject constructor(
             .whereEqualTo(USER_ID, uid)
             .get().await()
         refs += wallets.documents.map { it.reference }
+        val walletMovements = firebaseFireStore.collection(WALLET_MOVEMENTS)
+            .whereEqualTo(USER_ID, uid)
+            .get().await()
+        refs += walletMovements.documents.map { it.reference }
         refs += firebaseFireStore.collection(USERS).document(uid)
         refs += firebaseFireStore.collection(ALLOWANCE_TEMPLATES_COLLECTION).document(uid)
 

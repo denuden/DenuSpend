@@ -7,4 +7,7 @@ data class WalletRequest(
     val colorIndex : Int,
     val iconKey : String,
     val balance : Long,
+    // Edits only: the balance when the sheet opened. A different balance is saved as an increment plus a "Balance correction" entry.
+    val originalBalance : Long = 0L,
+    val correctionTitle : String = "",
 )

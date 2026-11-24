@@ -314,10 +314,9 @@
     <string name="wallet_lbl_negative_switch">Balance is negative (overspent or owed)</string>
     <string name="wallet_lbl_color">Color</string>
     <string name="wallet_lbl_icon">Icon</string>
-    <string name="wallet_lbl_paid_from_this">Paid from this wallet</string>
-    <string name="wallet_empty_title">No expenses yet</string>
-    <string name="wallet_empty_text">When you add an expense, pick %1$s under \"Paid from\" and it shows up here.</string>
-    <string name="wallet_empty_error_title">Couldn\'t load expenses</string>
+    <string name="wallet_empty_title">Nothing here yet</string>
+    <string name="wallet_empty_text">Use Add money, Take out or Transfer above, or pick %1$s under \"Paid from\" when you add an expense.</string>
+    <string name="wallet_empty_error_title">Couldn\'t load this wallet\'s history</string>
     <string name="wallet_lbl_transactions_error">Go back and open the wallet again.</string>
     <string name="wallet_snackbar_saved">Wallet saved</string>
     <string name="wallet_snackbar_closed">%1$s was closed</string>
@@ -339,6 +338,43 @@
     <string name="wallet_lbl_paid_from">Paid from</string>
     <string name="wallet_lbl_no_wallet">Don\'t deduct from a wallet</string>
     <string name="wallet_lbl_closed_wallet">Closed wallet</string>
+    <!-- money in / out (wallet_movements) -->
+    <string name="wallet_btn_add_money">Add money</string>
+    <string name="wallet_btn_take_out">Take out</string>
+    <string name="wallet_btn_transfer">Transfer</string>
+    <string name="wallet_title_add_money">Add money to %1$s</string>
+    <string name="wallet_title_take_out">Take out from %1$s</string>
+    <string name="wallet_title_transfer">Move money from %1$s</string>
+    <string name="wallet_lbl_movement_title">What was it? (30 characters)</string>
+    <string name="wallet_hint_movement_title">Pick one below or type your own</string>
+    <string name="wallet_lbl_movement_note">Note (optional, 50 characters)</string>
+    <string name="wallet_hint_movement_note">E.g. for Mom\'s medicine</string>
+    <string name="wallet_lbl_transfer_to">Move to</string>
+    <string name="wallet_lbl_movement_after">%1$s → %2$s after</string>
+    <string name="wallet_btn_save_movement">Save · %1$s</string>
+    <string name="wallet_lbl_transfer_to_wallet">To %1$s</string>
+    <string name="wallet_lbl_transfer_from_wallet">From %1$s</string>
+    <string name="wallet_lbl_history">Money in and out</string>
+    <string name="wallet_lbl_history_sub">Expenses paid from this wallet, plus money you added, took out or moved.</string>
+    <string name="wallet_snackbar_movement_saved">Saved to %1$s</string>
+    <string name="wallet_snackbar_transfer_saved">Moved to %1$s</string>
+    <string name="wallet_snackbar_movement_deleted">Entry deleted</string>
+    <string name="wallet_dialog_delete_movement_title">Delete this entry?</string>
+    <string name="wallet_dialog_delete_movement_in">%1$s will be taken back out of %2$s.</string>
+    <string name="wallet_dialog_delete_movement_out">%1$s will be put back into %2$s.</string>
+    <string name="wallet_dialog_delete_movement_transfer">%1$s goes back from %2$s to %3$s. Both sides of the transfer are deleted.</string>
+    <string name="wallet_btn_delete">Delete</string>
+    <!-- presets: shortcuts that fill the title, the user can always type their own -->
+    <string name="wallet_movement_preset_salary">Salary</string>
+    <string name="wallet_movement_preset_gift">Gift</string>
+    <string name="wallet_movement_preset_refund">Refund</string>
+    <string name="wallet_movement_preset_sold">Sold something</string>
+    <string name="wallet_movement_preset_emergency">Emergency</string>
+    <string name="wallet_movement_preset_lent">Gave / lent</string>
+    <string name="wallet_movement_preset_lost">Lost</string>
+    <string name="wallet_movement_preset_withdrawn">Withdrawn</string>
+    <string name="wallet_movement_preset_correction">Balance correction</string>
+    <string name="wallet_movement_preset_transfer">Transfer</string>
 
 <!--    HOME SCREEN-->
     <string name="home_lbl_left_today">Left to spend today</string>

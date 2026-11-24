@@ -1,6 +1,7 @@
 package com.gmail.vondenuelle.denuspend.ui.wallet
 
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 
 sealed class WalletScreenEvents {
     data object OnGetWallets : WalletScreenEvents()
@@ -15,7 +16,15 @@ sealed class WalletScreenEvents {
 
     //Wallet details
     data class OnGetWalletTransactions(val walletId : String) : WalletScreenEvents()
-    data class OnLoadMoreWalletTransactions(val walletId : String) : WalletScreenEvents()
+    data class OnGetWalletMovements(val walletId : String) : WalletScreenEvents()
+    data class OnLoadMoreWalletTransactions(val walletId : String) : WalletScreenEvents() // loads more of both lists
+
+    //Money in / out sheet
+    data class OnOpenMovementSheet(val type : MovementType) : WalletScreenEvents()
+    data object OnCloseMovementSheet : WalletScreenEvents()
+    data class OnMovementDraftChanged(val draft : MovementDraft) : WalletScreenEvents()
+    data class OnSaveMovement(val wallet : WalletModel) : WalletScreenEvents()
+    data class OnDeleteMovement(val movement : WalletMovementModel) : WalletScreenEvents()
 
     //First-time setup
     data class OnPhysicalDraftChanged(val draft : WalletModel) : WalletScreenEvents()

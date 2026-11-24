@@ -38,7 +38,7 @@ import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletStyle
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
 
 /**
- * "Paid from" as a sideways row of mini wallet cards, then "Don't deduct" ("" = no wallet).
+ * "Paid from" as a sideways row of mini wallet cards, then "Don't deduct" ("" = no wallet) unless showNoWalletOption is false.
  * An id that's no longer in the list (closed wallet, e.g. when editing an old expense) gets a selected "Closed wallet" card first.
  */
 @Composable
@@ -48,6 +48,7 @@ fun WalletPickerRow(
     hasLoadedWallets: Boolean,
     selectedId: String,
     onSelected: (String) -> Unit,
+    showNoWalletOption: Boolean = true, // false for a transfer's "Move to", which always needs a wallet
 ) {
     val isClosedWallet = hasLoadedWallets && selectedId.isNotEmpty() && wallets.none { it.docId == selectedId }
 
@@ -81,13 +82,15 @@ fun WalletPickerRow(
         items(wallets, key = { it.docId }) { wallet ->
             MiniWalletCard(wallet = wallet, isSelected = wallet.docId == selectedId, onClick = { onSelected(wallet.docId) })
         }
-        item {
-            PlainWalletOption(
-                icon = Icons.Outlined.MoneyOff,
-                label = stringResource(R.string.wallet_lbl_no_wallet),
-                isSelected = selectedId.isEmpty(),
-                onClick = { onSelected("") }
-            )
+        if (showNoWalletOption) {
+            item {
+                PlainWalletOption(
+                    icon = Icons.Outlined.MoneyOff,
+                    label = stringResource(R.string.wallet_lbl_no_wallet),
+                    isSelected = selectedId.isEmpty(),
+                    onClick = { onSelected("") }
+                )
+            }
         }
     }
 }
