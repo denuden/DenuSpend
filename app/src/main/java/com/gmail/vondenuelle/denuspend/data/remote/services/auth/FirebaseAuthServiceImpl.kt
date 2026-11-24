@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.data.remote.services.auth
 
+import android.content.Context
 import android.util.Log
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotSendEmailVerification
@@ -17,6 +18,7 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -26,7 +28,8 @@ import javax.inject.Singleton
 
 @Singleton
 class FirebaseAuthServiceImpl @Inject constructor(
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    @ApplicationContext private val context: Context,
 ) : AuthService {
 
     override suspend fun login(request: LoginRequest): UserModel {
@@ -160,10 +163,8 @@ class FirebaseAuthServiceImpl @Inject constructor(
             val actionCodeSettings = ActionCodeSettings.newBuilder()
                 .setUrl("https://denu-spend.firebaseapp.com")
                 .setHandleCodeInApp(true)
-                .setAndroidPackageName(
-                    "com.gmail.vondenuelle.denuspend.debug",
-                    true,
-                    null )
+                // Opens this build's app. packageName already has the ".debug" suffix on debug builds.
+                .setAndroidPackageName(context.packageName, true, null)
                 .build()
 
             firebaseAuth.sendPasswordResetEmail(request.email, actionCodeSettings).await()

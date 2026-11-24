@@ -349,12 +349,13 @@
     <string name="home_lbl_amount_over">%1$s over</string>
     <!-- month card -->
     <string name="home_lbl_month_day">Day %1$d of %2$d</string>
-    <string name="home_lbl_month_spent_of">spent of %1$s allowance</string>
-    <string name="home_lbl_month_spent">spent</string>
-    <!-- Month allowance = the daily allowances added so far, so the leftover is "unspent", not a monthly plan -->
-    <string name="home_lbl_month_unspent">%1$s unspent allowance</string>
+    <string name="home_lbl_month_spent_of_caption">Spent / allowance</string>
+    <string name="home_lbl_month_spent_caption">Spent</string>
+    <!-- Month allowance = the daily allowances added so far (no monthly plan), so the leftover is what has accumulated, not "left" -->
+    <string name="home_lbl_month_accumulated">%1$s accumulated allowance</string>
     <string name="home_lbl_month_lasts_until">Lasts until %1$s at %2$s/day</string>
-    <string name="home_lbl_month_overspent">%1$s overspent this month</string>
+    <!-- No amount here: the red spent / allowance numbers above already show it -->
+    <string name="home_lbl_month_overspent">Over this month\'s allowance</string>
     <string name="home_lbl_month_no_allowance">No allowance this month yet</string>
     <!-- balance card -->
     <plurals name="home_lbl_total_balance">

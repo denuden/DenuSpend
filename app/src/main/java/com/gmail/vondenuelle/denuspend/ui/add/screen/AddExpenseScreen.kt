@@ -154,12 +154,12 @@ fun AddExpenseScreenContent(
                 amountColor = MaterialTheme.colorScheme.error,
                 tooltipTitle = stringResource(R.string.add_tooltip_expense_title),
                 tooltipText = stringResource(R.string.add_tooltip_expense_text),
-                todayLine = leftTodayText(state),
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
-                FormSectionHeader(title = stringResource(R.string.add_lbl_expense_category))
+                // The "left today" hint sits above the grid, so it's still in view after scrolling down to pick a category
+                FormSectionHeader(title = stringResource(R.string.add_lbl_expense_category), supportingText = leftTodayText(state))
                 CategoryGrid(selected = state.transactionCategory) {
                     onEvent(AddScreenEvents.OnCategoryChanged(it))
                 }

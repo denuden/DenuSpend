@@ -42,7 +42,6 @@ fun AmountInputSection(
     amountColor: Color,
     tooltipTitle: String,
     tooltipText: String,
-    todayLine: String? = null, // "Food left today: …", shown right under the amount so it's in view while typing
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -76,16 +75,6 @@ fun AmountInputSection(
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-
-        todayLine?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
 
         // FlowRow so the chips wrap instead of clipping on narrow phones or big font sizes
         FlowRow(

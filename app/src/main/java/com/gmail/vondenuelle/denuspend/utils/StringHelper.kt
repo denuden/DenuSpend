@@ -1,6 +1,8 @@
 package com.gmail.vondenuelle.denuspend.utils
 
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
@@ -62,4 +64,19 @@ fun getDaysInMonth(monthIndex: Int, year: Int): Int {
 
 fun String?.orDefault(default: String = "---"): String {
     return if (this.isNullOrBlank()) default else this
+}
+
+// Styles each part inside an already formatted string, e.g. bolds "₱100.00" and "₱300.00" in "₱100.00 spent of ₱300.00 allowance".
+// Each search starts after the previous match, so two equal amounts both get styled.
+fun String.withStyledParts(parts: List<String>, style: SpanStyle): AnnotatedString = buildAnnotatedString {
+    val text = this@withStyledParts
+    append(text)
+    var from = 0
+    parts.forEach { part ->
+        val start = text.indexOf(part, from)
+        if (start >= 0) {
+            addStyle(style, start, start + part.length)
+            from = start + part.length
+        }
+    }
 }
