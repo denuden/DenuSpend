@@ -22,7 +22,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,24 +59,30 @@ import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
 import com.gmail.vondenuelle.denuspend.navigation.toNavOptions
 import com.gmail.vondenuelle.denuspend.ui.common.components.TransactionItem
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
+import com.gmail.vondenuelle.denuspend.ui.wallet.MovementType
 import com.gmail.vondenuelle.denuspend.ui.wallet.WalletScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.wallet.WalletScreenState
 import com.gmail.vondenuelle.denuspend.ui.wallet.WalletViewModel
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.CloseWalletDialog
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.DeleteMovementDialog
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletCard
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletEditorSheet
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletMovementItem
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletMovementSheet
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import com.gmail.vondenuelle.denuspend.utils.formatFirebaseDate
 import kotlinx.coroutines.launch
+import java.util.Date
 
 @Composable
 fun WalletDetailsScreen(
@@ -105,16 +115,18 @@ fun WalletDetailsScreen(
         }
     }
 
-    // Pushed screen, so both listeners stop on ON_STOP
+    // Pushed screen, so all three listeners stop on ON_STOP
     ComposableLifecycle { _, event ->
         when (event) {
             Lifecycle.Event.ON_START -> {
                 viewModel.onEvent(WalletScreenEvents.OnGetWallets)
                 viewModel.onEvent(WalletScreenEvents.OnGetWalletTransactions(walletId))
+                viewModel.onEvent(WalletScreenEvents.OnGetWalletMovements(walletId))
             }
             Lifecycle.Event.ON_STOP -> {
                 viewModel.stopWalletsListener()
                 viewModel.stopTransactionsListener()
+                viewModel.stopMovementsListener()
             }
             else -> Unit
         }
@@ -158,13 +170,66 @@ fun WalletDetailsScreen(
         },
     )
 
+    WalletMovementSheet(
+        draft = state.movementDraft,
+        wallet = wallet,
+        wallets = state.wallets,
+        hasLoadedWallets = state.hasLoadedWallets,
+        onDraftChange = { viewModel.onEvent(WalletScreenEvents.OnMovementDraftChanged(it)) },
+        onSave = { wallet?.let { viewModel.onEvent(WalletScreenEvents.OnSaveMovement(it)) } },
+        onDismiss = { viewModel.onEvent(WalletScreenEvents.OnCloseMovementSheet) },
+    )
+
+    // Only the id is saved, so the dialog shows the live copy and closes itself if the entry is deleted elsewhere
+    var deletingMovementId by rememberSaveable { mutableStateOf<String?>(null) }
+    val deletingMovement = state.walletMovements.find { it.docId == deletingMovementId }
+    DeleteMovementDialog(
+        movement = deletingMovement,
+        walletName = wallet?.name.orEmpty(),
+        otherWalletName = deletingMovement?.let { m -> state.wallets.find { it.docId == m.otherWalletId }?.name },
+        onDismiss = { deletingMovementId = null },
+        onConfirm = {
+            deletingMovementId = null
+            deletingMovement?.let { viewModel.onEvent(WalletScreenEvents.OnDeleteMovement(it)) }
+        },
+    )
+
     WalletDetailsScreenContent(
         wallet = wallet,
         state = state,
         onEvent = viewModel::onEvent,
         onCloseWalletClick = { showCloseDialog = true },
+        onMovementClick = { deletingMovementId = it.docId },
         modifier = Modifier.fillMaxSize()
     )
+}
+
+// One row of the merged list: an expense paid from this wallet, or a money in/out entry
+private sealed interface WalletEntry {
+    val date: Date
+    val key: String
+
+    data class Expense(val transaction: TransactionModel) : WalletEntry {
+        override val date: Date get() = transaction.date.toDate()
+        override val key get() = "t_${transaction.docId}"
+    }
+
+    data class Movement(val movement: WalletMovementModel) : WalletEntry {
+        override val date: Date get() = movement.date.toDate()
+        override val key get() = "m_${movement.docId}"
+    }
+}
+
+// Both lists are paged separately, newest first. A list that still has more pages is cut at its oldest loaded item,
+// so older entries of the other list don't show before the missing ones. "Load more" fills the gap.
+private fun mergeEntries(state: WalletScreenState): List<WalletEntry> {
+    val all = (state.walletTransactions.map { WalletEntry.Expense(it) } + state.walletMovements.map { WalletEntry.Movement(it) })
+        .sortedByDescending { it.date }
+    val cutoff = listOfNotNull(
+        state.walletTransactions.lastOrNull()?.date?.toDate()?.takeIf { state.hasMoreTransactions },
+        state.walletMovements.lastOrNull()?.date?.toDate()?.takeIf { state.hasMoreMovements },
+    ).maxOrNull() ?: return all
+    return all.filter { it.date >= cutoff }
 }
 
 @Composable
@@ -174,6 +239,7 @@ fun WalletDetailsScreenContent(
     state: WalletScreenState,
     onEvent: (WalletScreenEvents) -> Unit,
     onCloseWalletClick: () -> Unit,
+    onMovementClick: (WalletMovementModel) -> Unit,
 ) {
     if (wallet == null) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -182,12 +248,47 @@ fun WalletDetailsScreenContent(
         return
     }
 
+    // A failed listener can leave old cached rows (deleted ones, missing new ones), so the list is hidden behind the error panel instead
+    val hasHistoryError = state.hasTransactionsError || state.hasMovementsError
+    val entries = remember(state.walletTransactions, state.walletMovements, state.hasMoreTransactions, state.hasMoreMovements, hasHistoryError) {
+        if (hasHistoryError) emptyList() else mergeEntries(state)
+    }
+    val isHistoryLoading = state.isTransactionsLoading || state.isMovementsLoading
+    val isLoadingMore = state.isLoadingMoreTransactions || state.isLoadingMoreMovements
+
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
     ) {
         item {
             WalletCard(wallet = wallet)
+            // Money that isn't an expense. A transfer needs a second wallet to move to.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            ) {
+                MoneyActionButton(
+                    icon = Icons.Filled.Add,
+                    label = stringResource(R.string.wallet_btn_add_money),
+                    onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.IN)) },
+                    modifier = Modifier.weight(1f)
+                )
+                MoneyActionButton(
+                    icon = Icons.Filled.Remove,
+                    label = stringResource(R.string.wallet_btn_take_out),
+                    onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.OUT)) },
+                    modifier = Modifier.weight(1f)
+                )
+                MoneyActionButton(
+                    icon = Icons.Filled.SwapHoriz,
+                    label = stringResource(R.string.wallet_btn_transfer),
+                    enabled = state.wallets.size > 1,
+                    onClick = { onEvent(WalletScreenEvents.OnOpenMovementSheet(MovementType.TRANSFER)) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
             // The physical wallet can't be closed, so Edit takes the full width there
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -225,22 +326,27 @@ fun WalletDetailsScreenContent(
 
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                stringResource(R.string.wallet_lbl_paid_from_this),
+                stringResource(R.string.wallet_lbl_history),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Text(
+                stringResource(R.string.wallet_lbl_history_sub),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
             )
         }
 
-        if (state.isTransactionsLoading) {
+        if (isHistoryLoading) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
-        } else if (state.walletTransactions.isEmpty()) {
+        } else if (entries.isEmpty()) {
             item {
-                if (state.hasTransactionsError) {
+                if (hasHistoryError) {
                     WalletExpensesPlaceholder(
                         icon = Icons.Outlined.ErrorOutline,
                         title = stringResource(R.string.wallet_empty_error_title),
@@ -257,11 +363,12 @@ fun WalletDetailsScreenContent(
             }
         }
 
-        // Display only: edit/delete still happen from the Add tab or History, which know the transaction's day
-        // The list spans many days but TransactionItem only shows the time, so each new day gets a small date label
-        itemsIndexed(state.walletTransactions, key = { _, it -> it.docId }) { index, transaction ->
-            val day = formatFirebaseDate(transaction.date.toDate())
-            if (index == 0 || formatFirebaseDate(state.walletTransactions[index - 1].date.toDate()) != day) {
+        // Expenses are display only: edit/delete still happen from the Add tab or History, which know the transaction's day.
+        // Money in/out entries open the delete confirm.
+        // The list spans many days but the rows only show the time, so each new day gets a small date label
+        itemsIndexed(entries, key = { _, it -> it.key }) { index, entry ->
+            val day = formatFirebaseDate(entry.date)
+            if (index == 0 || formatFirebaseDate(entries[index - 1].date) != day) {
                 Text(
                     day,
                     style = MaterialTheme.typography.labelLarge,
@@ -269,13 +376,20 @@ fun WalletDetailsScreenContent(
                     modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
                 )
             }
-            TransactionItem(transactionModel = transaction)
+            when (entry) {
+                is WalletEntry.Expense -> TransactionItem(transactionModel = entry.transaction)
+                is WalletEntry.Movement -> WalletMovementItem(
+                    movement = entry.movement,
+                    otherWalletName = state.wallets.find { it.docId == entry.movement.otherWalletId }?.name,
+                    onClick = { onMovementClick(entry.movement) }
+                )
+            }
         }
 
-        if (state.hasMoreTransactions || state.isLoadingMoreTransactions) {
+        if (!hasHistoryError && (state.hasMoreTransactions || state.hasMoreMovements || isLoadingMore)) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    if (state.isLoadingMoreTransactions) {
+                    if (isLoadingMore) {
                         CircularProgressIndicator(modifier = Modifier.padding(8.dp))
                     } else {
                         TextButton(onClick = { onEvent(WalletScreenEvents.OnLoadMoreWalletTransactions(wallet.docId)) }) {
@@ -284,6 +398,39 @@ fun WalletDetailsScreenContent(
                     }
                 }
             }
+        }
+    }
+}
+
+/** Add money / Take out / Transfer: icon over a short label, so three fit in one row. */
+@Composable
+private fun MoneyActionButton(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier = modifier.alpha(if (enabled) 1f else 0.4f)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
+        ) {
+            Icon(icon, contentDescription = null)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
@@ -346,7 +493,8 @@ private fun WalletDetailsScreenEmptyPreview() {
                 wallet = WalletModel(docId = "a", name = "GCash", colorIndex = 1, iconKey = "ewallet", balance = 0),
                 state = WalletScreenState(),
                 onEvent = {},
-                onCloseWalletClick = {}
+                onCloseWalletClick = {},
+                onMovementClick = {},
             )
         }
     }
@@ -363,7 +511,8 @@ private fun WalletDetailsScreenPreview() {
                     walletTransactions = listOf(TransactionModel(docId = "1", title = "Lunch", category = "Food", amount = -15000))
                 ),
                 onEvent = {},
-                onCloseWalletClick = {}
+                onCloseWalletClick = {},
+                onMovementClick = {},
             )
         }
     }

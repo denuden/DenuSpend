@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
+import com.gmail.vondenuelle.denuspend.data.remote.models.wallet.request.WalletMovementRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.wallet.request.WalletRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.WalletRepository
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
@@ -50,9 +52,11 @@ class WalletViewModel @Inject constructor(
 
     private var walletsJob: Job? = null
     private var transactionsJob: Job? = null
+    private var movementsJob: Job? = null
 
     // Expenses paid from a wallet grow by one page per load-more; the listener restarts with the bigger limit
     private var transactionsLimit = TRANSACTIONS_PAGE_SIZE
+    private var movementsLimit = TRANSACTIONS_PAGE_SIZE
 
     companion object {
         private const val TRANSACTIONS_PAGE_SIZE = 20L
@@ -66,6 +70,11 @@ class WalletViewModel @Inject constructor(
     fun stopTransactionsListener() {
         transactionsJob?.cancel()
         transactionsJob = null
+    }
+
+    fun stopMovementsListener() {
+        movementsJob?.cancel()
+        movementsJob = null
     }
 
     fun onEvent(event: WalletScreenEvents) {
@@ -91,7 +100,10 @@ class WalletViewModel @Inject constructor(
             }
 
             is WalletScreenEvents.OnOpenWalletEditor -> _stateFlow.update {
-                it.copy(walletDraft = event.wallet ?: WalletModel(iconKey = "wallet", colorIndex = it.wallets.size % 10))
+                it.copy(
+                    walletDraft = event.wallet ?: WalletModel(iconKey = "wallet", colorIndex = it.wallets.size % 10),
+                    walletDraftOriginalBalance = event.wallet?.balance ?: 0L
+                )
             }
             WalletScreenEvents.OnCloseWalletEditor -> _stateFlow.update { it.copy(walletDraft = null) }
             is WalletScreenEvents.OnWalletDraftChanged -> _stateFlow.update { it.copy(walletDraft = event.draft) }
@@ -103,7 +115,12 @@ class WalletViewModel @Inject constructor(
                 _stateFlow.update { it.copy(isLoading = true) }
                 viewModelScope.launch {
                     try {
-                        walletRepository.saveWallet(draft.toRequest())
+                        walletRepository.saveWallet(
+                            draft.toRequest().copy(
+                                originalBalance = current.walletDraftOriginalBalance,
+                                correctionTitle = context.getString(R.string.wallet_movement_preset_correction)
+                            )
+                        )
                         _stateFlow.update { it.copy(isLoading = false, walletDraft = null) }
                         sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.wallet_snackbar_saved))))
                     } catch (e: Exception) {
@@ -137,15 +154,99 @@ class WalletViewModel @Inject constructor(
                 }
             }
 
+            is WalletScreenEvents.OnGetWalletMovements -> {
+                if (movementsJob?.isActive == true) return
+                movementsJob = viewModelScope.launch {
+                    collectWalletMovements(event.walletId, isLoadMore = false)
+                }
+            }
+
+            // One "Load more" for the merged list: each list that still has more grows by a page
             is WalletScreenEvents.OnLoadMoreWalletTransactions -> {
                 val current = _stateFlow.value
-                if (!current.hasMoreTransactions || current.isLoadingMoreTransactions || current.isTransactionsLoading) return
+                val isBusy = current.isLoadingMoreTransactions || current.isTransactionsLoading ||
+                    current.isLoadingMoreMovements || current.isMovementsLoading
+                if (isBusy) return
 
-                transactionsLimit += TRANSACTIONS_PAGE_SIZE
-                stopTransactionsListener()
-                transactionsJob = viewModelScope.launch {
-                    _stateFlow.update { it.copy(isLoadingMoreTransactions = true) }
-                    collectWalletTransactions(event.walletId, isLoadMore = true)
+                if (current.hasMoreTransactions) {
+                    transactionsLimit += TRANSACTIONS_PAGE_SIZE
+                    stopTransactionsListener()
+                    transactionsJob = viewModelScope.launch {
+                        _stateFlow.update { it.copy(isLoadingMoreTransactions = true) }
+                        collectWalletTransactions(event.walletId, isLoadMore = true)
+                    }
+                }
+                if (current.hasMoreMovements) {
+                    movementsLimit += TRANSACTIONS_PAGE_SIZE
+                    stopMovementsListener()
+                    movementsJob = viewModelScope.launch {
+                        _stateFlow.update { it.copy(isLoadingMoreMovements = true) }
+                        collectWalletMovements(event.walletId, isLoadMore = true)
+                    }
+                }
+            }
+
+            // A transfer starts with the "Transfer" title filled in, since it rarely needs another one
+            is WalletScreenEvents.OnOpenMovementSheet -> _stateFlow.update {
+                it.copy(
+                    movementDraft = if (event.type == MovementType.TRANSFER) {
+                        MovementDraft(
+                            type = event.type,
+                            title = context.getString(R.string.wallet_movement_preset_transfer),
+                            presetKey = WalletMovementModel.PRESET_TRANSFER
+                        )
+                    } else {
+                        MovementDraft(type = event.type)
+                    }
+                )
+            }
+            WalletScreenEvents.OnCloseMovementSheet -> _stateFlow.update { it.copy(movementDraft = null) }
+            is WalletScreenEvents.OnMovementDraftChanged -> _stateFlow.update { it.copy(movementDraft = event.draft) }
+
+            is WalletScreenEvents.OnSaveMovement -> {
+                val current = _stateFlow.value
+                val draft = current.movementDraft ?: return
+                if (current.isLoading) return // ignore double taps while saving
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        walletRepository.addMovement(
+                            WalletMovementRequest(
+                                walletId = event.wallet.docId,
+                                amount = if (draft.type == MovementType.OUT) -draft.amount else draft.amount,
+                                title = draft.title,
+                                presetKey = draft.presetKey,
+                                note = draft.note,
+                                toWalletId = if (draft.type == MovementType.TRANSFER) draft.toWalletId else ""
+                            )
+                        )
+                        _stateFlow.update { it.copy(isLoading = false, movementDraft = null) }
+                        // "Moved to BDO" for a transfer, "Saved to Cash" otherwise
+                        val message = if (draft.type == MovementType.TRANSFER) {
+                            context.getString(R.string.wallet_snackbar_transfer_saved, current.wallets.find { it.docId == draft.toWalletId }?.name.orEmpty())
+                        } else {
+                            context.getString(R.string.wallet_snackbar_movement_saved, event.wallet.name)
+                        }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = message)))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is WalletScreenEvents.OnDeleteMovement -> {
+                if (_stateFlow.value.isLoading) return
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        walletRepository.deleteMovement(event.movement)
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.wallet_snackbar_movement_deleted))))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
                 }
             }
 
@@ -193,6 +294,29 @@ class WalletViewModel @Inject constructor(
                             hasTransactionsError = false,
                             isTransactionsLoading = false,
                             isLoadingMoreTransactions = false
+                        )
+                    }
+                }
+            }.collect()
+    }
+
+    private suspend fun collectWalletMovements(walletId: String, isLoadMore: Boolean) {
+        walletRepository.getWalletMovements(walletId, movementsLimit).asResult()
+            .onEach { res ->
+                when (res) {
+                    ResultState.Completed -> _stateFlow.update { it.copy(isMovementsLoading = false, isLoadingMoreMovements = false) }
+                    is ResultState.Error -> {
+                        _stateFlow.update { it.copy(isMovementsLoading = false, isLoadingMoreMovements = false, hasMovementsError = true) }
+                        onError(res.exception)
+                    }
+                    ResultState.Loading -> if (!isLoadMore) _stateFlow.update { it.copy(isMovementsLoading = true, hasMovementsError = false) }
+                    is ResultState.Success -> _stateFlow.update {
+                        it.copy(
+                            walletMovements = res.data,
+                            hasMoreMovements = res.data.size.toLong() == movementsLimit,
+                            hasMovementsError = false,
+                            isMovementsLoading = false,
+                            isLoadingMoreMovements = false
                         )
                     }
                 }

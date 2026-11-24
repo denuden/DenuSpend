@@ -63,13 +63,14 @@ fun MonthCard(
         spent > 0 -> 1f
         else -> 0f
     }
-    val onContainer = MaterialTheme.colorScheme.onTertiaryContainer
+    // Neutral card so the month reads calmer than the purple Today card above it. The bar keeps the mauve tertiary.
+    val onContainer = MaterialTheme.colorScheme.onSurface
 
     Card(
         onClick = onClick,
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = onContainer,
         ),
         modifier = modifier.fillMaxWidth()
