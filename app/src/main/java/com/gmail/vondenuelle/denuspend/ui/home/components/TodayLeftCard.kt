@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
+import com.gmail.vondenuelle.denuspend.utils.withStyledParts
 
 // Home's main answer: today's allowance minus today's spending. Tapping it opens the Add tab.
 @Composable
@@ -93,15 +96,15 @@ fun TodayLeftCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 10.dp)
             )
+            val spentText = "₱${CurrencyUtils.formatCents(spent)}"
+            val allowanceText = "₱${CurrencyUtils.formatCents(allowance)}"
             Text(
                 text = when {
-                    isLoading -> stringResource(R.string.lbl_loading)
-                    allowance == 0L && spent == 0L -> stringResource(R.string.home_lbl_no_allowance_today)
-                    else -> stringResource(
-                        R.string.home_lbl_spent_of_allowance,
-                        "₱${CurrencyUtils.formatCents(spent)}",
-                        "₱${CurrencyUtils.formatCents(allowance)}"
-                    )
+                    isLoading -> AnnotatedString(stringResource(R.string.lbl_loading))
+                    allowance == 0L && spent == 0L -> AnnotatedString(stringResource(R.string.home_lbl_no_allowance_today))
+                    // Amounts bold so they stand out from the words, same as Add's "Today by category"
+                    else -> stringResource(R.string.home_lbl_spent_of_allowance, spentText, allowanceText)
+                        .withStyledParts(listOf(spentText, allowanceText), SpanStyle(fontWeight = FontWeight.Bold))
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,

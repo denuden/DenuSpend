@@ -55,10 +55,10 @@ fun TodayIncomeAndExpensesSection(
             Box(contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(
                     progress = { progress },
-                    strokeWidth = 6.dp,
+                    strokeWidth = 5.dp,
                     color = ringColor,
                     trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    modifier = Modifier.size(64.dp)
+                    modifier = Modifier.size(56.dp)
                 )
                 Text(
                     "${(progress * 100).roundToInt()}%",
@@ -68,7 +68,7 @@ fun TodayIncomeAndExpensesSection(
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -83,19 +83,19 @@ fun TodayIncomeAndExpensesSection(
                     fontWeight = FontWeight.ExtraBold,
                     modifier = Modifier.padding(top = 2.dp)
                 )
-                Row(modifier = Modifier.padding(top = 2.dp)) {
-                    Text(
-                        stringResource(R.string.add_lbl_of_total, totalBudget) + " · ",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        remaining,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isOverspent) MaterialTheme.colorScheme.error else colorResource(R.color.verified_green_text)
-                    )
-                }
+                Text(
+                    stringResource(R.string.add_lbl_of_total, totalBudget),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+                // Own line, so a long "left" amount doesn't get squeezed into a thin column next to the allowance
+                Text(
+                    remaining,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isOverspent) MaterialTheme.colorScheme.error else colorResource(R.color.verified_green_text)
+                )
             }
         }
     }

@@ -41,7 +41,9 @@ class MainActivity : ComponentActivity() {
             mainViewModel.session.value == SessionState.Loading
         }
         super.onCreate(savedInstanceState)
-        handleIntent(intent)
+        // Only on a fresh start. A rotation recreates the Activity with the same intent, which would re-open
+        // an email link whose one-time code was already used ("Verification failed").
+        if (savedInstanceState == null) handleIntent(intent)
         setContent {
             DenuSpendTheme {
                 Surface(

@@ -26,7 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.R
@@ -39,7 +42,7 @@ import java.util.Locale
 
 // This month's spending vs this month's allowance, from the monthly doc. Tapping it opens the Budget tab.
 // The month's allowance is only the daily allowances added so far (there's no monthly plan), so what's left is shown as
-// "unspent allowance" plus how long it lasts if only that is spent.
+// "accumulated allowance" plus how long it lasts if only that is spent. When over, the red numbers carry the amount.
 @Composable
 fun MonthCard(
     modifier: Modifier = Modifier,
@@ -97,29 +100,32 @@ fun MonthCard(
                 Icon(Icons.Filled.ChevronRight, contentDescription = null)
             }
 
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            Text(
+                stringResource(if (allowance > 0) R.string.home_lbl_month_spent_of_caption else R.string.home_lbl_month_spent_caption),
+                style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(top = 10.dp)
-            ) {
-                Text(
-                    if (isLoading) "—" else "₱${CurrencyUtils.formatCents(spent)}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Medium,
-                )
-                if (!isLoading) {
-                    Text(
+            )
+            // "₱spent / ₱allowance" in one Text: the no-break space keeps "/ ₱allowance" together,
+            // so long amounts wrap as a whole second line instead of squeezing into a column
+            val smallStyle = MaterialTheme.typography.titleMedium
+            Text(
+                if (isLoading) {
+                    buildAnnotatedString { append("—") }
+                } else {
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(color = if (isOver) MaterialTheme.colorScheme.error else onContainer)) {
+                            append("₱${CurrencyUtils.formatCents(spent)}")
+                        }
                         if (allowance > 0) {
-                            stringResource(R.string.home_lbl_month_spent_of, "₱${CurrencyUtils.formatCents(allowance)}")
-                        } else {
-                            stringResource(R.string.home_lbl_month_spent)
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 3.dp)
-                    )
-                }
-            }
+                            withStyle(SpanStyle(fontSize = smallStyle.fontSize, fontWeight = FontWeight.Normal)) {
+                                append(" / ₱${CurrencyUtils.formatCents(allowance)}")
+                            }
+                        }
+                    }
+                },
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium,
+            )
 
             LinearProgressIndicator(
                 progress = { if (isLoading) 0f else progress },
@@ -141,7 +147,7 @@ fun MonthCard(
                     style = MaterialTheme.typography.bodySmall
                 )
                 isOver -> Text(
-                    stringResource(R.string.home_lbl_month_overspent, "₱${CurrencyUtils.formatCents(spent - allowance)}"),
+                    stringResource(R.string.home_lbl_month_overspent),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
@@ -149,7 +155,7 @@ fun MonthCard(
                 else -> {
                     val left = allowance - spent
                     Text(
-                        stringResource(R.string.home_lbl_month_unspent, "₱${CurrencyUtils.formatCents(left)}"),
+                        stringResource(R.string.home_lbl_month_accumulated, "₱${CurrencyUtils.formatCents(left)}"),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = colorResource(R.color.verified_green_text)

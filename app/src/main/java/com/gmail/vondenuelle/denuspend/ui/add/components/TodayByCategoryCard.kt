@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
+import com.gmail.vondenuelle.denuspend.utils.withStyledParts
 
 private data class CategoryToday(val name: String, val icon: ImageVector, val color: Color, val allowance: Long, val spent: Long)
 
@@ -107,15 +109,16 @@ private fun CategoryRow(category: CategoryToday) {
                     color = if (isOver) MaterialTheme.colorScheme.error else colorResource(R.color.verified_green_text)
                 )
             }
+            val spent = "₱${CurrencyUtils.formatCents(category.spent)}"
+            val allowance = "₱${CurrencyUtils.formatCents(category.allowance)}"
+            // Amounts darker and semi-bold so they stand out from the grey words
+            val amountStyle = SpanStyle(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
             Text(
                 if (category.allowance == 0L) {
-                    stringResource(R.string.add_lbl_spent_no_allowance, "₱${CurrencyUtils.formatCents(category.spent)}")
+                    stringResource(R.string.add_lbl_spent_no_allowance, spent).withStyledParts(listOf(spent), amountStyle)
                 } else {
-                    stringResource(
-                        R.string.add_lbl_spent_of_allowance,
-                        "₱${CurrencyUtils.formatCents(category.spent)}",
-                        "₱${CurrencyUtils.formatCents(category.allowance)}"
-                    )
+                    stringResource(R.string.add_lbl_spent_of_allowance, spent, allowance)
+                        .withStyledParts(listOf(spent, allowance), amountStyle)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
