@@ -83,16 +83,22 @@ fun CardStatementSummaries(
                 CircularProgressIndicator()
             }
             else -> {
-                CurrentStatementCard(cycle = current, today = today, totals = totals, onClick = { onOpenStatement(0) })
-                // Everything in the listener is after the previous close, so it's exactly what moved the balance since then
-                val statementBalance = CardStatementHelper.statementBalance(card, totals)
-                PreviousStatementCard(
-                    cycle = previous,
-                    statementBalance = statementBalance,
-                    paidSince = totals.payments,
-                    isFromEnteredAmount = CardStatementHelper.toLocalDate(card.createdAt).isAfter(previous.end),
-                    onClick = { onOpenStatement(1) }
-                )
+                // Added during the open cycle: what was owed then is part of this cycle, and the bill before it was never tracked
+                val addedThisCycle = CardStatementHelper.toLocalDate(card.createdAt).isAfter(previous.end)
+                // The listener starts at the open cycle's first day, so it holds everything since the card was added
+                val owedWhenAdded = if (addedThisCycle) CardStatementHelper.owedWhenAdded(card, totals) else 0L
+                CurrentStatementCard(cycle = current, today = today, totals = totals, owedWhenAdded = owedWhenAdded, onClick = { onOpenStatement(0) })
+                if (addedThisCycle) {
+                    NotTrackedStatementCard(cycle = previous, addedOn = CardStatementHelper.toLocalDate(card.createdAt))
+                } else {
+                    // Everything in the listener is after the previous close, so it's exactly what moved the balance since then
+                    PreviousStatementCard(
+                        cycle = previous,
+                        statementBalance = CardStatementHelper.statementBalance(card, totals),
+                        paidSince = totals.payments,
+                        onClick = { onOpenStatement(1) }
+                    )
+                }
                 if (installments.isNotEmpty()) {
                     InstallmentsToComeCard(installments = installments, hasLimit = card.creditLimit > 0, onClick = onOpenRecurring)
                 }
@@ -106,6 +112,7 @@ private fun CurrentStatementCard(
     cycle: CardStatementHelper.Cycle,
     today: LocalDate,
     totals: CardStatementHelper.Totals,
+    owedWhenAdded: Long,
     onClick: () -> Unit,
 ) {
     val daysLeft = ChronoUnit.DAYS.between(today, cycle.end).toInt()
@@ -140,7 +147,7 @@ private fun CurrentStatementCard(
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                formatBalance(totals.charges),
+                formatBalance(totals.charges + owedWhenAdded),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 6.dp)
@@ -148,6 +155,45 @@ private fun CurrentStatementCard(
             Text(
                 pluralStringResource(R.plurals.wallet_lbl_statement_charge_count, totals.chargeCount, totals.chargeCount),
                 style = MaterialTheme.typography.bodySmall,
+            )
+            if (owedWhenAdded > 0) {
+                Text(
+                    stringResource(R.string.wallet_lbl_includes_owed_when_added, formatBalance(owedWhenAdded)),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    }
+}
+
+// The bill that closed before the card was added: nothing to show or pay here, since the amount owed entered is in the open cycle
+@Composable
+private fun NotTrackedStatementCard(cycle: CardStatementHelper.Cycle, addedOn: LocalDate) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                stringResource(R.string.wallet_lbl_statement_previous_tag),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.shapes.small)
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            )
+            Text(
+                stringResource(R.string.wallet_lbl_statement_name, CardStatementHelper.formatDay(cycle.end)),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)
+            )
+            Text(
+                stringResource(R.string.wallet_lbl_statement_not_tracked, CardStatementHelper.formatDay(addedOn)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -159,7 +205,6 @@ private fun PreviousStatementCard(
     cycle: CardStatementHelper.Cycle,
     statementBalance: Long,
     paidSince: Long,
-    isFromEnteredAmount: Boolean,
     onClick: () -> Unit,
 ) {
     val stillUnpaid = (statementBalance - paidSince).coerceAtLeast(0L)
@@ -195,14 +240,6 @@ private fun PreviousStatementCard(
                 formatBalance(stillUnpaid),
                 valueColor = if (stillUnpaid > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
             )
-            if (isFromEnteredAmount) {
-                Text(
-                    stringResource(R.string.wallet_lbl_statement_from_entered),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-            }
         }
     }
 }

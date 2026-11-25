@@ -29,6 +29,8 @@ import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.time.YearMonth
@@ -83,36 +85,58 @@ class BudgetRepository @Inject constructor(
     }
 
     /**
-     * Insights for one [category]. Up to 31 days it reads the daily docs; longer ranges read the monthly docs and
+     * Insights for one [category]. Up to 31 days it reads the daily docs; longer ranges and This year read the monthly docs and
      * start on the 1st of the first month (a monthly doc holds the whole month). Either way the previous period
      * (same number of days or months) comes from the same query, so it's one listener.
+     * Neither starts before tracking did, so empty days before the first entry don't lower the averages (see [trackedFrom]).
      */
     fun getBudgetInsights(
         category: String,
         filter: BudgetChartFilter,
         customStartMillis: Long? = null,
         customEndMillis: Long? = null,
-    ): Flow<BudgetInsightsModel> {
+    ): Flow<BudgetInsightsModel> = flow {
         val (firstDay, lastDay) = rangeFor(filter, customStartMillis, customEndMillis)
         val dayCount = ChronoUnit.DAYS.between(firstDay, lastDay).toInt() + 1
+        val setupDay = walletService.getTrackingStart()?.toLocalDate()
 
-        val insights = if (dayCount <= BudgetInsightsModel.MAX_DAILY_RANGE) {
+        // The filter picks days or months once, here: This year is always months (one bar in January), Custom goes by its length
+        val byDay = filter != THIS_YEAR && dayCount <= BudgetInsightsModel.MAX_DAILY_RANGE
+        val insights = if (byDay) {
             val previousStart = firstDay.minusDays(dayCount.toLong())
             budgetService.getDailyHistoryInRange(requestFor(previousStart, lastDay)).map { docs ->
-                val (previous, current) = docs.partition { it.date.toLocalDate().isBefore(firstDay) }
-                buildBudgetInsights(category, firstDay, lastDay, current, previous)
+                val tracked = trackedFrom(setupDay, docs.minOfOrNull { it.date.toLocalDate() }, lastDay, byMonth = false)
+                val start = maxOf(firstDay, tracked)
+                val (previous, current) = docs.partition { it.date.toLocalDate().isBefore(start) }
+                buildBudgetInsights(category, start, lastDay, current, previous, previousStart = minOf(maxOf(previousStart, tracked), start))
             }
         } else {
             val monthStart = firstDay.withDayOfMonth(1)
             val monthCount = ChronoUnit.MONTHS.between(YearMonth.from(monthStart), YearMonth.from(lastDay)) + 1
             val previousStart = monthStart.minusMonths(monthCount)
-            val previousDayCount = ChronoUnit.DAYS.between(previousStart, monthStart).toInt()
             budgetService.getMonthlyHistoryInRange(requestFor(previousStart, lastDay)).map { docs ->
-                val (previous, current) = docs.partition { it.month.toLocalDate().isBefore(monthStart) }
-                buildBudgetInsightsFromMonths(category, monthStart, lastDay, current, previous, previousDayCount)
+                val tracked = trackedFrom(setupDay, docs.minOfOrNull { it.month.toLocalDate() }, lastDay, byMonth = true)
+                val start = maxOf(monthStart, tracked)
+                // Months are whole, so the split is by month; the "before" days start where tracking did
+                val (previous, current) = docs.partition { YearMonth.from(it.month.toLocalDate()).isBefore(YearMonth.from(start)) }
+                val beforeStart = minOf(maxOf(previousStart, tracked), monthStart)
+                val beforeDays = ChronoUnit.DAYS.between(beforeStart, monthStart).toInt()
+                buildBudgetInsightsFromMonths(category, start, lastDay, current, previous, beforeStart, beforeDays)
             }
         }
-        return insights.flowOn(dispatcher)
+        emitAll(insights)
+    }.flowOn(dispatcher)
+
+    /**
+     * The first tracked day: the wallet setup day, unless a loaded doc is older (accounts that tracked before wallets existed),
+     * then that doc's day. Monthly docs are dated the 1st, so they only count when they're from an earlier month.
+     * An unknown setup day (offline) or one after the range ends (an old custom range) leaves the range as it is.
+     */
+    private fun trackedFrom(setupDay: LocalDate?, oldestDoc: LocalDate?, lastDay: LocalDate, byMonth: Boolean): LocalDate {
+        if (setupDay == null || setupDay.isAfter(lastDay)) return LocalDate.MIN
+        if (oldestDoc == null) return setupDay
+        val docIsOlder = if (byMonth) YearMonth.from(oldestDoc).isBefore(YearMonth.from(setupDay)) else oldestDoc.isBefore(setupDay)
+        return if (docIsOlder) oldestDoc else setupDay
     }
 
     /** Drill-in on a long range: the daily docs of one [month], up to [lastDay] (the range's end), for its daily bars. */

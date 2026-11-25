@@ -131,7 +131,9 @@ private fun insightLines(insights: BudgetInsightsModel): List<InsightLine> {
     if (insights.isLongRange) {
         val monthsWithDays = insights.months.filter { it.dayCount > 0 }
         val heaviest = monthsWithDays.maxByOrNull { it.avgPerDay }
-        val usual = if (monthsWithDays.isNotEmpty()) monthsWithDays.sumOf { it.avgPerDay } / monthsWithDays.size else 0L
+        // "Usual" is the other months' average, so the heaviest month isn't compared with itself
+        val others = monthsWithDays.filter { it !== heaviest }
+        val usual = if (others.isNotEmpty()) others.sumOf { it.avgPerDay } / others.size else 0L
         if (monthsWithDays.size >= 2 && heaviest != null && usual > 0) {
             val percent = ((heaviest.avgPerDay - usual) * 100 / usual).toInt()
             if (percent > 0) {

@@ -52,6 +52,8 @@ fun WalletPickerRow(
     showNoWalletOption: Boolean = true, // false for a transfer's "Move to", which always needs a wallet
 ) {
     val isClosedWallet = hasLoadedWallets && selectedId.isNotEmpty() && wallets.none { it.docId == selectedId }
+    // Without "Don't deduct", "" means nothing is picked yet (a transfer's "Move to"), so no card fades and none looks disabled
+    val hasPick = showNoWalletOption || selectedId.isNotEmpty()
 
     // Edge-to-edge row: the content padding keeps the first card in line with the form, and cards scroll under the screen edge
     LazyRow(
@@ -81,7 +83,7 @@ fun WalletPickerRow(
             }
         }
         items(wallets, key = { it.docId }) { wallet ->
-            MiniWalletCard(wallet = wallet, isSelected = wallet.docId == selectedId, onClick = { onSelected(wallet.docId) })
+            MiniWalletCard(wallet = wallet, isSelected = wallet.docId == selectedId, isFaded = hasPick && wallet.docId != selectedId, onClick = { onSelected(wallet.docId) })
         }
         if (showNoWalletOption) {
             item {
@@ -97,9 +99,9 @@ fun WalletPickerRow(
 }
 
 // Same colors and icon as the wallet's real card, so it's recognizable at a glance.
-// A border alone is hard to see on dark cards, so the picked one also gets a check and the others fade.
+// A border alone is hard to see on dark cards, so the picked one also gets a check and the others fade (only once one is picked).
 @Composable
-private fun MiniWalletCard(wallet: WalletModel, isSelected: Boolean, onClick: () -> Unit) {
+private fun MiniWalletCard(wallet: WalletModel, isSelected: Boolean, isFaded: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
@@ -109,7 +111,7 @@ private fun MiniWalletCard(wallet: WalletModel, isSelected: Boolean, onClick: ()
         modifier = Modifier
             .width(140.dp)
             .height(80.dp)
-            .alpha(if (isSelected) 1f else 0.6f)
+            .alpha(if (isFaded) 0.6f else 1f)
     ) {
         Column(
             verticalArrangement = Arrangement.SpaceBetween,

@@ -25,12 +25,15 @@ data class BudgetInsightsModel(
     // Monday to Sunday
     val weekdays: List<InsightWeekday> = emptyList(),
     val months: List<InsightMonth> = emptyList(),
-    // The period right before startDate (same number of days, or of months on long ranges), for "Compared to before"
+    // The period right before startDate (same number of days, or of months on long ranges), for "Compared to before".
+    // It never starts before tracking did, so days before the first entry don't pull the average down (0 days = nothing to compare).
+    val previousStartDate: LocalDate = LocalDate.now(),
     val previousSpent: Long = 0L,
     val previousDayCount: Int = 0,
+    // Built from monthly docs: the chart shows months and "over" is counted per month. Set by the builder that read the docs,
+    // not worked out from dayCount, since a range that starts on the setup day can be 31 days or fewer and still be monthly.
+    val isLongRange: Boolean = false,
 ) {
-    // Over 31 days the chart shows months, and "over" is counted per month
-    val isLongRange: Boolean get() = dayCount > MAX_DAILY_RANGE
     val avgPerDay: Long get() = if (dayCount > 0) spent / dayCount else 0L
     val avgPerTransaction: Long get() = if (transactionCount > 0) spent / transactionCount else 0L
     val previousAvgPerDay: Long get() = if (previousDayCount > 0) previousSpent / previousDayCount else 0L
@@ -82,7 +85,7 @@ data class InsightMonth(
 
 /**
  * Up to 31 days: adds up the daily docs of [start]..[end] for one [category].
- * [previousDocs] are the docs of the same number of days right before [start].
+ * [previousDocs] are the docs of [previousStart]..the day before [start].
  */
 fun buildBudgetInsights(
     category: String,
@@ -90,6 +93,7 @@ fun buildBudgetInsights(
     end: LocalDate,
     docs: List<DailyHistoryModel>,
     previousDocs: List<DailyHistoryModel>,
+    previousStart: LocalDate = start.minusDays(ChronoUnit.DAYS.between(start, end) + 1),
 ): BudgetInsightsModel {
     val docsByDate = docs.associateBy { it.date.toLocalDate() }
 
@@ -137,14 +141,16 @@ fun buildBudgetInsights(
         days = days,
         weekdays = weekdays,
         months = months,
+        previousStartDate = previousStart,
         previousSpent = previousDocs.sumOf { it.expenseByCategory[category] ?: 0L },
-        previousDayCount = days.size,
+        previousDayCount = ChronoUnit.DAYS.between(previousStart, start).toInt().coerceAtLeast(0),
     )
 }
 
 /**
- * Over 31 days: adds up the monthly docs of [start]'s month..[end]'s month. [start] must be the 1st of a month,
- * because a monthly doc holds the whole month. [previousDocs] are the same number of months right before.
+ * Over 31 days: adds up the monthly docs of [start]'s month..[end]'s month. [start] is the 1st of a month (a monthly doc holds
+ * the whole month), or the day tracking started when that's later, so the per-day averages only count tracked days.
+ * [previousDocs] are the months from [previousStart] to the one before [start].
  */
 fun buildBudgetInsightsFromMonths(
     category: String,
@@ -152,6 +158,7 @@ fun buildBudgetInsightsFromMonths(
     end: LocalDate,
     docs: List<MonthlyHistoryModel>,
     previousDocs: List<MonthlyHistoryModel>,
+    previousStart: LocalDate,
     previousDayCount: Int,
 ): BudgetInsightsModel {
     val docsByMonth = docs.associateBy { YearMonth.from(it.month.toLocalDate()) }
@@ -162,7 +169,7 @@ fun buildBudgetInsightsFromMonths(
             val doc = docsByMonth[month]
             InsightMonth(
                 month = month,
-                firstDay = month.atDay(1),
+                firstDay = maxOf(month.atDay(1), start),
                 lastDay = minOf(month.atEndOfMonth(), end),
                 spent = doc?.expenseByCategory?.get(category) ?: 0L,
                 allowance = doc?.allowanceByCategory?.get(category) ?: 0L,
@@ -190,8 +197,10 @@ fun buildBudgetInsightsFromMonths(
         allCategoriesSpent = docs.sumOf { doc -> doc.expenseByCategory.values.sum() },
         weekdays = weekdays,
         months = months,
+        previousStartDate = previousStart,
         previousSpent = previousDocs.sumOf { it.expenseByCategory[category] ?: 0L },
         previousDayCount = previousDayCount,
+        isLongRange = true,
     )
 }
 

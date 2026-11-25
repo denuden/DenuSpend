@@ -34,13 +34,16 @@ fun InsightsCompareCard(
     val previous = insights.previousAvgPerDay
     val maxAvg = maxOf(current, previous).coerceAtLeast(1L)
 
-    val previousStart = if (insights.isLongRange) {
-        insights.startDate.minusMonths(insights.months.size.toLong())
-    } else {
-        insights.startDate.minusDays(insights.dayCount.toLong())
-    }
+    // The year shows when the period before isn't all in this range's year ("Oct 1, 2025 – May 31")
+    val previousStart = insights.previousStartDate
+    val previousEnd = insights.startDate.minusDays(1)
+    val startFormatter = DateTimeFormatter.ofPattern(if (previousStart.year != insights.startDate.year) "MMM d, yyyy" else "MMM d", Locale.getDefault())
     val dateFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
-    val previousDates = "${previousStart.format(dateFormatter)} – ${insights.startDate.minusDays(1).format(dateFormatter)}"
+    val previousDates = if (insights.previousDayCount > 0) {
+        stringResource(R.string.insights_compare_sub, "${previousStart.format(startFormatter)} – ${previousEnd.format(dateFormatter)}")
+    } else {
+        stringResource(R.string.insights_compare_sub_untracked)
+    }
 
     // Under 1% either way counts as the same
     val percent = if (previous > 0) ((current - previous) * 100 / previous).toInt() else null
@@ -54,7 +57,7 @@ fun InsightsCompareCard(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    stringResource(R.string.insights_compare_sub, previousDates),
+                    previousDates,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

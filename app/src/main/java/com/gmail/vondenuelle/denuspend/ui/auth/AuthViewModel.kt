@@ -66,7 +66,9 @@ class AuthViewModel @Inject constructor(
                             // Creates the users/{uid} doc if it's missing (older accounts) and refreshes name/email
                             profileRepository.syncUserDoc()
                             _stateFlow.update { it.copy(userModel = user) }
-                            sendEvent(OneTimeEvents.ShowToast(context.getString(R.string.login_toast_welcome, user.name.ifBlank { user.email })))
+                            // No display name comes back as "---" (orDefault), so fall back to the email then
+                            val name = user.name.takeUnless { it.isBlank() || it == "---" } ?: user.email
+                            sendEvent(OneTimeEvents.ShowToast(context.getString(R.string.login_toast_welcome, name)))
                             sendEvent(OneTimeEvents.OnLoginOrRegisterCompleted)
                         }else{
                             sendEvent(OneTimeEvents.ShowError(context.getString(R.string.error_user_not_existing)))

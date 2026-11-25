@@ -159,6 +159,7 @@ private fun WalletMovementSheetContent(
                     selectedId = draft.fromWalletId,
                     onSelected = { onDraftChange(draft.copy(fromWalletId = it)) },
                 )
+                otherWallets.find { it.docId == draft.fromWalletId }?.let { from -> OtherWalletAfter(from, from.balance - draft.amount) }
             }
 
             if (draft.type == MovementType.TRANSFER) {
@@ -170,11 +171,13 @@ private fun WalletMovementSheetContent(
                     onSelected = { onDraftChange(draft.copy(toWalletId = it)) },
                     showNoWalletOption = false,
                 )
+                otherWallets.find { it.docId == draft.toWalletId }?.let { to -> OtherWalletAfter(to, to.balance + draft.amount) }
             }
 
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Spacer(modifier = Modifier.height(16.dp))
-                FieldLabel(stringResource(R.string.wallet_lbl_movement_title))
+                // Transfers and card payments start with their title filled in, so "What was it?" only fits the rest
+                FieldLabel(stringResource(if (presets.isEmpty() || draft.presetKey == WalletMovementPresets.PRESET_CARD_PAYMENT) R.string.wallet_lbl_movement_title_plain else R.string.wallet_lbl_movement_title))
                 OutlinedTextField(
                     value = draft.title,
                     // A typed title is the user's own, so it no longer counts as the preset (it gets the generic icon)
@@ -256,4 +259,15 @@ private fun WalletMovementSheetPreview() {
             )
         }
     }
+}
+
+// The other side of a transfer or a card payment: how its balance moves, like the line under the amount
+@Composable
+private fun OtherWalletAfter(other: WalletModel, after: Long) {
+    Text(
+        stringResource(R.string.wallet_lbl_other_wallet_after, other.name, formatBalance(other.balance), formatBalance(after)),
+        style = MaterialTheme.typography.labelLarge,
+        color = if (after < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp)
+    )
 }

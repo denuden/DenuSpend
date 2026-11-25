@@ -6,6 +6,7 @@
 - **Keyboard Done on the last field submits** (`onImeAction` on Login/Register password and the Forgot password email). It goes through the same validation as the button.
 - **Success toasts use the display name** ("Welcome back, <name>" / "Account created. Welcome, <name>"), not the raw email. ViewModel texts come from `strings.xml` via `@ApplicationContext`, which is only used for reading strings.
 - **Register re-reads the profile at the end.** `AuthRepository.register` caches the user in DataStore before the display name exists, which showed "Welcome, ---" (the `orDefault()` placeholder). `RegisterUseCase` sets the name, then returns `profileRepository.getUserProfile()`, which saves the name to DataStore.
+- **Login toast with no display name** (1.6.1): the name comes back as "---" (`orDefault()`), not blank, so `AuthViewModel` treats "---" as missing and uses the email ("Welcome back, ---" before).
 - **Login and register keep `users/{uid}` in Firestore up to date** through `ProfileRepository.syncUserDoc()`. It isn't awaited, so it never blocks login. Details are in `profile.md`.
 - **Server errors stay in the dialog.** `onError(e)` → `OneTimeEvents.ShowError` → `ErrorDialog`. Field errors are for input problems only.
 - **Emails are trimmed in `AuthRepository`** (`login`, `register`, `sendPasswordReset`), not in the UI. Validation also trims, so autocomplete's trailing space passes both.

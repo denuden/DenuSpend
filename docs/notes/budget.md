@@ -20,3 +20,4 @@
 - **Listener:** `billsJob` (dashboard instance only), started with the summary on ON_START, restarted on a filter change, no ON_STOP (tab rule). **Fails quietly:** an error hides the card with no dialog, so a missing index or rules problem never blocks the summary.
 - **Cost:** 1 read per charge in the range (a few a month), plus the shared listeners.
 - **Known/accepted:** after a filter change the previous range's bills show until the new range emits; a due charge not yet auto-charged can show a past "Next up" date (rare, the charge runs on every open).
+- **"stopped" (1.6.1):** a subscription whose schedule was deleted (paused, e.g. Netflix deleted and added again) has no schedule doc left, so its row says "stopped" next to the card name, instead of looking like a duplicate of the new one.
