@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.ui.budget
 
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetBillsModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetInsightsModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
@@ -14,6 +15,8 @@ data class BudgetScreenState(
     val customStartMillis : Long? = null,
     val customEndMillis : Long? = null,
     val budgetTotalSummaryModel: BudgetTotalSummaryModel = BudgetTotalSummaryModel(),
+    // "Bills & subscriptions" card (dashboard only), same range as the summary
+    val budgetBills : BudgetBillsModel = BudgetBillsModel(),
     // Insights screen (its own ViewModel instance, so filter/custom range above are its own too). Empty = dashboard.
     val insightsCategory : String = "",
     val budgetInsights : BudgetInsightsModel = BudgetInsightsModel(),

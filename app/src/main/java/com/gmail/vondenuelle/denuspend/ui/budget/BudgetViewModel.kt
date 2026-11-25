@@ -7,8 +7,10 @@ import com.gmail.vondenuelle.denuspend.data.repositories.BudgetRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.TransactionRepository
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetBillsModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
+import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.network.ResultState
 import com.gmail.vondenuelle.denuspend.utils.network.asResult
@@ -46,6 +48,13 @@ class BudgetViewModel @Inject constructor(
         getBudgetSummaryJob = null
     }
 
+    private var billsJob : Job? = null
+
+    fun stopBillsListener() {
+        billsJob?.cancel()
+        billsJob = null
+    }
+
     private var insightsJob : Job? = null
 
     fun stopInsightsListener() {
@@ -80,6 +89,9 @@ class BudgetViewModel @Inject constructor(
             is BudgetScreenEvents.OnNavigateToBudgetTransactionScreen -> {
                 sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetInsightsScreenNavigation(event.category)))
             }
+            is BudgetScreenEvents.OnOpenBillCard -> {
+                sendEvent(OneTimeEvents.OnNavigate(WalletScreens.WalletRecurringNavigation(event.walletId)))
+            }
             is BudgetScreenEvents.OnChangeFilter -> {
                 // Custom waits for the user to pick a range in the dialog first
                 if (event.filter == BudgetChartFilter.CUSTOM) {
@@ -91,6 +103,7 @@ class BudgetViewModel @Inject constructor(
             }
             BudgetScreenEvents.OnGetBudgetSummary -> {
                 // Already live, so nothing to restart. isActive also covers a listener that ended with an error.
+                if (billsJob?.isActive != true) getBudgetBills()
                 if (getBudgetSummaryJob?.isActive == true) return
                 getBudgetSummary()
             }
@@ -157,11 +170,29 @@ class BudgetViewModel @Inject constructor(
         }
     }
 
+    // Its own listener that fails quietly: on an error (e.g. a missing index) the card just stays hidden, no dialog,
+    // and the summary keeps working
+    private fun getBudgetBills() {
+        val current = _stateFlow.value
+        billsJob = viewModelScope.launch {
+            budgetRepository.getBudgetBills(current.filter, current.customStartMillis, current.customEndMillis).asResult()
+                .onEach { res ->
+                    when (res) {
+                        is ResultState.Error -> _stateFlow.update { it.copy(budgetBills = BudgetBillsModel()) }
+                        is ResultState.Success -> _stateFlow.update { it.copy(budgetBills = res.data) }
+                        else -> Unit
+                    }
+                }.collect()
+        }
+    }
+
     // The dashboard and Insights each get their own ViewModel instance, so a filter change restarts this instance's listener
     private fun restartForFilter() {
         if (_stateFlow.value.insightsCategory.isEmpty()) {
             stopGetBudgetSummaryListener()
             getBudgetSummary()
+            stopBillsListener()
+            getBudgetBills()
         } else {
             // A new range closes an opened month
             stopInsightsMonthListener()

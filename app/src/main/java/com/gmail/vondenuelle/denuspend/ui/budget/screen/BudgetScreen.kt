@@ -43,6 +43,7 @@ import com.gmail.vondenuelle.denuspend.ui.add.components.CategoryDropdownButtonM
 import com.gmail.vondenuelle.denuspend.ui.budget.BudgetScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.budget.BudgetScreenState
 import com.gmail.vondenuelle.denuspend.ui.budget.BudgetViewModel
+import com.gmail.vondenuelle.denuspend.ui.budget.components.BudgetBillsCard
 import com.gmail.vondenuelle.denuspend.ui.budget.components.BudgetItem
 import com.gmail.vondenuelle.denuspend.ui.budget.components.section.ChartSection
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
@@ -208,6 +209,19 @@ fun BudgetScreenContent(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)
                 )
             }
+        }
+
+        // Only for someone with a card (or charges from a card that was closed since)
+        val bills = state.budgetBills
+        if (bills.hasCards || bills.rows.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            BudgetBillsCard(
+                bills = bills,
+                emptyText = stringResource(
+                    if (state.filter == BudgetChartFilter.THIS_MONTH) R.string.budget_lbl_bills_empty_month else R.string.budget_lbl_bills_empty
+                ),
+                onOpenCard = { onEvent(BudgetScreenEvents.OnOpenBillCard(it)) },
+            )
         }
         Spacer(modifier = Modifier.height(16.dp))
     }
