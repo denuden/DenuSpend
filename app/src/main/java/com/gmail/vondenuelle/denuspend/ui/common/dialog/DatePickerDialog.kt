@@ -12,11 +12,12 @@ import androidx.compose.runtime.Composable
 @Composable
 fun DatePickerDialogModal(
     selectableDates: SelectableDates = DatePickerDefaults.AllDates,
+    initialSelectedDateMillis: Long? = null, // UTC midnight of the day to open on (null = none picked)
     showDialog: Boolean,
     onDateSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val datePickerState = rememberDatePickerState(selectableDates = selectableDates)
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialSelectedDateMillis, selectableDates = selectableDates)
 
     if (showDialog) {
         DatePickerDialog(

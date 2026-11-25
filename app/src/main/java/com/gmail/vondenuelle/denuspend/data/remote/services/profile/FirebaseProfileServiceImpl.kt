@@ -23,6 +23,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.Firebase
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.USER_ID
 import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl.Companion.WALLETS
 import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl.Companion.WALLET_MOVEMENTS
+import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.FirebaseWalletServiceImpl.Companion.RECURRING_CHARGES
 import com.google.firebase.FirebaseException
 import com.google.firebase.Timestamp
 import com.google.firebase.FirebaseNetworkException
@@ -277,6 +278,10 @@ class FirebaseProfileServiceImpl @Inject constructor(
             .whereEqualTo(USER_ID, uid)
             .get().await()
         refs += walletMovements.documents.map { it.reference }
+        val recurringCharges = firebaseFireStore.collection(RECURRING_CHARGES)
+            .whereEqualTo(USER_ID, uid)
+            .get().await()
+        refs += recurringCharges.documents.map { it.reference }
         refs += firebaseFireStore.collection(USERS).document(uid)
         refs += firebaseFireStore.collection(ALLOWANCE_TEMPLATES_COLLECTION).document(uid)
 

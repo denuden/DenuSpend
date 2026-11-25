@@ -221,6 +221,7 @@ private fun topBarTitle(destination: NavDestination?, entry: NavBackStackEntry?,
         destination.hasRoute<MainScreens.WalletNavigation>() -> stringResource(R.string.main_title_wallet)
         destination.hasRoute<WalletScreens.WalletDetailsNavigation>() -> stringResource(R.string.main_title_wallet_details)
         destination.hasRoute<WalletScreens.WalletStatementNavigation>() -> stringResource(R.string.main_title_statement)
+        destination.hasRoute<WalletScreens.WalletRecurringNavigation>() -> stringResource(R.string.main_title_recurring)
         // A docId in the route args means the form is editing an existing transaction
         destination.hasRoute<AddScreens.AddIncomeScreenNavigation>() ->
             if (entry?.toRoute<AddScreens.AddIncomeScreenNavigation>()?.docId != null) stringResource(R.string.main_title_edit_income)

@@ -2,6 +2,11 @@ package com.gmail.vondenuelle.denuspend
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
+import com.gmail.vondenuelle.denuspend.utils.SnackBarController
+import com.gmail.vondenuelle.denuspend.utils.SnackbarEvent
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.filter
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.WalletRepository
@@ -29,6 +34,7 @@ sealed interface SessionState {
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
+    @ApplicationContext private val context: Context, // only for the auto-charge snackbar text
     private val authRepository: AuthRepository,
     private val walletRepository: WalletRepository,
 ) : ViewModel() {
@@ -43,6 +49,7 @@ class MainViewModel @Inject constructor(
     init {
         checkCurrentUser()
         observeSignOut()
+        chargeDueOnLogin()
     }
 
     // Called by the auth screens only after login/register fully finished (incl. saving the display name)
@@ -75,6 +82,28 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 // e.g. offline with an expired token. Firebase still has the user cached, so let them in.
                 if (authRepository.hasUser()) SessionState.LoggedIn else SessionState.LoggedOut
+            }
+        }
+    }
+
+    /**
+     * Card subscriptions and installments are charged when the app opens (each time the session becomes LoggedIn: a cold start or a login).
+     * It runs quietly: offline or a failure just leaves them for the next open. One snackbar names what was charged.
+     */
+    private fun chargeDueOnLogin() {
+        viewModelScope.launch {
+            _session.filter { it == SessionState.LoggedIn }.collect {
+                val charged = try {
+                    walletRepository.chargeDueRecurring()
+                } catch (e: Exception) {
+                    emptyList()
+                }
+                if (charged.isEmpty()) return@collect
+                val names = charged.joinToString(", ") { it.second }
+                val cards = charged.map { it.first }.distinct()
+                val message = if (cards.size == 1) context.getString(R.string.main_snackbar_recurring_charged, cards.first(), names)
+                else context.getString(R.string.main_snackbar_recurring_charged_many, names)
+                SnackBarController.sendEvent(SnackbarEvent(message = message))
             }
         }
     }

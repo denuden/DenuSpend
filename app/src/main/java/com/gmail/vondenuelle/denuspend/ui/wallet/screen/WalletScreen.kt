@@ -58,6 +58,7 @@ import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletCard
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletEditorSheet
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
+import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
@@ -94,8 +95,12 @@ fun WalletScreen(
 
     ComposableLifecycle { _, event ->
         when (event) {
-            Lifecycle.Event.ON_START -> viewModel.onEvent(WalletScreenEvents.OnGetWallets)
-            // No ON_STOP stop: this is a bottom-nav tab screen, so the listener keeps running and the data stays cached
+            Lifecycle.Event.ON_START -> {
+                viewModel.onEvent(WalletScreenEvents.OnGetWallets)
+                // Cards hold their installments to come against the limit, so their "available" needs these too
+                viewModel.onEvent(WalletScreenEvents.OnGetRecurringCharges)
+            }
+            // No ON_STOP stop: this is a bottom-nav tab screen, so the listeners keep running and the data stays cached
             else -> Unit
         }
     }
@@ -232,6 +237,7 @@ fun WalletScreenContent(
         items(state.wallets, key = { it.docId }) { wallet ->
             WalletCard(
                 wallet = wallet,
+                installmentsToCome = RecurringChargeHelper.installmentsToCome(state.recurringCharges, wallet.docId),
                 onClick = { onEvent(WalletScreenEvents.OnNavigateToWalletDetails(wallet.docId)) }
             )
         }

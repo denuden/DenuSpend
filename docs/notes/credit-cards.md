@@ -1,4 +1,4 @@
-# Credit cards and statements (how it works, 1.4.0)
+# Credit cards and statements (how it works, 1.4.0; subscriptions and installments 1.5.0)
 
 - **A credit card is a wallet type,** not a new collection. `wallets/{id}` gets `type` (`""` or `credit_card`), `creditLimit` (cents, 0 = none) and `statementDay` (1–31, required for a card). `type` is a String because Firestore maps a Kotlin `isX` Boolean to the field `x`. Computed `@get:Exclude`: `isCreditCard`, `owed`, `needsAttention`.
 - **Owed is stored as a negative balance,** so the existing expense/movement math works unchanged (an expense does `increment(-sum)`, so owed goes up). Going over the limit is allowed. `needsAttention` (the red "!") means a negative balance for a wallet, but over the limit for a card. TalkBack reads it as "Over the limit" on a card (`NegativeBadge(isCreditCard)`).
@@ -16,7 +16,9 @@
 - **Statement screen** (`WalletStatementNavigation(walletId, monthsBack)`): one cycle, like the bank's PDF. Sections: Purchases / Subscriptions / Installments / Other charges / Payments & credits, with empty ones hidden. Display only: edits still go through Add/History or the card's details. ‹ always reaches the latest closed statement, and older ones stop at the cycle tracking started in. `monthsBack` is `rememberSaveable`. The screen pops if the wallet stops being a valid card.
 - **Firestore:** no rule or index changes for 1.4.0 (owners can already update `wallets`).
 - **Known gaps:** staying on card details across midnight on statement day keeps the old cycle until the screen restarts. The Feb 28 clamp was checked in code only.
-- **Next (planned, not built):** PR 3 adds subscriptions and installments in one `recurring_charges` collection with `kind` (`PRESET_SUBSCRIPTION`/`PRESET_INSTALLMENT` are already grouped by the Statement screen), on its own screen behind a row on card details. PR 4 auto-charges on app open through `runTransaction` with fixed-id movements `{id}_{yyyyMMdd}`. The `wallet_movements` rule `update: if false` blocks a double charge. Planned rule:
+
+## Subscriptions and installments (1.5.0)
+- **One collection, `recurring_charges/{autoId}`** (`RecurringChargeModel`, `@Keep`): `userId`, `walletId`, `kind` (`subscription`/`installment`), `name`, `amount` (cents per charge), `repeatEvery` + `repeatUnit` (day/week/month/year), `startDate` (the anchor), `chargeCount`, `totalCount`, `paidBefore`, `totalAmount`, `nextChargeDate`, `active`, `endedReason` (`paid_off`/`wallet_closed`), `createdAt`. Read with one `userId ==` listener (no index) and split per card on the phone. Rule:
   ```
   match /recurring_charges/{id} {
     allow get:    if resource == null || isMe(resource.data.userId);
@@ -26,3 +28,24 @@
     allow delete: if isMe(resource.data.userId);
   }
   ```
+- **Schedule math** (`utils/RecurringChargeHelper`): date k = `startDate` + k cycles (`plusMonths(k)` from the anchor, so a Jan 31 start stays on the 31st when the month has one). An installment's date k is the card's statement day in month(start)+k, so it follows a statement day edit.
+  - **A subscription is never back-charged:** a past start only sets the repeat day. On create, `chargeCount` = the dates before today (`datesBefore`), and today counts as due.
+  - **An installment** starts on the next statement day, today included (`firstInstallmentDate`). "Already paid" months are assumed to be inside the amount owed already. `amount` = total ÷ months, and the very last month takes the rounding (₱10,000/3 = 3,333.33, 3,333.33, 3,333.34; `amountAt`).
+  - **Installments to come** (`installmentsToCome` = `stillToPay` of active installments) is its own card under the statements. It's held against "available" on `WalletCard` (a lighter part of the limit bar), like banks do. On a card with no limit the note skips the limit sentence.
+- **Editing is name-only, and there's no pause** (user decision): the repository only does `update("name")` on an existing doc. Anything else is delete (confirm popup) and add again, so an edit can never make the auto-charge post a date twice or skip one. Deleting a schedule keeps what it already posted. Deleting a posted charge refunds the card like any money-out entry, and it isn't re-posted.
+- **Screens:** card details has a "Subscriptions & installments" row → `WalletRecurringScreen` (`WalletRecurringNavigation(walletId)`): the card, then the Subscriptions and Installments sections with Add. `SubscriptionSheet` / `InstallmentSheet` (new = the full form; edit = read-only plus the name), `NumberStepper`, `DeleteRecurringDialog`. That screen and details stop the listener on ON_STOP. The Wallet tab starts it too (tab rule: no stop), so "available" matches.
+- **Closing a card** stops its schedules (the close popup says so: `wallet_dialog_close_recurring`). The next auto-charge marks them `wallet_closed` and posts nothing.
+
+## Auto-charge on app open (1.5.0)
+- **When:** `MainViewModel.chargeDueOnLogin()`, each time the session becomes LoggedIn (cold start or login). It's silent on failure or offline, and everything waits for the next open. It doesn't run when the app comes back from the background.
+- **What:** `FirebaseWalletServiceImpl.chargeDueRecurring(today)` does one `get()` of the user's docs, keeps the active due ones, then runs **one transaction per charge** (`chargeInTransaction`):
+  - it re-reads the charge and its card (all reads before writes);
+  - it posts every date from the next one through today as a money-out `wallet_movements` doc dated on its due day (so missed ones land on the right statement), with id `{chargeId}_{yyyyMMdd}`, `presetKey` subscription/installment, `recurringId`, and a note like "5 of 24" for installments;
+  - it does `increment(-total)` on the card and moves `chargeCount`/`nextChargeDate` forward. An installment that runs out becomes `active=false, paid_off`.
+- **Installments are picked by month,** not by the stored day, because a statement day edit makes the stored `nextChargeDate` stale. The transaction works out the exact day with the current statement day, and posts nothing if it's not that day yet.
+- **No double charge:** a second phone's transaction re-reads the new `chargeCount` and finds nothing due. The fixed id plus the `wallet_movements` rule `update: if false` is the backstop. Movement docs aren't read in the transaction, because the read rule denies docs that don't exist.
+- **Errors:** only UNAVAILABLE (offline) stops the run, and `CancellationException` is rethrown. Any other error skips that one charge. There are at most 60 dates per charge per open (`MAX_CHARGES_PER_OPEN`).
+- **Snackbar** through `SnackBarController`: "Charged to Visa: AI assistant, Phone", or "Charged to your cards: …" when it's more than one card.
+- **Cost:** an open with nothing due is 1 query (1 read per doc, at least 1). A due charge is 2 reads + (dates + 2) writes.
+- **Charges are wallet movements,** so they show on the Statement screen (Subscriptions / Installments) and in the card's list (Autorenew / EventRepeat icons), but never in Add, History, Budget, Insights or the allowance.
+- **Left as-is:** the grey band behind the sheet handle in landscape (the shared sheet) and "12:00 AM" on its own line for auto charges (the existing row style).

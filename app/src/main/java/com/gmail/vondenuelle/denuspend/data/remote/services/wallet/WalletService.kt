@@ -3,10 +3,12 @@ package com.gmail.vondenuelle.denuspend.data.remote.services.wallet
 import com.gmail.vondenuelle.denuspend.data.remote.models.wallet.request.WalletMovementRequest
 import com.gmail.vondenuelle.denuspend.data.remote.models.wallet.request.WalletRequest
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 interface WalletService {
     suspend fun needsWalletSetup(): Boolean
@@ -23,4 +25,11 @@ interface WalletService {
 
     // Credit card statements: expenses + money in/out on one wallet from `since` on
     fun getWalletActivitySince(walletId: String, since: Timestamp): Flow<Pair<List<TransactionModel>, List<WalletMovementModel>>>
+
+    // Credit cards: subscriptions and installments (recurring_charges)
+    fun getRecurringCharges(): Flow<List<RecurringChargeModel>>
+    suspend fun saveRecurringCharge(charge: RecurringChargeModel)
+    suspend fun deleteRecurringCharge(docId: String)
+    // Auto-charge on app open: posts every due date and returns (card name, charge name) for each charge it posted
+    suspend fun chargeDueRecurring(today: LocalDate): List<Pair<String, String>>
 }

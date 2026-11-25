@@ -1,6 +1,7 @@
 package com.gmail.vondenuelle.denuspend.ui.wallet
 
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import java.time.LocalDate
@@ -37,6 +38,11 @@ data class WalletScreenState(
     val hasLoadedStatement : Boolean = false,
     val hasStatementError : Boolean = false,
     val statementLoadedSince : LocalDate? = null, // the range the statement lists belong to, so a new month never shows the old month's rows
+
+//    Credit cards: subscriptions and installments of every card (one small listener, split per card on screen)
+    val recurringCharges : List<RecurringChargeModel> = emptyList(),
+    val hasLoadedRecurring : Boolean = false,
+    val recurringDraft : RecurringChargeModel? = null, // the add/edit subscription or installment sheet (null = closed, empty docId = new)
 
 //    First-time setup (0 = physical wallet, 1 = add more wallets)
     val setupStep : Int = 0,
