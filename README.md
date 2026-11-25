@@ -44,3 +44,7 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
 
 ## About
 Built by me from the ground up: the app structure, coding patterns, and the Firestore schema for the Add and Budget modules. Later features and polish were made together with Claude (Anthropic's AI) as a coding partner.
+
+## License
+Copyright (c) 2026 Von Denuelle L. Tandoc (denuden). All rights reserved.
+The code is public for viewing only. See [LICENSE](LICENSE).
