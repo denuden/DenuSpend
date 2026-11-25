@@ -2,8 +2,11 @@ package com.gmail.vondenuelle.denuspend.data.repositories
 
 import com.gmail.vondenuelle.denuspend.data.remote.models.budget.request.GetBudgetSummaryRequest
 import com.gmail.vondenuelle.denuspend.data.remote.services.budget.BudgetService
+import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.WalletService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseBudget
+import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseWallet
 import com.gmail.vondenuelle.denuspend.di.qualifiers.IoDispatcher
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetBillsModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.CUSTOM
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.LAST_15_DAYS
@@ -17,6 +20,7 @@ import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.TH
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetInsightsModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.MonthlyHistoryModel
+import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetBills
 import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetInsights
 import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetInsightsFromMonths
 import com.gmail.vondenuelle.denuspend.domain.models.budget.toLocalDate
@@ -24,6 +28,7 @@ import com.google.firebase.Timestamp
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.time.YearMonth
@@ -40,6 +45,7 @@ import javax.inject.Inject
 @ViewModelScoped
 class BudgetRepository @Inject constructor(
     @FirebaseBudget private val budgetService: BudgetService,
+    @FirebaseWallet private val walletService: WalletService,
     @IoDispatcher private val dispatcher: CoroutineDispatcher
 ) {
     /** [customStartMillis]/[customEndMillis] are only used for CUSTOM. They are the date range picker's UTC-midnight millis. */
@@ -50,6 +56,23 @@ class BudgetRepository @Inject constructor(
     ) : Flow<BudgetTotalSummaryModel> {
         val (firstDay, lastDay) = rangeFor(filter, customStartMillis, customEndMillis)
         return budgetService.getBudgetSummary(requestFor(firstDay, lastDay))
+            .flowOn(dispatcher)
+    }
+
+    // "Bills & subscriptions": the range's card charges, named with the wallets and schedules (the same listeners the Wallet tab runs)
+    fun getBudgetBills(
+        filter: BudgetChartFilter,
+        customStartMillis: Long? = null,
+        customEndMillis: Long? = null,
+    ): Flow<BudgetBillsModel> {
+        val (firstDay, lastDay) = rangeFor(filter, customStartMillis, customEndMillis)
+        val request = requestFor(firstDay, lastDay)
+        val includesToday = !lastDay.isBefore(LocalDate.now())
+        return combine(
+            walletService.getBillCharges(request.startDate, request.endDate),
+            walletService.getWallets(),
+            walletService.getRecurringCharges(),
+        ) { charges, wallets, schedules -> buildBudgetBills(charges, wallets, schedules, includesToday) }
             .flowOn(dispatcher)
     }
 

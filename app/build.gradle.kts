@@ -17,8 +17,8 @@ android {
         applicationId = "com.gmail.vondenuelle.denuspend"
         minSdk = 29
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.5.0"
+        versionCode = 9
+        versionName = "1.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

@@ -59,6 +59,7 @@ class FirebaseWalletServiceImpl @Inject constructor(
         const val STATEMENT_DAY = "statementDay"
         const val WALLET_ID = "walletId" // on transactions and wallet_movements
         const val WALLET_MOVEMENTS = "wallet_movements"
+        const val PRESET_KEY = "presetKey"
         const val RECURRING_CHARGES = "recurring_charges"
         private const val MAX_CHARGES_PER_OPEN = 60
 
@@ -348,6 +349,31 @@ class FirebaseWalletServiceImpl @Inject constructor(
                     doc.toObject<RecurringChargeModel>()?.copy(docId = doc.id)
                 } ?: emptyList()
                 trySend(data.sortedBy { it.createdAt })
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    // Needs a composite index: wallet_movements (userId ASC, presetKey ASC, date ASC). The first run logs a link that creates it.
+    // Reads only the posted charges, so a deleted charge or schedule and a closed card still add up right.
+    override fun getBillCharges(start: Timestamp, end: Timestamp): Flow<List<WalletMovementModel>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        val listener = firebaseFireStore.collection(WALLET_MOVEMENTS)
+            .whereEqualTo(USER_ID, currentUser.uid)
+            .whereIn(PRESET_KEY, listOf(WalletMovementModel.PRESET_SUBSCRIPTION, WalletMovementModel.PRESET_INSTALLMENT))
+            .whereGreaterThanOrEqualTo(DATE, start)
+            .whereLessThanOrEqualTo(DATE, end)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val data = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject<WalletMovementModel>()?.copy(docId = doc.id)
+                } ?: emptyList()
+                trySend(data)
             }
 
         awaitClose { listener.remove() }

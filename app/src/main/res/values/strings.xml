@@ -228,6 +228,24 @@
         <item quantity="one">%d transaction</item>
         <item quantity="other">%d transactions</item>
     </plurals>
+    <string name="budget_lbl_bills">Bills &amp; subscriptions</string>
+    <string name="budget_lbl_bills_not_allowance">Not in your allowance</string>
+    <string name="budget_lbl_bills_charged">Charged to your cards</string>
+    <string name="budget_lbl_bills_empty_month">No bills this month</string>
+    <string name="budget_lbl_bills_empty">No bills in this period</string>
+    <string name="budget_lbl_bills_times"> · %1$d×</string>
+    <string name="budget_lbl_bills_next">next %1$s</string>
+    <string name="budget_lbl_bills_paid_off">paid off</string>
+    <string name="budget_lbl_bills_closed_card">Closed card</string>
+    <string name="budget_lbl_bills_next_up">Next up: %1$s %2$s on %3$s (%4$s)</string>
+    <plurals name="budget_lbl_bills_charges">
+        <item quantity="one">%1$d charge</item>
+        <item quantity="other">%1$d charges</item>
+    </plurals>
+    <plurals name="budget_lbl_bills_cards">
+        <item quantity="one">%1$d card</item>
+        <item quantity="other">%1$d cards</item>
+    </plurals>
 
 <!--    BUDGET INSIGHTS SCREEN-->
     <plurals name="insights_lbl_range_days">
