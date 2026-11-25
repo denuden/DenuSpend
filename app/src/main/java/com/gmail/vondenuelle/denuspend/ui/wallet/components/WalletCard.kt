@@ -41,6 +41,7 @@ import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 fun WalletCard(
     modifier: Modifier = Modifier,
     wallet: WalletModel,
+    installmentsToCome: Long = 0L, // a card's installments not on a statement yet; they're held against the limit
     onClick: (() -> Unit)? = null, // null = not clickable
 ) {
     Card(
@@ -94,7 +95,7 @@ fun WalletCard(
             Spacer(modifier = Modifier.height(20.dp))
 
             if (wallet.isCreditCard) {
-                CardBalance(wallet)
+                CardBalance(wallet, installmentsToCome)
             } else {
                 Text(
                     stringResource(R.string.wallet_lbl_balance),
@@ -117,9 +118,10 @@ fun WalletCard(
 }
 
 // "Owed now ₱12,340.00", then a limit bar with "₱37,660 available / of ₱50,000" when a limit is set.
+// Installments to come are held against the limit like a bank does: a lighter part of the bar, and "available" subtracts them.
 // A card paid past ₱0 shows "Credit on card" instead, since the bank owes the user then.
 @Composable
-private fun CardBalance(wallet: WalletModel) {
+private fun CardBalance(wallet: WalletModel, installmentsToCome: Long) {
     val labelColor = Color.White.copy(alpha = 0.8f)
     Text(
         stringResource(if (wallet.balance > 0) R.string.wallet_lbl_card_credit else R.string.wallet_lbl_owed_now),
@@ -133,6 +135,7 @@ private fun CardBalance(wallet: WalletModel) {
     )
     if (wallet.creditLimit > 0) {
         val used = (wallet.owed.toFloat() / wallet.creditLimit).coerceIn(0f, 1f)
+        val held = ((wallet.owed + installmentsToCome).toFloat() / wallet.creditLimit).coerceIn(0f, 1f)
         Box(
             modifier = Modifier
                 .padding(top = 12.dp)
@@ -141,10 +144,11 @@ private fun CardBalance(wallet: WalletModel) {
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.28f))
         ) {
+            Box(modifier = Modifier.fillMaxWidth(held).fillMaxHeight().background(Color.White.copy(alpha = 0.55f)))
             Box(modifier = Modifier.fillMaxWidth(used).fillMaxHeight().background(Color.White))
         }
         Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            val available = wallet.creditLimit - wallet.owed
+            val available = wallet.creditLimit - wallet.owed - installmentsToCome
             Text(
                 if (available >= 0) stringResource(R.string.wallet_lbl_available, formatBalance(available))
                 else stringResource(R.string.wallet_lbl_over_limit, formatBalance(-available)),

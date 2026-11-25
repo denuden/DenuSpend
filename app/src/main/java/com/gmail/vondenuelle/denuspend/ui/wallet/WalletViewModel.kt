@@ -9,6 +9,7 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.wallet.request.WalletM
 import com.gmail.vondenuelle.denuspend.data.remote.models.wallet.request.WalletRequest
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.WalletRepository
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
@@ -57,6 +58,7 @@ class WalletViewModel @Inject constructor(
     private var transactionsJob: Job? = null
     private var movementsJob: Job? = null
     private var statementJob: Job? = null
+    private var recurringJob: Job? = null
     private var statementSince: LocalDate? = null // the range the statement listener runs for, so the same range isn't restarted
 
     // Expenses paid from a wallet grow by one page per load-more; the listener restarts with the bigger limit
@@ -85,6 +87,11 @@ class WalletViewModel @Inject constructor(
     fun stopStatementListener() {
         statementJob?.cancel()
         statementJob = null
+    }
+
+    fun stopRecurringListener() {
+        recurringJob?.cancel()
+        recurringJob = null
     }
 
     fun onEvent(event: WalletScreenEvents) {
@@ -229,6 +236,71 @@ class WalletViewModel @Inject constructor(
 
             is WalletScreenEvents.OnNavigateToStatement -> {
                 sendEvent(OnNavigate(WalletScreens.WalletStatementNavigation(event.walletId, event.monthsBack)))
+            }
+
+            // One listener for every card's subscriptions and installments (a handful of docs). The Wallet tab keeps it running.
+            WalletScreenEvents.OnGetRecurringCharges -> {
+                if (recurringJob?.isActive == true) return
+                recurringJob = viewModelScope.launch {
+                    walletRepository.getRecurringCharges().asResult().onEach { res ->
+                        when (res) {
+                            ResultState.Completed -> Unit
+                            is ResultState.Error -> onError(res.exception)
+                            ResultState.Loading -> Unit
+                            is ResultState.Success -> _stateFlow.update { it.copy(recurringCharges = res.data, hasLoadedRecurring = true) }
+                        }
+                    }.collect()
+                }
+            }
+
+            is WalletScreenEvents.OnNavigateToRecurring -> {
+                sendEvent(OnNavigate(WalletScreens.WalletRecurringNavigation(event.walletId)))
+            }
+
+            // A new subscription starts today, monthly. A new installment starts at 12 months; its first date is set on save.
+            is WalletScreenEvents.OnOpenRecurringSheet -> _stateFlow.update {
+                it.copy(
+                    recurringDraft = event.charge ?: RecurringChargeModel(
+                        walletId = event.walletId,
+                        kind = event.kind,
+                        startDate = CardStatementHelper.startOfDay(LocalDate.now()),
+                        totalCount = if (event.kind == RecurringChargeModel.KIND_INSTALLMENT) 12 else 0,
+                    )
+                )
+            }
+            WalletScreenEvents.OnCloseRecurringSheet -> _stateFlow.update { it.copy(recurringDraft = null) }
+            is WalletScreenEvents.OnRecurringDraftChanged -> _stateFlow.update { it.copy(recurringDraft = event.draft) }
+
+            is WalletScreenEvents.OnSaveRecurring -> {
+                val current = _stateFlow.value
+                val draft = current.recurringDraft ?: return
+                if (current.isLoading) return // ignore double taps while saving
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        walletRepository.saveRecurringCharge(draft, event.card.statementDay)
+                        _stateFlow.update { it.copy(isLoading = false, recurringDraft = null) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.wallet_snackbar_recurring_saved, draft.name.trim()))))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
+            }
+
+            is WalletScreenEvents.OnDeleteRecurring -> {
+                if (_stateFlow.value.isLoading) return
+                _stateFlow.update { it.copy(isLoading = true) }
+                viewModelScope.launch {
+                    try {
+                        walletRepository.deleteRecurringCharge(event.charge.docId)
+                        _stateFlow.update { it.copy(isLoading = false, recurringDraft = null) }
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.wallet_snackbar_recurring_deleted, event.charge.name))))
+                    } catch (e: Exception) {
+                        _stateFlow.update { it.copy(isLoading = false) }
+                        onError(e)
+                    }
+                }
             }
 
             // A transfer starts with the "Transfer" title filled in, since it rarely needs another one. "Pay card" starts as "Card payment" the same way.

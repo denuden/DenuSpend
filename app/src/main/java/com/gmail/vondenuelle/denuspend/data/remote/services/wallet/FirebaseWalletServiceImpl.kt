@@ -7,15 +7,25 @@ import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.Firebase
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.TRANSACTION
 import com.gmail.vondenuelle.denuspend.data.remote.services.transaction.FirebaseTransactionServiceImpl.Companion.USER_ID
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
+import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
+import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Transaction
 import com.google.firebase.firestore.toObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -49,6 +59,8 @@ class FirebaseWalletServiceImpl @Inject constructor(
         const val STATEMENT_DAY = "statementDay"
         const val WALLET_ID = "walletId" // on transactions and wallet_movements
         const val WALLET_MOVEMENTS = "wallet_movements"
+        const val RECURRING_CHARGES = "recurring_charges"
+        private const val MAX_CHARGES_PER_OPEN = 60
 
         fun physicalWalletId(uid: String) = "$uid${WalletModel.PHYSICAL_SUFFIX}"
     }
@@ -318,5 +330,143 @@ class FirebaseWalletServiceImpl @Inject constructor(
             }
 
         awaitClose { listener.remove() }
+    }
+
+    // A handful per user, so all of them are read with one userId filter and split per card on the device (no composite index)
+    override fun getRecurringCharges(): Flow<List<RecurringChargeModel>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        val listener = firebaseFireStore.collection(RECURRING_CHARGES)
+            .whereEqualTo(USER_ID, currentUser.uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val data = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject<RecurringChargeModel>()?.copy(docId = doc.id)
+                } ?: emptyList()
+                trySend(data.sortedBy { it.createdAt })
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    // New (empty docId) = the whole doc. An edit only renames it: the schedule is fixed once saved, so an edit can never
+    // make the auto-charge post a date twice or skip one (to change it, delete it and add it again).
+    override suspend fun saveRecurringCharge(charge: RecurringChargeModel) {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        if (charge.docId.isEmpty()) {
+            firebaseFireStore.collection(RECURRING_CHARGES).document()
+                .set(charge.copy(userId = currentUser.uid, createdAt = Timestamp.now())).awaitWrite(context)
+        } else {
+            firebaseFireStore.collection(RECURRING_CHARGES).document(charge.docId).update("name", charge.name).awaitWrite(context)
+        }
+    }
+
+    // Charges it already posted stay on the card (they're real charges); only the schedule goes
+    override suspend fun deleteRecurringCharge(docId: String) {
+        firebaseFireStore.collection(RECURRING_CHARGES).document(docId).delete().awaitWrite(context)
+    }
+
+    /**
+     * The auto-charge, on app open. Each due subscription / installment gets its own transaction that re-reads the doc, posts every date
+     * from its next one up to today (dated on the due day, so missed ones land on the right statement), moves the card's balance and
+     * moves chargeCount forward, all in one commit. Two phones opening at once can't both post: Firestore retries the second
+     * transaction, which then sees the new chargeCount and finds nothing due. The fixed movement id "{id}_{yyyyMMdd}" plus the
+     * wallet_movements "update: if false" rule is the backstop. Offline, the transactions fail and nothing is charged until next time.
+     */
+    override suspend fun chargeDueRecurring(today: LocalDate): List<Pair<String, String>> {
+        val currentUser = firebaseAuth.currentUser
+            ?: throw NoUserException("User not logged in")
+
+        val startOfTomorrow = CardStatementHelper.startOfDay(today.plusDays(1))
+        val thisMonth = YearMonth.from(today)
+        val due = firebaseFireStore.collection(RECURRING_CHARGES)
+            .whereEqualTo(USER_ID, currentUser.uid)
+            .get().await()
+            .documents.mapNotNull { doc -> doc.toObject<RecurringChargeModel>()?.copy(docId = doc.id) }
+            .filter { charge ->
+                // An installment's stored date has the statement day from when it was last charged, and the card's day can be edited
+                // since. Its month never changes, so it's checked by month; the transaction works out the exact day (nothing if not yet).
+                charge.active && if (charge.isInstallment) !YearMonth.from(CardStatementHelper.toLocalDate(charge.nextChargeDate)).isAfter(thisMonth)
+                else charge.nextChargeDate < startOfTomorrow
+            }
+
+        val charged = mutableListOf<Pair<String, String>>()
+        for (charge in due) {
+            val result = try {
+                firebaseFireStore.runTransaction { tx -> chargeInTransaction(tx, charge.docId, currentUser.uid, today) }.await()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: FirebaseFirestoreException) {
+                // Offline: stop, the rest is charged on a later open. Anything else only skips this one.
+                if (e.code == FirebaseFirestoreException.Code.UNAVAILABLE) break else continue
+            } catch (e: Exception) {
+                continue
+            }
+            result?.let { charged += it }
+        }
+        return charged
+    }
+
+    // Returns (card name, charge name) when something was posted. All reads happen before any write, as transactions require.
+    private fun chargeInTransaction(tx: Transaction, chargeId: String, uid: String, today: LocalDate): Pair<String, String>? {
+        val chargeRef = firebaseFireStore.collection(RECURRING_CHARGES).document(chargeId)
+        val charge = tx.get(chargeRef).toObject<RecurringChargeModel>()?.copy(docId = chargeId) ?: return null
+        if (!charge.active) return null
+        val cardRef = walletRef(charge.walletId)
+        val card = tx.get(cardRef).toObject<WalletModel>()
+
+        // The card was closed: stop the schedule instead of charging nothing forever
+        if (card == null) {
+            tx.update(chargeRef, mapOf("active" to false, "endedReason" to RecurringChargeModel.ENDED_WALLET_CLOSED))
+            return null
+        }
+
+        // Every date from the next one up to today. Capped per open, so a long-missed daily one can't overflow the transaction.
+        val limit = minOf(MAX_CHARGES_PER_OPEN, if (charge.isInstallment) RecurringChargeHelper.monthsLeft(charge) else MAX_CHARGES_PER_OPEN)
+        val ks = (charge.chargeCount until charge.chargeCount + limit)
+            .takeWhile { k -> !RecurringChargeHelper.dateAt(charge, k, card.statementDay).isAfter(today) }
+        if (ks.isEmpty()) return null
+
+        var total = 0L
+        ks.forEach { k ->
+            val date = RecurringChargeHelper.dateAt(charge, k, card.statementDay)
+            val amount = RecurringChargeHelper.amountAt(charge, k)
+            total += amount
+            tx.set(
+                firebaseFireStore.collection(WALLET_MOVEMENTS).document("${chargeId}_${date.format(DateTimeFormatter.BASIC_ISO_DATE)}"),
+                WalletMovementModel(
+                    userId = uid,
+                    walletId = charge.walletId,
+                    amount = -amount,
+                    title = charge.name,
+                    presetKey = if (charge.isInstallment) WalletMovementModel.PRESET_INSTALLMENT else WalletMovementModel.PRESET_SUBSCRIPTION,
+                    // "5 of 24" on the statement for installments
+                    note = if (charge.isInstallment) context.getString(R.string.wallet_lbl_installment_of, charge.paidBefore + k + 1, charge.totalCount) else "",
+                    date = CardStatementHelper.startOfDay(date),
+                    recurringId = chargeId,
+                )
+            )
+        }
+        tx.update(cardRef, BALANCE, FieldValue.increment(-total))
+
+        val newCount = ks.last() + 1
+        val updated = charge.copy(chargeCount = newCount)
+        val isPaidOff = charge.isInstallment && RecurringChargeHelper.monthsLeft(updated) == 0
+        tx.update(
+            chargeRef,
+            mapOf(
+                "chargeCount" to newCount,
+                "nextChargeDate" to CardStatementHelper.startOfDay(RecurringChargeHelper.nextDate(updated, card.statementDay)),
+                "active" to !isPaidOff,
+                "endedReason" to if (isPaidOff) RecurringChargeModel.ENDED_PAID_OFF else "",
+            )
+        )
+        return card.name to charge.name
     }
 }

@@ -20,6 +20,8 @@ data class WalletMovementModel(
     // Transfers only: the wallet on the other side, and the id both halves share ("{transferId}_out" / "{transferId}_in")
     val otherWalletId : String = "",
     val transferId : String = "",
+    // Auto charges only: the subscription / installment it came from (its doc id is "{recurringId}_{yyyyMMdd}")
+    val recurringId : String = "",
 ) {
     @get:Exclude
     val isTransfer : Boolean
@@ -29,7 +31,7 @@ data class WalletMovementModel(
         // Preset keys the service writes itself (the rest of the presets are UI only, see WalletMovementPresets)
         const val PRESET_CORRECTION = "correction"
         const val PRESET_TRANSFER = "transfer"
-        // Card charges the app posts on its own (subscriptions / installments, coming next). The Statement screen already groups by them.
+        // Card charges the app posts on its own (subscriptions / installments). The Statement screen groups by them.
         const val PRESET_SUBSCRIPTION = "subscription"
         const val PRESET_INSTALLMENT = "installment"
     }

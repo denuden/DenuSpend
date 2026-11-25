@@ -7,11 +7,15 @@ import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.WalletService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseWallet
 import com.gmail.vondenuelle.denuspend.di.qualifiers.IoDispatcher
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import com.google.firebase.Timestamp
+import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
+import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
@@ -65,6 +69,51 @@ class WalletRepository @Inject constructor(
         return walletService.getWalletActivitySince(walletId, since)
             .flowOn(dispatcher)
     }
+
+    fun getRecurringCharges(): Flow<List<RecurringChargeModel>> {
+        return walletService.getRecurringCharges()
+            .flowOn(dispatcher)
+    }
+
+    /**
+     * Builds the schedule fields before saving a new one. A subscription skips every date before today (it's never back-charged).
+     * A new installment starts on the card's next statement day; its monthly amount comes from the total.
+     */
+    suspend fun saveRecurringCharge(charge: RecurringChargeModel, statementDay: Int, today: LocalDate = LocalDate.now()) {
+        if (charge.name.isBlank()) throw CannotCreateTransactionException("Give it a name")
+        // A saved one can only be renamed (see the service), so there's no schedule to rebuild
+        if (charge.docId.isNotEmpty()) return walletService.saveRecurringCharge(charge.copy(name = charge.name.trim()))
+        val built = if (charge.isInstallment) {
+            if (charge.totalAmount <= 0L) throw CannotCreateTransactionException("Enter the total amount")
+            if (charge.totalCount !in 1..360) throw CannotCreateTransactionException("Pick how many months")
+            if (charge.paidBefore !in 0 until charge.totalCount) throw CannotCreateTransactionException("Already paid has to be less than the months")
+            val start = CardStatementHelper.startOfDay(RecurringChargeHelper.firstInstallmentDate(statementDay, today))
+            val withStart = charge.copy(
+                startDate = start,
+                amount = RecurringChargeHelper.monthlyAmount(charge.totalAmount, charge.totalCount),
+                repeatEvery = 1,
+                repeatUnit = RecurringChargeModel.UNIT_MONTH,
+            )
+            val isPaidOff = RecurringChargeHelper.monthsLeft(withStart) == 0
+            withStart.copy(
+                active = !isPaidOff,
+                endedReason = if (isPaidOff) RecurringChargeModel.ENDED_PAID_OFF else "",
+            )
+        } else {
+            if (charge.amount <= 0L) throw CannotCreateTransactionException("Enter an amount")
+            if (charge.repeatEvery !in 1..365) throw CannotCreateTransactionException("Pick how often it repeats")
+            charge.copy(chargeCount = RecurringChargeHelper.datesBefore(charge, today, statementDay), totalCount = 0, paidBefore = 0, totalAmount = 0L)
+        }
+        val next = RecurringChargeHelper.nextDate(built, statementDay)
+        walletService.saveRecurringCharge(built.copy(name = built.name.trim(), nextChargeDate = CardStatementHelper.startOfDay(next)))
+    }
+
+    suspend fun deleteRecurringCharge(docId: String) {
+        walletService.deleteRecurringCharge(docId)
+    }
+
+    // (card name, charge name) for every charge posted, for the snackbar
+    suspend fun chargeDueRecurring(): List<Pair<String, String>> = walletService.chargeDueRecurring(LocalDate.now())
 
     // A balance of ₱0 or below is fine (an empty pocket, or a card that's owed). The name is required, and a card needs its statement day.
     private fun validate(request: WalletRequest): WalletRequest {

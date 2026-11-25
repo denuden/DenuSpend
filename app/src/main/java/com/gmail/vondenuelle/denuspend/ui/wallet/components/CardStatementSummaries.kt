@@ -27,11 +27,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.gmail.vondenuelle.denuspend.ui.common.components.InformationTooltip
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
+import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
@@ -39,6 +41,7 @@ import java.time.temporal.ChronoUnit
  * "Statements" on a credit card's details: the open statement and the last closed one, as two separate cards that are never added together
  * (like a bank app). Both come from one listener that starts at the open cycle's first day, since the previous statement's
  * balance is worked out from today's owed amount minus what happened after it closed.
+ * A third card, "Installments to come", shows the installment months not on any statement yet (from recurring_charges).
  */
 @Composable
 fun CardStatementSummaries(
@@ -49,6 +52,8 @@ fun CardStatementSummaries(
     hasLoaded: Boolean,
     hasError: Boolean,
     onOpenStatement: (monthsBack: Int) -> Unit,
+    installments: List<RecurringChargeModel> = emptyList(), // the card's active installments
+    onOpenRecurring: () -> Unit = {},
 ) {
     val today = LocalDate.now()
     val current = CardStatementHelper.cycle(card.statementDay, 0, today)
@@ -88,6 +93,9 @@ fun CardStatementSummaries(
                     isFromEnteredAmount = CardStatementHelper.toLocalDate(card.createdAt).isAfter(previous.end),
                     onClick = { onOpenStatement(1) }
                 )
+                if (installments.isNotEmpty()) {
+                    InstallmentsToComeCard(installments = installments, hasLimit = card.creditLimit > 0, onClick = onOpenRecurring)
+                }
             }
         }
     }
@@ -195,6 +203,45 @@ private fun PreviousStatementCard(
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
+        }
+    }
+}
+
+// Months of the card's installments that aren't on any statement yet, one line each. Never added to the statements above.
+@Composable
+private fun InstallmentsToComeCard(installments: List<RecurringChargeModel>, hasLimit: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            SummaryTagRow(
+                tag = stringResource(R.string.wallet_lbl_installments_to_come_tag),
+                tagColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                tagTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                formatBalance(installments.sumOf { RecurringChargeHelper.stillToPay(it) }),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+            installments.forEach { charge ->
+                val left = RecurringChargeHelper.monthsLeft(charge)
+                AmountRow(
+                    pluralStringResource(R.plurals.wallet_lbl_installment_months_left, left, left, charge.name),
+                    formatBalance(RecurringChargeHelper.stillToPay(charge))
+                )
+            }
+            Text(
+                // "your limit already counts it" only makes sense when the card has a limit
+                stringResource(if (hasLimit) R.string.wallet_lbl_installments_to_come_text else R.string.wallet_lbl_installments_to_come_text_no_limit),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp)
+            )
         }
     }
 }

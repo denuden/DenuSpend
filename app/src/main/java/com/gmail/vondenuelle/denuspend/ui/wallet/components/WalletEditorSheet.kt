@@ -36,6 +36,7 @@ fun WalletEditorSheet(
     onSave: () -> Unit,
     onDismiss: () -> Unit,
     onCloseWallet: (() -> Unit)? = null,
+    recurringCount: Int = 0, // passed to the close confirm
 ) {
     var showCloseDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -81,6 +82,7 @@ fun WalletEditorSheet(
     CloseWalletDialog(
         showDialog = showCloseDialog && draft != null,
         walletName = draft?.name.orEmpty(),
+        recurringCount = recurringCount,
         onDismiss = { showCloseDialog = false },
         onConfirm = {
             showCloseDialog = false

@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Sell
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolunteerActivism
@@ -59,6 +61,8 @@ object WalletMovementPresets {
     fun icon(key: String): ImageVector? = when (key) {
         WalletMovementModel.PRESET_CORRECTION -> Icons.Filled.Tune
         WalletMovementModel.PRESET_TRANSFER -> Icons.Filled.SwapHoriz
+        WalletMovementModel.PRESET_SUBSCRIPTION -> Icons.Filled.Autorenew
+        WalletMovementModel.PRESET_INSTALLMENT -> Icons.Filled.EventRepeat
         else -> (moneyIn + moneyOut + cardIn + cardOut).firstOrNull { it.key == key }?.icon
     }
 }

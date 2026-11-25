@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.ui.wallet
 
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import java.time.LocalDate
@@ -23,6 +24,15 @@ sealed class WalletScreenEvents {
     //Credit card statements
     data class OnGetStatement(val walletId : String, val since : LocalDate) : WalletScreenEvents() // since = first day of the oldest cycle needed
     data class OnNavigateToStatement(val walletId : String, val monthsBack : Int) : WalletScreenEvents()
+
+    //Subscriptions and installments (credit cards)
+    data object OnGetRecurringCharges : WalletScreenEvents()
+    data class OnNavigateToRecurring(val walletId : String) : WalletScreenEvents()
+    data class OnOpenRecurringSheet(val walletId : String, val kind : String, val charge : RecurringChargeModel? = null) : WalletScreenEvents() // null = new
+    data object OnCloseRecurringSheet : WalletScreenEvents()
+    data class OnRecurringDraftChanged(val draft : RecurringChargeModel) : WalletScreenEvents()
+    data class OnSaveRecurring(val card : WalletModel) : WalletScreenEvents()
+    data class OnDeleteRecurring(val charge : RecurringChargeModel) : WalletScreenEvents()
 
     //Money in / out sheet
     data class OnOpenMovementSheet(val type : MovementType, val isCreditCard : Boolean = false) : WalletScreenEvents()

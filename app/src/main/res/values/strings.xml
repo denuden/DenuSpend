@@ -47,6 +47,9 @@
     <string name="main_title_wallet">Wallet</string>
     <string name="main_title_wallet_details">Wallet Details</string>
     <string name="main_title_statement">Statement</string>
+    <string name="main_title_recurring">Subscriptions &amp; installments</string>
+    <string name="main_snackbar_recurring_charged">Charged to %1$s: %2$s</string>
+    <string name="main_snackbar_recurring_charged_many">Charged to your cards: %1$s</string>
     <string name="main_tab_home">Home</string>
     <string name="main_tab_wallet">Wallet</string>
     <string name="main_tab_add">Add</string>
@@ -325,6 +328,10 @@
     <string name="wallet_btn_close_wallet">Close wallet</string>
     <string name="wallet_dialog_close_title">Close this wallet?</string>
     <string name="wallet_dialog_close_text">%1$s and its balance will be removed. Expenses paid from it stay in your history. They just won\'t be linked to a wallet anymore. This can\'t be undone.</string>
+    <plurals name="wallet_dialog_close_recurring">
+        <item quantity="one">\n\nIts 1 subscription or installment stops too. What it already charged stays.</item>
+        <item quantity="other">\n\nIts %1$d subscriptions and installments stop too. What they already charged stays.</item>
+    </plurals>
     <!-- first-time setup -->
     <string name="wallet_setup_step">Step %1$d of %2$d</string>
     <string name="wallet_setup_btn_sign_out">Sign out</string>
@@ -416,7 +423,7 @@
     <!-- credit card statements -->
     <string name="wallet_lbl_statements">Statements</string>
     <string name="wallet_tip_statements_title">How your card numbers work</string>
-    <string name="wallet_tip_statements_text">Owed now: everything posted to your card that you haven\'t paid yet, from all statements. It\'s the balance on the card.\n\nCurrent statement: charges posted since your last statement closed. It isn\'t billed yet, and it closes on your statement day.\n\nPrevious statement: the bill from when the last cycle closed. \"Paid since\" is what you paid after that, and \"Still unpaid\" is what\'s left of that bill.\n\nAvailable: your limit minus what you owe now.</string>
+    <string name="wallet_tip_statements_text">Owed now: everything posted to your card that you haven\'t paid yet, from all statements. It\'s the balance on the card.\n\nCurrent statement: charges posted since your last statement closed. It isn\'t billed yet, and it closes on your statement day.\n\nPrevious statement: the bill from when the last cycle closed. \"Paid since\" is what you paid after that, and \"Still unpaid\" is what\'s left of that bill.\n\nInstallments to come: the months of your installments that aren\'t on any statement yet. Each statement day, one month is posted to your card.\n\nAvailable: your limit minus what you owe now and the installments to come, because banks hold the whole installment against your limit.</string>
     <string name="wallet_lbl_statement_current_tag">Current · open</string>
     <string name="wallet_lbl_statement_previous_tag">Previous · closed</string>
     <string name="wallet_lbl_statement_name">%1$s statement</string>
@@ -451,6 +458,82 @@
     <string name="wallet_lbl_tracking_started">Tracking started %1$s. Charges before that aren\'t listed, but they\'re part of the amount owed you entered.</string>
     <string name="wallet_cd_previous_statement">Previous statement</string>
     <string name="wallet_cd_next_statement">Next statement</string>
+    <!-- Subscriptions & installments (credit cards) -->
+    <string name="wallet_lbl_recurring_row">Subscriptions &amp; installments</string>
+    <string name="wallet_lbl_recurring_row_empty">Add what\'s charged to this card on repeat</string>
+    <string name="wallet_lbl_recurring_row_count">%1$d active · next %2$s</string>
+    <string name="wallet_lbl_recurring_none_active">All paid off</string>
+    <string name="wallet_lbl_subscriptions">Subscriptions</string>
+    <string name="wallet_lbl_installments">Installments</string>
+    <string name="wallet_btn_add">Add</string>
+    <string name="wallet_lbl_subscriptions_empty">Streaming, an AI tool, games, cloud storage… anything this card pays on repeat.</string>
+    <string name="wallet_lbl_installments_empty">A phone or a laptop paid monthly. Enter the total and the app works out each month.</string>
+    <plurals name="wallet_lbl_repeat_day">
+        <item quantity="one">Every day</item>
+        <item quantity="other">Every %1$d days</item>
+    </plurals>
+    <plurals name="wallet_lbl_repeat_week">
+        <item quantity="one">Every week</item>
+        <item quantity="other">Every %1$d weeks</item>
+    </plurals>
+    <plurals name="wallet_lbl_repeat_month">
+        <item quantity="one">Every month</item>
+        <item quantity="other">Every %1$d months</item>
+    </plurals>
+    <plurals name="wallet_lbl_repeat_year">
+        <item quantity="one">Every year</item>
+        <item quantity="other">Every %1$d years</item>
+    </plurals>
+    <string name="wallet_lbl_repeat_next">%1$s · next %2$s</string>
+    <string name="wallet_lbl_installment_progress">%1$d of %2$d · next %3$s</string>
+    <string name="wallet_lbl_paid_off">Paid off · %1$d of %1$d</string>
+    <string name="wallet_lbl_per_month">%1$s/mo</string>
+    <string name="wallet_title_new_subscription">New subscription · %1$s</string>
+    <string name="wallet_title_edit_subscription">Edit subscription</string>
+    <string name="wallet_title_new_installment">New installment · %1$s</string>
+    <string name="wallet_title_edit_installment">Edit installment</string>
+    <string name="wallet_lbl_charged_even_over_limit">Charged to the card on every date, even over the limit</string>
+    <string name="wallet_lbl_recurring_name">Name (30 characters)</string>
+    <string name="wallet_hint_subscription_name">E.g. streaming, an AI tool, games</string>
+    <string name="wallet_hint_installment_name">E.g. Phone, Laptop</string>
+    <string name="wallet_lbl_repeats_every">Repeats every</string>
+    <string name="wallet_lbl_unit_day">Day</string>
+    <string name="wallet_lbl_unit_week">Week</string>
+    <string name="wallet_lbl_unit_month">Month</string>
+    <string name="wallet_lbl_unit_year">Year</string>
+    <string name="wallet_lbl_started_on">Started on</string>
+    <string name="wallet_lbl_next_charge">Next charge</string>
+    <string name="wallet_lbl_before_today">Before today</string>
+    <string name="wallet_lbl_not_charged">Not charged</string>
+    <string name="wallet_btn_save_subscription">Save subscription · %1$s</string>
+    <string name="wallet_lbl_total_amount">Total amount (with interest)</string>
+    <string name="wallet_lbl_months">Months</string>
+    <string name="wallet_lbl_already_paid">Already paid</string>
+    <string name="wallet_lbl_every_month">Every month</string>
+    <string name="wallet_lbl_payments_left">Payments left</string>
+    <string name="wallet_lbl_still_to_pay">Still to pay</string>
+    <string name="wallet_lbl_next_last">Next · last</string>
+    <string name="wallet_lbl_next_last_value">%1$s · %2$s</string>
+    <plurals name="wallet_lbl_already_paid_hint">
+        <item quantity="one">Already-paid months are already in \"Amount owed\". The app only adds the 1 month that\'s left, on the card\'s statement day.</item>
+        <item quantity="other">Already-paid months are already in \"Amount owed\". The app only adds the %1$d months that are left, on the card\'s statement day.</item>
+    </plurals>
+    <string name="wallet_lbl_installment_of">%1$d of %2$d</string>
+    <string name="wallet_lbl_edit_name_only">Only the name can be changed. To change the amount or dates, delete it and add it again.</string>
+    <string name="wallet_btn_save_installment">Save installment · %1$s/mo</string>
+    <string name="wallet_title_delete_recurring">Delete %1$s?</string>
+    <string name="wallet_text_delete_recurring">It won\'t be charged again. Charges it already added stay on the card\'s statements.</string>
+    <string name="wallet_snackbar_recurring_saved">Saved %1$s</string>
+    <string name="wallet_snackbar_recurring_deleted">Deleted %1$s</string>
+    <string name="wallet_cd_decrease">Less</string>
+    <string name="wallet_cd_increase">More</string>
+    <string name="wallet_lbl_installments_to_come_tag">Installments to come</string>
+    <string name="wallet_lbl_installments_to_come_text">Not on any statement yet. One month posts on each statement day, and your limit already counts all of it.</string>
+    <string name="wallet_lbl_installments_to_come_text_no_limit">Not on any statement yet. One month posts on each statement day.</string>
+    <plurals name="wallet_lbl_installment_months_left">
+        <item quantity="one">%2$s · 1 month left</item>
+        <item quantity="other">%2$s · %1$d months left</item>
+    </plurals>
 
 <!--    HOME SCREEN-->
     <string name="home_lbl_left_today">Left to spend today</string>

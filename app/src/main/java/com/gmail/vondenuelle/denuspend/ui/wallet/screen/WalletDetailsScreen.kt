@@ -23,6 +23,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
@@ -61,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavOptions
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.TransactionModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.gmail.vondenuelle.denuspend.navigation.NavigationScreens
@@ -82,6 +85,7 @@ import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletMovementItem
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletMovementSheet
 import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
+import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
@@ -136,6 +140,7 @@ fun WalletDetailsScreen(
                 viewModel.onEvent(WalletScreenEvents.OnGetWallets)
                 viewModel.onEvent(WalletScreenEvents.OnGetWalletTransactions(walletId))
                 viewModel.onEvent(WalletScreenEvents.OnGetWalletMovements(walletId))
+                viewModel.onEvent(WalletScreenEvents.OnGetRecurringCharges)
                 currentStatementSince?.let { viewModel.onEvent(WalletScreenEvents.OnGetStatement(walletId, it)) }
             }
             Lifecycle.Event.ON_STOP -> {
@@ -143,6 +148,7 @@ fun WalletDetailsScreen(
                 viewModel.stopTransactionsListener()
                 viewModel.stopMovementsListener()
                 viewModel.stopStatementListener()
+                viewModel.stopRecurringListener()
             }
             else -> Unit
         }
@@ -165,6 +171,9 @@ fun WalletDetailsScreen(
         showDialog = error.isNotEmpty()
     ) { error = "" }
 
+    // Closing a card stops its subscriptions and installments, so both close confirms say how many
+    val activeRecurringCount = state.recurringCharges.count { it.walletId == walletId && it.active }
+
     WalletEditorSheet(
         draft = state.walletDraft,
         onDraftChange = { viewModel.onEvent(WalletScreenEvents.OnWalletDraftChanged(it)) },
@@ -173,12 +182,14 @@ fun WalletDetailsScreen(
         onCloseWallet = if (wallet != null && !wallet.isPhysical) {
             { viewModel.onEvent(WalletScreenEvents.OnCloseWallet(wallet)) }
         } else null,
+        recurringCount = activeRecurringCount,
     )
 
     var showCloseDialog by rememberSaveable { mutableStateOf(false) }
     CloseWalletDialog(
         showDialog = showCloseDialog && wallet != null,
         walletName = wallet?.name.orEmpty(),
+        recurringCount = activeRecurringCount,
         onDismiss = { showCloseDialog = false },
         onConfirm = {
             showCloseDialog = false
@@ -277,7 +288,7 @@ fun WalletDetailsScreenContent(
         contentPadding = PaddingValues(16.dp),
     ) {
         item {
-            WalletCard(wallet = wallet)
+            WalletCard(wallet = wallet, installmentsToCome = RecurringChargeHelper.installmentsToCome(state.recurringCharges, wallet.docId))
             // Money that isn't an expense. A transfer needs a second wallet to move to.
             // A card has "Pay card" (its "Paid from" covers what a transfer did) and "Other charge" (fees) instead.
             Row(
@@ -364,7 +375,15 @@ fun WalletDetailsScreenContent(
                     hasLoaded = state.hasLoadedStatement,
                     hasError = state.hasStatementError,
                     onOpenStatement = { onEvent(WalletScreenEvents.OnNavigateToStatement(wallet.docId, it)) },
+                    installments = state.recurringCharges.filter { it.walletId == wallet.docId && it.isInstallment && it.active },
+                    onOpenRecurring = { onEvent(WalletScreenEvents.OnNavigateToRecurring(wallet.docId)) },
                     modifier = Modifier.padding(top = 24.dp)
+                )
+                RecurringChargesRow(
+                    charges = state.recurringCharges.filter { it.walletId == wallet.docId },
+                    statementDay = wallet.statementDay,
+                    onClick = { onEvent(WalletScreenEvents.OnNavigateToRecurring(wallet.docId)) },
+                    modifier = Modifier.padding(top = 12.dp)
                 )
             }
 
@@ -442,6 +461,42 @@ fun WalletDetailsScreenContent(
                     }
                 }
             }
+        }
+    }
+}
+
+/** "Subscriptions & installments · 3 active · next Nov 28" on a card, opening their own screen. */
+@Composable
+private fun RecurringChargesRow(
+    modifier: Modifier = Modifier,
+    charges: List<RecurringChargeModel>,
+    statementDay: Int,
+    onClick: () -> Unit,
+) {
+    val active = charges.filter { it.active }
+    val subtitle = when {
+        charges.isEmpty() -> stringResource(R.string.wallet_lbl_recurring_row_empty)
+        active.isEmpty() -> stringResource(R.string.wallet_lbl_recurring_none_active)
+        else -> stringResource(
+            R.string.wallet_lbl_recurring_row_count,
+            active.size,
+            // LocalDate is Comparable<ChronoLocalDate>, so the earliest is picked by its day number
+            CardStatementHelper.formatDay(active.map { RecurringChargeHelper.nextDate(it, statementDay) }.minBy { it.toEpochDay() })
+        )
+    }
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(16.dp)) {
+            Icon(Icons.Filled.Autorenew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(stringResource(R.string.wallet_lbl_recurring_row), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.Filled.ChevronRight, contentDescription = null)
         }
     }
 }
