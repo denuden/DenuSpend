@@ -22,7 +22,9 @@ fun FormSectionHeader(
     title: String,
     trailingText: String? = null,
     supportingText: String? = null,
+    isWarning: Boolean = false, // both notes in red, e.g. a wallet that would go negative
 ) {
+    val noteColor = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
     Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -35,7 +37,7 @@ fun FormSectionHeader(
                 Text(
                     trailingText,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = noteColor,
                     maxLines = 1,
                 )
             }
@@ -44,7 +46,7 @@ fun FormSectionHeader(
             Text(
                 supportingText,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = noteColor,
             )
         }
     }

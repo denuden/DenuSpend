@@ -12,6 +12,8 @@ import java.time.LocalDate
 
 interface WalletService {
     suspend fun needsWalletSetup(): Boolean
+    // The day tracking started: when the physical wallet was set up. null when it can't be read (offline, no setup yet)
+    suspend fun getTrackingStart(): Timestamp?
     suspend fun savePhysicalWallet(request: WalletRequest)
     suspend fun saveWallet(request: WalletRequest)
     suspend fun closeWallet(docId: String)

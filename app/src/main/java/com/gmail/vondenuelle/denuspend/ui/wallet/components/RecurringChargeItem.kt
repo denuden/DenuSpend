@@ -92,7 +92,12 @@ fun RecurringChargeItem(
             }
         }
         Text(
-            if (charge.isInstallment) stringResource(R.string.wallet_lbl_per_month, formatBalance(charge.amount)) else formatBalance(charge.amount),
+            when {
+                // A paid-off one shows what it cost in total, since its last month absorbed the rounding (₱6,666.68, not ₱6,666.66)
+                charge.isInstallment && charge.endedReason == RecurringChargeModel.ENDED_PAID_OFF -> formatBalance(charge.totalAmount)
+                charge.isInstallment -> stringResource(R.string.wallet_lbl_per_month, formatBalance(charge.amount))
+                else -> formatBalance(charge.amount)
+            },
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
         )

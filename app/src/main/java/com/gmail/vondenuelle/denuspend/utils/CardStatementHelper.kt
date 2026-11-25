@@ -70,6 +70,13 @@ object CardStatementHelper {
     fun statementBalance(card: WalletModel, after: Totals): Long =
         -card.balance - after.charges + after.payments
 
+    /**
+     * The "Owed now" typed in when the card was added. It's a charge of the cycle the card was added in (the statement day picked vs
+     * the day it was added), not of the bill before it. Worked out like a statement balance, so `sinceAdded` must hold every entry
+     * from the day it was added (a listener that starts on or before that day). A credit balance entered counts as ₱0.
+     */
+    fun owedWhenAdded(card: WalletModel, sinceAdded: Totals): Long = statementBalance(card, sinceAdded).coerceAtLeast(0L)
+
     // "Nov 28", or "Nov 28, 2026" with the year
     fun formatDay(date: LocalDate, withYear: Boolean = false): String =
         date.format(DateTimeFormatter.ofPattern(if (withYear) "MMM d, yyyy" else "MMM d", Locale.getDefault()))

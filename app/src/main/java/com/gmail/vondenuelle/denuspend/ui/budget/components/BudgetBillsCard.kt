@@ -150,6 +150,9 @@ private fun BillRowItem(row: BillRow, onClick: () -> Unit) {
             if (schedule?.endedReason == RecurringChargeModel.ENDED_PAID_OFF) add(stringResource(R.string.budget_lbl_bills_paid_off))
         } else if (schedule != null && row.nextDate != null) {
             add(repeatText(schedule).lowercase())
+        } else if (schedule == null && !isCardClosed) {
+            // Its schedule was deleted (stopped or paused); the charges it already posted still count
+            add(stringResource(R.string.budget_lbl_bills_stopped))
         }
         if (row.nextDate != null) add(stringResource(R.string.budget_lbl_bills_next, CardStatementHelper.formatDay(row.nextDate)))
     }

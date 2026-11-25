@@ -143,6 +143,7 @@
     <string name="add_lbl_char_counter">%1$d/%2$d</string>
     <string name="add_lbl_expense_category">Category</string>
     <string name="add_lbl_wallet_after">%1$s → %2$s after</string>
+    <string name="add_lbl_wallet_not_enough">Not enough in %1$s. Pick another wallet, or move money into it first.</string>
     <string name="add_lbl_left_today">%1$s left today: %2$s</string>
     <string name="add_lbl_left_today_after">%1$s left today: %2$s → %3$s</string>
     <string name="add_lbl_overspent_today">%1$s overspent today: %2$s</string>
@@ -236,6 +237,7 @@
     <string name="budget_lbl_bills_times"> · %1$d×</string>
     <string name="budget_lbl_bills_next">next %1$s</string>
     <string name="budget_lbl_bills_paid_off">paid off</string>
+    <string name="budget_lbl_bills_stopped">stopped</string>
     <string name="budget_lbl_bills_closed_card">Closed card</string>
     <string name="budget_lbl_bills_next_up">Next up: %1$s %2$s on %3$s (%4$s)</string>
     <plurals name="budget_lbl_bills_charges">
@@ -261,6 +263,7 @@
     <!-- compared to before -->
     <string name="insights_compare_title">Compared to before</string>
     <string name="insights_compare_sub">Avg per day vs %1$s</string>
+    <string name="insights_compare_sub_untracked">Nothing tracked before this range yet</string>
     <string name="insights_compare_this_range">This range</string>
     <string name="insights_compare_before">Before</string>
     <string name="insights_compare_more">You\'re spending %1$s more per day on %2$s than the period before.</string>
@@ -372,11 +375,13 @@
     <string name="wallet_title_take_out">Take out from %1$s</string>
     <string name="wallet_title_transfer">Move money from %1$s</string>
     <string name="wallet_lbl_movement_title">What was it? (30 characters)</string>
+    <string name="wallet_lbl_movement_title_plain">Title (30 characters)</string>
     <string name="wallet_hint_movement_title">Pick one below or type your own</string>
     <string name="wallet_lbl_movement_note">Note (optional, 50 characters)</string>
     <string name="wallet_hint_movement_note">E.g. for Mom\'s medicine</string>
     <string name="wallet_lbl_transfer_to">Move to</string>
     <string name="wallet_lbl_movement_after">%1$s → %2$s after</string>
+    <string name="wallet_lbl_other_wallet_after">%1$s: %2$s → %3$s after</string>
     <string name="wallet_btn_save_movement">Save · %1$s</string>
     <string name="wallet_lbl_transfer_to_wallet">To %1$s</string>
     <string name="wallet_lbl_transfer_from_wallet">From %1$s</string>
@@ -419,6 +424,7 @@
     <string name="wallet_lbl_over_limit">%1$s over the limit</string>
     <string name="wallet_cd_over_limit">Over the limit</string>
     <string name="wallet_lbl_of_limit">of %1$s</string>
+    <string name="wallet_lbl_held_for_installments">%1$s held for installments</string>
     <string name="wallet_lbl_owed_short">Owed</string>
     <string name="wallet_lbl_card_debt">Card debt · %1$s</string>
     <plurals name="wallet_lbl_card_count">
@@ -459,7 +465,8 @@
     <string name="wallet_lbl_statement_balance">Statement balance</string>
     <string name="wallet_lbl_paid_since">Paid since %1$s</string>
     <string name="wallet_lbl_still_unpaid">Still unpaid</string>
-    <string name="wallet_lbl_statement_from_entered">Worked out from the amount owed you entered, since tracking started after this statement closed.</string>
+    <string name="wallet_lbl_statement_not_tracked">Not tracked. This card was added on %1$s, after this statement closed, so what you owed then is in the current statement.</string>
+    <string name="wallet_lbl_includes_owed_when_added">Includes %1$s owed when the card was added</string>
     <string name="wallet_lbl_statement_error">Couldn\'t load this card\'s statements. Go back and open the card again.</string>
     <!-- Statement screen -->
     <string name="wallet_lbl_statement_state_open">%1$s · open</string>

@@ -77,6 +77,19 @@ class FirebaseWalletServiceImpl @Inject constructor(
         return !doc.exists() && !doc.metadata.isFromCache
     }
 
+    // One get() of the physical wallet (usually from the cache, since the Wallet tab listens to it). Any failure is just "unknown".
+    override suspend fun getTrackingStart(): Timestamp? {
+        val currentUser = firebaseAuth.currentUser ?: return null
+        return try {
+            firebaseFireStore.collection(WALLETS).document(physicalWalletId(currentUser.uid)).get().await()
+                .toObject<WalletModel>()?.createdAt
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     // set() on the fixed id, so pressing Next again in setup just saves over it instead of making a second physical wallet
     override suspend fun savePhysicalWallet(request: WalletRequest) {
         val currentUser = firebaseAuth.currentUser

@@ -162,6 +162,14 @@ private fun CardBalance(wallet: WalletModel, installmentsToCome: Long) {
                 color = labelColor
             )
         }
+        // Says why the bar is full while "Owed now" is low: the lighter part is installments still to come
+        if (installmentsToCome > 0) {
+            Text(
+                stringResource(R.string.wallet_lbl_held_for_installments, formatBalance(installmentsToCome)),
+                style = MaterialTheme.typography.labelMedium,
+                color = labelColor,
+            )
+        }
     }
 }
 

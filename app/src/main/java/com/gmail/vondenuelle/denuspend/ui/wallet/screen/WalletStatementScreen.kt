@@ -174,9 +174,9 @@ fun WalletStatementScreenContent(
     }
 
     val trackedFrom = CardStatementHelper.toLocalDate(wallet.createdAt)
-    // Older cycles go back to the one tracking started in (its end is on or after the day the card was added). The latest closed
-    // statement is always reachable, like the Previous card on details, since its balance comes from the amount owed entered.
-    val canGoBack = monthsBack == 0 || !cycle.start.minusDays(1).isBefore(trackedFrom)
+    // Cycles go back to the one tracking started in (its end is on or after the day the card was added). A bill that closed
+    // before the card was added was never tracked: the amount owed entered belongs to the cycle it was added in.
+    val canGoBack = !cycle.start.minusDays(1).isBefore(trackedFrom)
     val isOpen = monthsBack == 0
 
     val inCycle = { date: LocalDate -> cycle.contains(date) }
@@ -187,6 +187,11 @@ fun WalletStatementScreenContent(
         state.statementMovements.filter { CardStatementHelper.toLocalDate(it.date).isAfter(cycle.end) },
     )
     val cycleTotals = CardStatementHelper.totals(cycleTransactions, cycleMovements)
+    // The cycle the card was added in carries the amount owed entered. The listener starts on this cycle's first day, so it holds
+    // everything since the card was added.
+    val owedWhenAdded = if (cycle.contains(trackedFrom)) {
+        CardStatementHelper.owedWhenAdded(wallet, CardStatementHelper.totals(state.statementTransactions, state.statementMovements))
+    } else 0L
     val sections = statementSections(cycleTransactions, cycleMovements, state.wallets)
     // The lists belong to the cycle on screen (a month switch restarts the listener, and the old rows must not show as the new month)
     val isReady = state.hasLoadedStatement && !state.isStatementLoading && state.statementLoadedSince == cycle.start
@@ -217,7 +222,7 @@ fun WalletStatementScreenContent(
                     if (isOpen) {
                         val daysLeft = ChronoUnit.DAYS.between(LocalDate.now(), cycle.end).toInt()
                         Text(stringResource(R.string.wallet_lbl_charges_so_far), style = MaterialTheme.typography.titleSmall)
-                        Text(formatBalance(cycleTotals.charges), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                        Text(formatBalance(cycleTotals.charges + owedWhenAdded), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                         Text(
                             if (daysLeft <= 0) stringResource(R.string.wallet_lbl_statement_closes_today)
                             else pluralStringResource(R.plurals.wallet_lbl_statement_closes_in, daysLeft, daysLeft),
@@ -228,7 +233,7 @@ fun WalletStatementScreenContent(
                         val statementBalance = CardStatementHelper.statementBalance(wallet, afterTotals)
                         Text(stringResource(R.string.wallet_lbl_statement_balance), style = MaterialTheme.typography.titleSmall)
                         Text(formatBalance(statementBalance), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                        AmountRow(stringResource(R.string.wallet_lbl_charges_this_period), formatBalance(cycleTotals.charges))
+                        AmountRow(stringResource(R.string.wallet_lbl_charges_this_period), formatBalance(cycleTotals.charges + owedWhenAdded))
                         // "Paid since" only means something for the latest bill; older ones were paid by the bills after them
                         if (monthsBack == 1) {
                             val stillUnpaid = (statementBalance - afterTotals.payments).coerceAtLeast(0L)
@@ -244,6 +249,14 @@ fun WalletStatementScreenContent(
                                 valueColor = if (stillUnpaid > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                             )
                         }
+                    }
+                    if (owedWhenAdded > 0) {
+                        Text(
+                            stringResource(R.string.wallet_lbl_includes_owed_when_added, formatBalance(owedWhenAdded)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
                     }
                 }
             }
