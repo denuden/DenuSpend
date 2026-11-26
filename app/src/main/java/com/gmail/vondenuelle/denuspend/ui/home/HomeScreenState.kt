@@ -15,4 +15,5 @@ data class HomeScreenState(
     val isMonthLoading : Boolean = true,
     val wallets : List<WalletModel> = emptyList(), // physical first
     val isWalletsLoading : Boolean = true,
+    val dueCardCharges : Map<String, Long> = emptyMap(), // cardId → charged since the last close, only cards inside their due window
 )

@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,7 +37,7 @@ import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 
 /**
- * A credit card's own fields in the wallet editor: amount owed, an optional limit and the statement day.
+ * A credit card's own fields in the wallet editor: amount owed, an optional limit, the statement day and the payment due days.
  * Owed is stored as a negative balance, so expenses (which subtract) make it grow and payments (which add) shrink it.
  */
 @Composable
@@ -67,33 +68,57 @@ fun CreditCardFields(
 
         Spacer(modifier = Modifier.height(16.dp))
         FieldLabel(stringResource(R.string.wallet_lbl_statement_day))
-        StatementDayPicker(
-            day = draft.statementDay,
-            onDayChange = { onDraftChange(draft.copy(statementDay = it)) }
+        MenuPickerField(
+            selected = draft.statementDay,
+            options = (1..31).toList(),
+            optionText = { stringResource(R.string.wallet_lbl_statement_day_value, CardStatementHelper.ordinal(it)) },
+            placeholder = stringResource(R.string.wallet_lbl_statement_day_pick),
+            onPick = { onDraftChange(draft.copy(statementDay = it)) }
         )
         HelpText(stringResource(R.string.wallet_lbl_statement_day_help))
+
+        Spacer(modifier = Modifier.height(16.dp))
+        FieldLabel(stringResource(R.string.wallet_lbl_payment_due))
+        MenuPickerField(
+            selected = draft.paymentDueDays,
+            options = (0..CardStatementHelper.MAX_DUE_DAYS).toList(),
+            optionText = { days ->
+                if (days == 0) stringResource(R.string.wallet_lbl_payment_due_not_set)
+                else pluralStringResource(R.plurals.wallet_lbl_payment_due_value, days, days)
+            },
+            onPick = { onDraftChange(draft.copy(paymentDueDays = it)) }
+        )
+        HelpText(stringResource(R.string.wallet_lbl_payment_due_help))
     }
 }
 
-// A read-only field that opens a 1–31 menu ("28th of every month")
+// A read-only field that opens a menu of numbers ("28th of every month", "20 days after the statement day").
+// A selected value that isn't in options shows the placeholder (a new card has no statement day yet).
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StatementDayPicker(day: Int, onDayChange: (Int) -> Unit) {
+private fun MenuPickerField(
+    selected: Int,
+    options: List<Int>,
+    optionText: @Composable (Int) -> String,
+    onPick: (Int) -> Unit,
+    placeholder: String = "",
+) {
     var expanded by remember { mutableStateOf(false) }
     val outlinedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-    // Opens scrolled to the picked day (2 rows above it) instead of the 1st. scrollTo clamps at the end of the list.
+    // Opens scrolled to the picked option (2 rows above it) instead of the first. scrollTo clamps at the end of the list.
     val menuScrollState = rememberScrollState()
     val itemHeightPx = with(LocalDensity.current) { 48.dp.toPx() }
+    val selectedIndex = options.indexOf(selected)
     LaunchedEffect(expanded) {
-        if (expanded && day > 3) menuScrollState.scrollTo(((day - 3) * itemHeightPx).toInt())
+        if (expanded && selectedIndex > 2) menuScrollState.scrollTo(((selectedIndex - 2) * itemHeightPx).toInt())
     }
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
-            value = if (day in 1..31) stringResource(R.string.wallet_lbl_statement_day_value, CardStatementHelper.ordinal(day)) else "",
+            value = if (selectedIndex >= 0) optionText(selected) else "",
             onValueChange = {},
             readOnly = true,
-            placeholder = { Text(stringResource(R.string.wallet_lbl_statement_day_pick)) },
+            placeholder = { Text(placeholder) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             singleLine = true,
             shape = MaterialTheme.shapes.extraLarge,
@@ -112,12 +137,12 @@ private fun StatementDayPicker(day: Int, onDayChange: (Int) -> Unit) {
             onDismissRequest = { expanded = false },
             scrollState = menuScrollState,
         ) {
-            (1..31).forEach { option ->
+            options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.wallet_lbl_statement_day_value, CardStatementHelper.ordinal(option))) },
+                    text = { Text(optionText(option)) },
                     onClick = {
                         expanded = false
-                        onDayChange(option)
+                        onPick(option)
                     },
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                 )

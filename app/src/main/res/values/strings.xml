@@ -416,6 +416,13 @@
     <string name="wallet_lbl_statement_day_value">%1$s of every month</string>
     <string name="wallet_lbl_statement_day_pick">Pick the day your statement closes</string>
     <string name="wallet_lbl_statement_day_help">The day your bank closes each statement. Charges made on that day go on that statement. The 29th to 31st fall on the last day in shorter months.</string>
+    <string name="wallet_lbl_payment_due">Payment due</string>
+    <plurals name="wallet_lbl_payment_due_value">
+        <item quantity="one">%1$d day after the statement day</item>
+        <item quantity="other">%1$d days after the statement day</item>
+    </plurals>
+    <string name="wallet_lbl_payment_due_not_set">Not set</string>
+    <string name="wallet_lbl_payment_due_help">Check your statement for the due date. We\'ll warn you 5 days before if it isn\'t paid yet.</string>
     <string name="wallet_lbl_card_kind">Credit card · statement on the %1$s</string>
     <string name="wallet_lbl_card_kind_no_day">Credit card</string>
     <string name="wallet_lbl_owed_now">Owed now</string>
@@ -447,7 +454,7 @@
     <!-- credit card statements -->
     <string name="wallet_lbl_statements">Statements</string>
     <string name="wallet_tip_statements_title">How your card numbers work</string>
-    <string name="wallet_tip_statements_text">Owed now: everything posted to your card that you haven\'t paid yet, from all statements. It\'s the balance on the card.\n\nCurrent statement: charges posted since your last statement closed. It isn\'t billed yet, and it closes on your statement day.\n\nPrevious statement: the bill from when the last cycle closed. \"Paid since\" is what you paid after that, and \"Still unpaid\" is what\'s left of that bill.\n\nInstallments to come: the months of your installments that aren\'t on any statement yet. Each statement day, one month is posted to your card.\n\nAvailable: your limit minus what you owe now and the installments to come, because banks hold the whole installment against your limit.</string>
+    <string name="wallet_tip_statements_text">Owed now: everything you owe on this card, from all statements.\n\nCurrent statement: what you\'ve charged since your last statement. It\'s still adding up and closes on your statement day.\n\nLast statement: what your bank asked you to pay. \"Paid so far\" is what you\'ve paid toward it, and \"Left to pay\" is what\'s left.\n\nInstallments to come: months you haven\'t been charged yet. One month is added to your statement on each statement day.\n\nAvailable: your limit minus what you owe and the installments to come, because banks hold the whole installment against your limit.</string>
     <string name="wallet_lbl_statement_current_tag">Current · open</string>
     <string name="wallet_lbl_statement_previous_tag">Previous · closed</string>
     <string name="wallet_lbl_statement_name">%1$s statement</string>
@@ -463,8 +470,22 @@
         <item quantity="other">%1$d charges so far</item>
     </plurals>
     <string name="wallet_lbl_statement_balance">Statement balance</string>
-    <string name="wallet_lbl_paid_since">Paid since %1$s</string>
+    <string name="wallet_lbl_paid_since">Paid so far</string>
     <string name="wallet_lbl_still_unpaid">Still unpaid</string>
+    <!-- payment due date -->
+    <string name="wallet_lbl_due_on">Due %1$s</string>
+    <plurals name="wallet_lbl_due_in">
+        <item quantity="one">Due in %1$d day · %2$s</item>
+        <item quantity="other">Due in %1$d days · %2$s</item>
+    </plurals>
+    <string name="wallet_lbl_due_tomorrow">Due tomorrow · %1$s</string>
+    <string name="wallet_lbl_due_today">Due today</string>
+    <string name="wallet_lbl_overdue">Overdue · was due %1$s</string>
+    <string name="wallet_lbl_due_paid">Paid ✓ · was due %1$s</string>
+    <string name="wallet_lbl_card_due_amount">%1$s due %2$s</string>
+    <string name="wallet_lbl_card_overdue_amount">%1$s overdue</string>
+    <string name="wallet_cd_due_soon">Payment due soon</string>
+    <string name="wallet_cd_overdue">Payment overdue</string>
     <string name="wallet_lbl_statement_not_tracked">Not tracked. This card was added on %1$s, after this statement closed, so what you owed then is in the current statement.</string>
     <string name="wallet_lbl_includes_owed_when_added">Includes %1$s owed when the card was added</string>
     <string name="wallet_lbl_statement_error">Couldn\'t load this card\'s statements. Go back and open the card again.</string>
@@ -539,10 +560,11 @@
     <string name="wallet_lbl_still_to_pay">Still to pay</string>
     <string name="wallet_lbl_next_last">Next · last</string>
     <string name="wallet_lbl_next_last_value">%1$s · %2$s</string>
-    <plurals name="wallet_lbl_already_paid_hint">
-        <item quantity="one">Already-paid months are already in \"Amount owed\". The app only adds the 1 month that\'s left, on the card\'s statement day.</item>
-        <item quantity="other">Already-paid months are already in \"Amount owed\". The app only adds the %1$d months that are left, on the card\'s statement day.</item>
+    <plurals name="wallet_lbl_month_count">
+        <item quantity="one">%1$d month</item>
+        <item quantity="other">%1$d months</item>
     </plurals>
+    <string name="wallet_lbl_installment_months_note">%1$s done, %2$s left. What you see here is the rest of the installments yet to pay.</string>
     <string name="wallet_lbl_installment_of">%1$d of %2$d</string>
     <string name="wallet_lbl_edit_name_only">Only the name can be changed. To change the amount or dates, delete it and add it again.</string>
     <string name="wallet_btn_save_installment">Save installment · %1$s/mo</string>

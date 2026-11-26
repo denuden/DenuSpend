@@ -165,8 +165,10 @@ fun WalletEditorFields(
         Spacer(modifier = Modifier.height(16.dp))
         FieldLabel(stringResource(R.string.wallet_lbl_color))
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.SpaceBetween, // spread across the full width, like the icon grid below
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            maxItemsInEachRow = 7, // 14 colors = 2 even rows
+            modifier = Modifier.fillMaxWidth()
         ) {
             WalletStyle.colors.forEachIndexed { index, color ->
                 Box(

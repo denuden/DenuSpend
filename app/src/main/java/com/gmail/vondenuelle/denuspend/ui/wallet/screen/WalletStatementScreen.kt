@@ -60,6 +60,7 @@ import com.gmail.vondenuelle.denuspend.ui.wallet.WalletScreenEvents
 import com.gmail.vondenuelle.denuspend.ui.wallet.WalletScreenState
 import com.gmail.vondenuelle.denuspend.ui.wallet.WalletViewModel
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.AmountRow
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.DueDateLine
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.StatementRow
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.StatementSection
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
@@ -234,11 +235,11 @@ fun WalletStatementScreenContent(
                         Text(stringResource(R.string.wallet_lbl_statement_balance), style = MaterialTheme.typography.titleSmall)
                         Text(formatBalance(statementBalance), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                         AmountRow(stringResource(R.string.wallet_lbl_charges_this_period), formatBalance(cycleTotals.charges + owedWhenAdded))
-                        // "Paid since" only means something for the latest bill; older ones were paid by the bills after them
+                        // "Paid so far" and the due date only mean something for the latest bill; older ones were paid by the bills after them
                         if (monthsBack == 1) {
                             val stillUnpaid = (statementBalance - afterTotals.payments).coerceAtLeast(0L)
                             AmountRow(
-                                stringResource(R.string.wallet_lbl_paid_since, CardStatementHelper.formatDay(cycle.end)),
+                                stringResource(R.string.wallet_lbl_paid_since),
                                 formatBalance(afterTotals.payments),
                                 valueColor = if (afterTotals.payments > 0) colorResource(R.color.verified_green_text) else MaterialTheme.colorScheme.onSurface
                             )
@@ -248,6 +249,7 @@ fun WalletStatementScreenContent(
                                 formatBalance(stillUnpaid),
                                 valueColor = if (stillUnpaid > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                             )
+                            CardStatementHelper.dueStatus(wallet, stillUnpaid)?.let { DueDateLine(it, modifier = Modifier.padding(top = 4.dp)) }
                         }
                     }
                     if (owedWhenAdded > 0) {

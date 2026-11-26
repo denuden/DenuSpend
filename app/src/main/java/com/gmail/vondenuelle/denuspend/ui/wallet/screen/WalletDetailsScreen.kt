@@ -288,7 +288,11 @@ fun WalletDetailsScreenContent(
         contentPadding = PaddingValues(16.dp),
     ) {
         item {
-            WalletCard(wallet = wallet, installmentsToCome = RecurringChargeHelper.installmentsToCome(state.recurringCharges, wallet.docId))
+            WalletCard(
+                wallet = wallet,
+                installmentsToCome = RecurringChargeHelper.installmentsToCome(state.recurringCharges, wallet.docId),
+                due = CardStatementHelper.dueStatus(wallet, state.dueCardCharges)
+            )
             // Money that isn't an expense. A transfer needs a second wallet to move to.
             // A card has "Pay card" (its "Paid from" covers what a transfer did) and "Other charge" (fees) instead.
             Row(

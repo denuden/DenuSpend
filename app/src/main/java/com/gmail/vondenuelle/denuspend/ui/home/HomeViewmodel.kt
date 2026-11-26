@@ -1,5 +1,6 @@
 package com.gmail.vondenuelle.denuspend.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.data.repositories.AuthRepository
@@ -9,6 +10,8 @@ import com.gmail.vondenuelle.denuspend.data.repositories.WalletRepository
 import com.gmail.vondenuelle.denuspend.di.modules.TokenProvider
 import com.gmail.vondenuelle.denuspend.domain.models.budget.MonthlyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
+import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
+import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 import com.gmail.vondenuelle.denuspend.navigation.AuthScreens
 import com.gmail.vondenuelle.denuspend.navigation.NavBehavior
 import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
@@ -20,6 +23,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -51,6 +55,22 @@ class HomeViewmodel @Inject constructor(
     private var monthJob: Job? = null // this month's monthly doc (November card)
     private var monthOf: YearMonth? = null // the month monthJob is listening to
     private var walletsJob: Job? = null // Total balance card
+    private var dueJob: Job? = null // charges since the last close, only for cards inside their due window (the red "!")
+    private var dueCardsKey: List<Any>? = null // the cards dueJob listens to, so a balance change doesn't restart it
+
+    // Same as the Wallet tab: restarts only when the set of cards in their due window (or their days) changes
+    private fun watchDueCards(wallets: List<WalletModel>) {
+        val cards = wallets.filter { CardStatementHelper.isInDueWindow(it) }
+        val key = cards.map { listOf(it.docId, it.statementDay, it.paymentDueDays) } + LocalDate.now()
+        if (key == dueCardsKey && dueJob?.isActive == true) return
+        dueCardsKey = key
+        dueJob?.cancel()
+        dueJob = viewModelScope.launch {
+            walletRepository.getChargesSinceClose(cards)
+                .catch { e -> Log.e(TAG, "due cards: ${e.message}") } // no badge is better than an error for a warning
+                .collect { charges -> _stateFlow.update { it.copy(dueCardCharges = charges) } }
+        }
+    }
 
     fun stopTodayListener() {
         todayJob?.cancel()
@@ -63,6 +83,9 @@ class HomeViewmodel @Inject constructor(
     fun stopWalletsListener() {
         walletsJob?.cancel()
         walletsJob = null
+        dueJob?.cancel()
+        dueJob = null
+        dueCardsKey = null
     }
 
     fun onEvent(event: HomeScreenEvents) {
@@ -135,8 +158,9 @@ class HomeViewmodel @Inject constructor(
                                 _stateFlow.update { it.copy(isWalletsLoading = false) }
                                 onError(res.exception)
                             }
-                            is ResultState.Success -> _stateFlow.update {
-                                it.copy(wallets = res.data, isWalletsLoading = false)
+                            is ResultState.Success -> {
+                                _stateFlow.update { it.copy(wallets = res.data, isWalletsLoading = false) }
+                                watchDueCards(res.data)
                             }
                         }
                     }.collect()

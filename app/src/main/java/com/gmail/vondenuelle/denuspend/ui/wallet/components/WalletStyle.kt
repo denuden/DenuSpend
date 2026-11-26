@@ -39,6 +39,11 @@ object WalletStyle {
         Color(0xFFC62828), // red
         Color(0xFFEF6C00), // orange
         Color(0xFF5D4037), // brown
+        // Added later: always append, since the index is what's saved
+        Color(0xFFA67C00), // yellow (gold), dark enough for the small white text
+        Color(0xFF689F38), // light green
+        Color(0xFF0288D1), // sky blue
+        Color(0xFFE64A19), // coral
     )
 
     // Keys are what's stored, so never rename one (old wallets would fall back to the default icon)

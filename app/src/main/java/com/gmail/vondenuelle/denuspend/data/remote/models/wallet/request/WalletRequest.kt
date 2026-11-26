@@ -10,6 +10,7 @@ data class WalletRequest(
     val type : String = "", // WalletModel.TYPE_CREDIT_CARD or ""
     val creditLimit : Long = 0L,
     val statementDay : Int = 0,
+    val paymentDueDays : Int = 0,
     // Edits only: the balance when the sheet opened. A different balance is saved as an increment plus a "Balance correction" entry.
     val originalBalance : Long = 0L,
     val correctionTitle : String = "",

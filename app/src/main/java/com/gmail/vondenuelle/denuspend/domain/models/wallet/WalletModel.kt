@@ -18,6 +18,7 @@ data class WalletModel(
     val type : String = "",
     val creditLimit : Long = 0L, // cents, 0 = no limit set (the bar is hidden)
     val statementDay : Int = 0, // 1–31, the day the bank closes each statement (29–31 fall on the month's last day)
+    val paymentDueDays : Int = 0, // 1–25 days after the statement day, 0 = not set. Only for the due warning, never for the statement math.
 ) {
     // The physical wallet's doc id is "{uid}_physical", so the id itself says which one it is (no extra field to keep in sync)
     @get:Exclude

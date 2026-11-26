@@ -57,6 +57,7 @@ class FirebaseWalletServiceImpl @Inject constructor(
         const val CREATED_AT = "createdAt"
         const val CREDIT_LIMIT = "creditLimit"
         const val STATEMENT_DAY = "statementDay"
+        const val PAYMENT_DUE_DAYS = "paymentDueDays"
         const val WALLET_ID = "walletId" // on transactions and wallet_movements
         const val WALLET_MOVEMENTS = "wallet_movements"
         const val PRESET_KEY = "presetKey"
@@ -122,6 +123,7 @@ class FirebaseWalletServiceImpl @Inject constructor(
                 type = request.type,
                 creditLimit = request.creditLimit,
                 statementDay = request.statementDay,
+                paymentDueDays = request.paymentDueDays,
             )
             firebaseFireStore.collection(WALLETS).document().set(wallet).awaitWrite(context)
         } else {
@@ -135,6 +137,7 @@ class FirebaseWalletServiceImpl @Inject constructor(
                 ICON_KEY to request.iconKey,
                 CREDIT_LIMIT to request.creditLimit,
                 STATEMENT_DAY to request.statementDay,
+                PAYMENT_DUE_DAYS to request.paymentDueDays,
             )
             val batch = firebaseFireStore.batch()
             if (delta != 0L) {

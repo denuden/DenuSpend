@@ -123,6 +123,7 @@ fun HomeScreenContent(
             )
             BalanceCard(
                 wallets = state.wallets,
+                dueCardCharges = state.dueCardCharges,
                 isLoading = state.isWalletsLoading,
                 onClick = { onNavigateToTab(MainScreens.WalletNavigation) },
                 onWalletClick = { onEvent(HomeScreenEvents.OnOpenWalletDetails(it)) },

@@ -17,7 +17,10 @@ import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 @ViewModelScoped
@@ -68,6 +71,21 @@ class WalletRepository @Inject constructor(
     fun getWalletActivitySince(walletId: String, since: Timestamp): Flow<Pair<List<TransactionModel>, List<WalletMovementModel>>> {
         return walletService.getWalletActivitySince(walletId, since)
             .flowOn(dispatcher)
+    }
+
+    /**
+     * For the due warning on the Wallet tab and Home: what each card charged since its last statement closed (cardId → charges).
+     * Pass only the cards inside their due window, so outside those few days a month this reads nothing.
+     * Same range listener as card details, so it reuses its indexes.
+     */
+    fun getChargesSinceClose(cards: List<WalletModel>, today: LocalDate = LocalDate.now()): Flow<Map<String, Long>> {
+        if (cards.isEmpty()) return flowOf(emptyMap())
+        val flows = cards.map { card ->
+            val since = CardStatementHelper.startOfDay(CardStatementHelper.cycle(card.statementDay, 0, today).start)
+            walletService.getWalletActivitySince(card.docId, since)
+                .map { (transactions, movements) -> card.docId to CardStatementHelper.totals(transactions, movements).charges }
+        }
+        return combine(flows) { it.toMap() }.flowOn(dispatcher)
     }
 
     fun getRecurringCharges(): Flow<List<RecurringChargeModel>> {
@@ -122,6 +140,9 @@ class WalletRepository @Inject constructor(
         }
         if (request.type == WalletModel.TYPE_CREDIT_CARD && request.statementDay !in 1..31) {
             throw CannotCreateTransactionException("Pick the card's statement day")
+        }
+        if (request.paymentDueDays !in 0..CardStatementHelper.MAX_DUE_DAYS) {
+            throw CannotCreateTransactionException("Pick when the payment is due")
         }
         return request.copy(name = request.name.trim())
     }

@@ -92,10 +92,12 @@ fun CardStatementSummaries(
                     NotTrackedStatementCard(cycle = previous, addedOn = CardStatementHelper.toLocalDate(card.createdAt))
                 } else {
                     // Everything in the listener is after the previous close, so it's exactly what moved the balance since then
+                    val statementBalance = CardStatementHelper.statementBalance(card, totals)
                     PreviousStatementCard(
                         cycle = previous,
-                        statementBalance = CardStatementHelper.statementBalance(card, totals),
+                        statementBalance = statementBalance,
                         paidSince = totals.payments,
+                        due = CardStatementHelper.dueStatus(card, (statementBalance - totals.payments).coerceAtLeast(0L), today),
                         onClick = { onOpenStatement(1) }
                     )
                 }
@@ -205,6 +207,7 @@ private fun PreviousStatementCard(
     cycle: CardStatementHelper.Cycle,
     statementBalance: Long,
     paidSince: Long,
+    due: CardStatementHelper.DueStatus?,
     onClick: () -> Unit,
 ) {
     val stillUnpaid = (statementBalance - paidSince).coerceAtLeast(0L)
@@ -229,7 +232,7 @@ private fun PreviousStatementCard(
             )
             AmountRow(stringResource(R.string.wallet_lbl_statement_balance), formatBalance(statementBalance))
             AmountRow(
-                stringResource(R.string.wallet_lbl_paid_since, CardStatementHelper.formatDay(cycle.end)),
+                stringResource(R.string.wallet_lbl_paid_since),
                 formatBalance(paidSince),
                 // A payment is money you put in, not a negative: green like money in, no minus
                 valueColor = if (paidSince > 0) colorResource(R.color.verified_green_text) else MaterialTheme.colorScheme.onSurface
@@ -240,8 +243,31 @@ private fun PreviousStatementCard(
                 formatBalance(stillUnpaid),
                 valueColor = if (stillUnpaid > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
             )
+            if (due != null) DueDateLine(due, modifier = Modifier.padding(top = 4.dp))
         }
     }
+}
+
+// "Due Dec 3", "Due in 3 days · Dec 3", "Overdue · was due Dec 3" or "Paid ✓ · was due Dec 3" under the last statement's Still unpaid
+@Composable
+fun DueDateLine(due: CardStatementHelper.DueStatus, modifier: Modifier = Modifier) {
+    val day = CardStatementHelper.formatDay(due.date)
+    val text = when (due.state) {
+        CardStatementHelper.DueState.PAID -> stringResource(R.string.wallet_lbl_due_paid, day)
+        CardStatementHelper.DueState.OVERDUE -> stringResource(R.string.wallet_lbl_overdue, day)
+        CardStatementHelper.DueState.UPCOMING -> stringResource(R.string.wallet_lbl_due_on, day)
+        CardStatementHelper.DueState.SOON -> when (due.daysLeft) {
+            0 -> stringResource(R.string.wallet_lbl_due_today)
+            1 -> stringResource(R.string.wallet_lbl_due_tomorrow, day)
+            else -> pluralStringResource(R.plurals.wallet_lbl_due_in, due.daysLeft, due.daysLeft, day)
+        }
+    }
+    val color = when (due.state) {
+        CardStatementHelper.DueState.PAID -> colorResource(R.color.verified_green_text)
+        CardStatementHelper.DueState.UPCOMING -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.error
+    }
+    Text(text, style = MaterialTheme.typography.bodySmall, fontWeight = if (due.needsWarning) FontWeight.Bold else null, color = color, modifier = modifier)
 }
 
 // Months of the card's installments that aren't on any statement yet, one line each. Never added to the statements above.
