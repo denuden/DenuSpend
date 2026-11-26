@@ -466,8 +466,8 @@
     </plurals>
     <string name="wallet_lbl_statement_period_open">%1$s · %2$s</string>
     <plurals name="wallet_lbl_statement_charge_count">
-        <item quantity="one">%1$d charge so far</item>
-        <item quantity="other">%1$d charges so far</item>
+        <item quantity="one">%1$d charge</item>
+        <item quantity="other">%1$d charges</item>
     </plurals>
     <string name="wallet_lbl_statement_balance">Statement balance</string>
     <string name="wallet_lbl_paid_since">Paid so far</string>
@@ -566,6 +566,12 @@
     </plurals>
     <string name="wallet_lbl_installment_months_note">%1$s done, %2$s left. What you see here is the rest of the installments yet to pay.</string>
     <string name="wallet_lbl_installment_of">%1$d of %2$d</string>
+    <string name="wallet_lbl_first_charge_later">First charge later</string>
+    <string name="wallet_lbl_first_charge_later_sub">Buy now, pay later: the bank starts billing in a few months</string>
+    <string name="wallet_lbl_first_charge_later_locked">Not possible with months already paid</string>
+    <string name="wallet_lbl_wait_months">Wait (months)</string>
+    <string name="wallet_lbl_first_charge_on">First charge: %1$s statement</string>
+    <string name="wallet_lbl_installment_starts">Starts %1$s · %2$s</string>
     <string name="wallet_lbl_edit_name_only">Only the name can be changed. To change the amount or dates, delete it and add it again.</string>
     <string name="wallet_btn_save_installment">Save installment · %1$s/mo</string>
     <string name="wallet_title_delete_recurring">Delete %1$s?</string>

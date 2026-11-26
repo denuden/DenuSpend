@@ -95,7 +95,8 @@ class WalletRepository @Inject constructor(
 
     /**
      * Builds the schedule fields before saving a new one. A subscription skips every date before today (it's never back-charged).
-     * A new installment starts on the card's next statement day; its monthly amount comes from the total.
+     * A new installment starts on the card's next statement day, or that many months later when "First charge later" is on
+     * (the draft's startDate holds the month picked). Its monthly amount comes from the total.
      */
     suspend fun saveRecurringCharge(charge: RecurringChargeModel, statementDay: Int, today: LocalDate = LocalDate.now()) {
         if (charge.name.isBlank()) throw CannotCreateTransactionException("Give it a name")
@@ -105,7 +106,9 @@ class WalletRepository @Inject constructor(
             if (charge.totalAmount <= 0L) throw CannotCreateTransactionException("Enter the total amount")
             if (charge.totalCount !in 1..360) throw CannotCreateTransactionException("Pick how many months")
             if (charge.paidBefore !in 0 until charge.totalCount) throw CannotCreateTransactionException("Already paid has to be less than the months")
-            val start = CardStatementHelper.startOfDay(RecurringChargeHelper.firstInstallmentDate(statementDay, today))
+            val wait = RecurringChargeHelper.waitMonths(CardStatementHelper.toLocalDate(charge.startDate), statementDay, today)
+            if (wait > 0 && charge.paidBefore > 0) throw CannotCreateTransactionException("A later first charge can't have months already paid")
+            val start = CardStatementHelper.startOfDay(RecurringChargeHelper.deferredInstallmentDate(statementDay, wait, today))
             val withStart = charge.copy(
                 startDate = start,
                 amount = RecurringChargeHelper.monthlyAmount(charge.totalAmount, charge.totalCount),
