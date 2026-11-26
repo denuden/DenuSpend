@@ -43,6 +43,7 @@ import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletStyle
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.MiniOwedLabel
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.miniBalanceText
+import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 
 // Real money across all wallets, dark so it reads differently from the allowance (plan) cards above it.
 // The card opens the Wallet tab; each mini card opens that wallet's details.
@@ -53,6 +54,7 @@ fun BalanceCard(
     isLoading: Boolean,
     onClick: () -> Unit,
     onWalletClick: (String) -> Unit,
+    dueCardCharges: Map<String, Long> = emptyMap(), // cards inside their due window, for the red "!"
 ) {
     val onContainer = MaterialTheme.colorScheme.inverseOnSurface
     // Cards are debt, so they're left out of the total and shown as their own line under it
@@ -117,7 +119,7 @@ fun BalanceCard(
                 contentPadding = PaddingValues(horizontal = 16.dp),
             ) {
                 items(wallets, key = { it.docId }) { wallet ->
-                    MiniWalletCard(wallet = wallet, onClick = { onWalletClick(wallet.docId) })
+                    MiniWalletCard(wallet = wallet, due = CardStatementHelper.dueStatus(wallet, dueCardCharges), onClick = { onWalletClick(wallet.docId) })
                 }
             }
         }
@@ -126,7 +128,7 @@ fun BalanceCard(
 
 // Same color and icon as the wallet's real card. The wallet colors are made for white text.
 @Composable
-private fun MiniWalletCard(wallet: WalletModel, onClick: () -> Unit) {
+private fun MiniWalletCard(wallet: WalletModel, due: CardStatementHelper.DueStatus?, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
@@ -144,7 +146,7 @@ private fun MiniWalletCard(wallet: WalletModel, onClick: () -> Unit) {
                 Icon(WalletStyle.icon(wallet.iconKey), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.weight(1f))
                 MiniOwedLabel(wallet, modifier = Modifier.padding(end = 4.dp))
-                if (wallet.needsAttention) NegativeBadge(size = 18.dp, isCreditCard = wallet.isCreditCard)
+                if (wallet.needsAttention || due?.needsWarning == true) NegativeBadge(size = 18.dp, isCreditCard = wallet.isCreditCard, due = due)
             }
             Column {
                 Text(

@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 
@@ -51,15 +52,18 @@ object CardStatementHelper {
 
     /**
      * Money out = a charge (expenses, other charges, money moved off the card), money in = a payment or credit.
-     * Balance corrections count by their sign too, so the statement math always matches the card's real balance.
+     * Balance corrections are added up first and only what's left counts, by its sign, so lowering then raising the owed amount back
+     * cancels out instead of landing as a payment plus a charge. Charges − payments stays the same, so statement balances don't change.
      */
     fun totals(transactions: List<TransactionModel>, movements: List<WalletMovementModel>): Totals {
         val expenses = transactions.filter { it.amount < 0 }
-        val outs = movements.filter { it.amount < 0 }
+        val (corrections, others) = movements.partition { it.presetKey == WalletMovementModel.PRESET_CORRECTION }
+        val outs = others.filter { it.amount < 0 }
+        val netCorrection = corrections.sumOf { it.amount }
         return Totals(
-            charges = -expenses.sumOf { it.amount } - outs.sumOf { it.amount },
-            payments = movements.filter { it.amount > 0 }.sumOf { it.amount },
-            chargeCount = expenses.size + outs.size
+            charges = -expenses.sumOf { it.amount } - outs.sumOf { it.amount } + (-netCorrection).coerceAtLeast(0L),
+            payments = others.filter { it.amount > 0 }.sumOf { it.amount } + netCorrection.coerceAtLeast(0L),
+            chargeCount = expenses.size + outs.size + (if (netCorrection < 0) 1 else 0)
         )
     }
 
@@ -76,6 +80,49 @@ object CardStatementHelper {
      * from the day it was added (a listener that starts on or before that day). A credit balance entered counts as ₱0.
      */
     fun owedWhenAdded(card: WalletModel, sinceAdded: Totals): Long = statementBalance(card, sinceAdded).coerceAtLeast(0L)
+
+    const val MAX_DUE_DAYS = 25 // so the due date always lands before the next statement closes (the shortest cycle is 28 days)
+    const val DUE_WARNING_DAYS = 5
+
+    enum class DueState { UPCOMING, SOON, OVERDUE, PAID }
+
+    data class DueStatus(val date: LocalDate, val daysLeft: Int, val left: Long, val state: DueState) {
+        val needsWarning get() = state == DueState.SOON || state == DueState.OVERDUE
+    }
+
+    /**
+     * When the last closed statement has to be paid: its closing day + the card's due days. Null when the due days aren't set,
+     * or when that statement wasn't tracked (the card was added after it closed). Only a warning: nothing here touches the statements.
+     */
+    fun dueDate(card: WalletModel, today: LocalDate = LocalDate.now()): LocalDate? {
+        if (!card.isCreditCard || card.statementDay !in 1..31 || card.paymentDueDays !in 1..MAX_DUE_DAYS) return null
+        val previous = cycle(card.statementDay, 1, today)
+        if (toLocalDate(card.createdAt).isAfter(previous.end)) return null
+        return previous.end.plusDays(card.paymentDueDays.toLong())
+    }
+
+    // From 5 days before the due date until the next statement closes (then it's a new statement with a new due date)
+    fun isInDueWindow(card: WalletModel, today: LocalDate = LocalDate.now()): Boolean =
+        dueDate(card, today)?.let { !today.isBefore(it.minusDays(DUE_WARNING_DAYS.toLong())) } ?: false
+
+    // "Still unpaid" of the last closed statement = statement balance − paid since = owed now − what was charged since it closed
+    fun leftToPay(card: WalletModel, chargesSinceClose: Long): Long = (-card.balance - chargesSinceClose).coerceAtLeast(0L)
+
+    fun dueStatus(card: WalletModel, left: Long, today: LocalDate = LocalDate.now()): DueStatus? {
+        val date = dueDate(card, today) ?: return null
+        val daysLeft = ChronoUnit.DAYS.between(today, date).toInt()
+        val state = when {
+            left == 0L -> DueState.PAID
+            daysLeft < 0 -> DueState.OVERDUE
+            daysLeft <= DUE_WARNING_DAYS -> DueState.SOON
+            else -> DueState.UPCOMING
+        }
+        return DueStatus(date, daysLeft, left, state)
+    }
+
+    // For the Wallet tab and Home: null until the card's charges since the close have loaded (only cards inside their due window)
+    fun dueStatus(card: WalletModel, chargesSinceClose: Map<String, Long>): DueStatus? =
+        chargesSinceClose[card.docId]?.let { dueStatus(card, leftToPay(card, it)) }
 
     // "Nov 28", or "Nov 28, 2026" with the year
     fun formatDay(date: LocalDate, withYear: Boolean = false): String =

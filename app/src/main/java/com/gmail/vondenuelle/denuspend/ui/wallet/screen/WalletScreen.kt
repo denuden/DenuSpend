@@ -59,6 +59,7 @@ import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletEditorSheet
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.formatBalance
 import com.gmail.vondenuelle.denuspend.utils.ComposableLifecycle
 import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
+import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 import com.gmail.vondenuelle.denuspend.utils.ObserveAsEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
@@ -238,6 +239,7 @@ fun WalletScreenContent(
             WalletCard(
                 wallet = wallet,
                 installmentsToCome = RecurringChargeHelper.installmentsToCome(state.recurringCharges, wallet.docId),
+                due = CardStatementHelper.dueStatus(wallet, state.dueCardCharges),
                 onClick = { onEvent(WalletScreenEvents.OnNavigateToWalletDetails(wallet.docId)) }
             )
         }

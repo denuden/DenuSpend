@@ -77,6 +77,7 @@ private fun InstallmentSheetContent(
         amount = RecurringChargeHelper.monthlyAmount(draft.totalAmount, draft.totalCount),
     )
     val monthsLeft = RecurringChargeHelper.monthsLeft(preview)
+    val monthsDone = draft.totalCount - monthsLeft // paid before adding + charged by the app since
     val canSave = draft.name.isNotBlank() && (!isNew || (draft.totalAmount > 0 && monthsLeft > 0)) // a paid-off one can still be renamed
 
     Column(modifier = Modifier.imePadding()) {
@@ -162,12 +163,19 @@ private fun InstallmentSheetContent(
                             )
                         )
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
-                    Text(
-                        pluralStringResource(R.plurals.wallet_lbl_already_paid_hint, monthsLeft, monthsLeft),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    // Nothing done yet = the rows above already say it all
+                    if (monthsDone > 0) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
+                        Text(
+                            stringResource(
+                                R.string.wallet_lbl_installment_months_note,
+                                pluralStringResource(R.plurals.wallet_lbl_month_count, monthsDone, monthsDone),
+                                pluralStringResource(R.plurals.wallet_lbl_month_count, monthsLeft, monthsLeft),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 

@@ -12,6 +12,7 @@ data class WalletScreenState(
 
     val wallets : List<WalletModel> = emptyList(),
     val hasLoadedWallets : Boolean = false,
+    val dueCardCharges : Map<String, Long> = emptyMap(), // cardId → charged since the last close, only cards inside their due window
     // The wallet open in the add/edit sheet (null = closed, empty docId = a new one)
     val walletDraft : WalletModel? = null,
     val walletDraftOriginalBalance : Long = 0L, // the balance when the sheet opened, so a change is saved as a correction

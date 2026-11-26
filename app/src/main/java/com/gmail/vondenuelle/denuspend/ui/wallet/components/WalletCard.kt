@@ -42,6 +42,7 @@ fun WalletCard(
     modifier: Modifier = Modifier,
     wallet: WalletModel,
     installmentsToCome: Long = 0L, // a card's installments not on a statement yet; they're held against the limit
+    due: CardStatementHelper.DueStatus? = null, // the last statement's due date; warns from 5 days before while it isn't paid
     onClick: (() -> Unit)? = null, // null = not clickable
 ) {
     Card(
@@ -88,8 +89,20 @@ fun WalletCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                    if (due?.needsWarning == true) {
+                        Text(
+                            if (due.state == CardStatementHelper.DueState.OVERDUE) stringResource(R.string.wallet_lbl_card_overdue_amount, formatBalance(due.left))
+                            else stringResource(R.string.wallet_lbl_card_due_amount, formatBalance(due.left), CardStatementHelper.formatDay(due.date)),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .background(MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.small)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
-                if (wallet.needsAttention) NegativeBadge(isCreditCard = wallet.isCreditCard)
+                if (wallet.needsAttention || due?.needsWarning == true) NegativeBadge(isCreditCard = wallet.isCreditCard, due = due)
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -174,9 +187,15 @@ private fun CardBalance(wallet: WalletModel, installmentsToCome: Long) {
 }
 
 // The "!" in a negative wallet's top-right corner, so it stands out before reading the balance.
-// On a card it means over the limit (a card's balance is always negative), so TalkBack says that instead.
+// On a card it means over the limit (a card's balance is always negative), or a statement due soon / overdue, so TalkBack says that instead.
 @Composable
-fun NegativeBadge(modifier: Modifier = Modifier, size: Dp = 24.dp, isCreditCard: Boolean = false) {
+fun NegativeBadge(modifier: Modifier = Modifier, size: Dp = 24.dp, isCreditCard: Boolean = false, due: CardStatementHelper.DueStatus? = null) {
+    val description = when {
+        due?.state == CardStatementHelper.DueState.OVERDUE -> stringResource(R.string.wallet_cd_overdue)
+        due?.state == CardStatementHelper.DueState.SOON -> stringResource(R.string.wallet_cd_due_soon)
+        isCreditCard -> stringResource(R.string.wallet_cd_over_limit)
+        else -> stringResource(R.string.wallet_lbl_negative)
+    }
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -185,7 +204,7 @@ fun NegativeBadge(modifier: Modifier = Modifier, size: Dp = 24.dp, isCreditCard:
     ) {
         Icon(
             Icons.Filled.PriorityHigh,
-            contentDescription = stringResource(if (isCreditCard) R.string.wallet_cd_over_limit else R.string.wallet_lbl_negative),
+            contentDescription = description,
             tint = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier.size(size * 0.7f)
         )

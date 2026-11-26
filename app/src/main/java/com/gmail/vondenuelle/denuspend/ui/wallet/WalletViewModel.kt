@@ -1,6 +1,7 @@
 package com.gmail.vondenuelle.denuspend.ui.wallet
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gmail.vondenuelle.denuspend.R
@@ -14,6 +15,7 @@ import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletModel
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.WalletMovementModel
 import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
 import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletMovementPresets
+import com.gmail.vondenuelle.denuspend.ui.wallet.components.WalletStyle
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents.OnNavigate
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
@@ -27,6 +29,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -59,6 +62,8 @@ class WalletViewModel @Inject constructor(
     private var movementsJob: Job? = null
     private var statementJob: Job? = null
     private var recurringJob: Job? = null
+    private var dueJob: Job? = null // charges since the last close, only for cards inside their due window (the red "!")
+    private var dueCardsKey: List<Any>? = null // the cards dueJob listens to, so a balance change doesn't restart it
     private var statementSince: LocalDate? = null // the range the statement listener runs for, so the same range isn't restarted
 
     // Expenses paid from a wallet grow by one page per load-more; the listener restarts with the bigger limit
@@ -72,6 +77,23 @@ class WalletViewModel @Inject constructor(
     fun stopWalletsListener() {
         walletsJob?.cancel()
         walletsJob = null
+        dueJob?.cancel()
+        dueJob = null
+        dueCardsKey = null
+    }
+
+    // Restarts only when the set of cards in their due window (or their days) changes, not on every balance update
+    private fun watchDueCards(wallets: List<WalletModel>) {
+        val cards = wallets.filter { CardStatementHelper.isInDueWindow(it) }
+        val key = cards.map { listOf(it.docId, it.statementDay, it.paymentDueDays) } + LocalDate.now()
+        if (key == dueCardsKey && dueJob?.isActive == true) return
+        dueCardsKey = key
+        dueJob?.cancel()
+        dueJob = viewModelScope.launch {
+            walletRepository.getChargesSinceClose(cards)
+                .catch { e -> Log.e("WalletViewModel", "due cards: ${e.message}") } // no badge is better than an error for a warning
+                .collect { charges -> _stateFlow.update { it.copy(dueCardCharges = charges) } }
+        }
     }
 
     fun stopTransactionsListener() {
@@ -104,8 +126,9 @@ class WalletViewModel @Inject constructor(
                             ResultState.Completed -> _stateFlow.update { it.copy(isListLoading = false) }
                             is ResultState.Error -> onError(res.exception)
                             ResultState.Loading -> _stateFlow.update { it.copy(isListLoading = true) }
-                            is ResultState.Success -> _stateFlow.update {
-                                it.copy(wallets = res.data, hasLoadedWallets = true, isListLoading = false)
+                            is ResultState.Success -> {
+                                _stateFlow.update { it.copy(wallets = res.data, hasLoadedWallets = true, isListLoading = false) }
+                                watchDueCards(res.data)
                             }
                         }
                     }.collect()
@@ -118,7 +141,7 @@ class WalletViewModel @Inject constructor(
 
             is WalletScreenEvents.OnOpenWalletEditor -> _stateFlow.update {
                 it.copy(
-                    walletDraft = event.wallet ?: WalletModel(iconKey = "wallet", colorIndex = it.wallets.size % 10),
+                    walletDraft = event.wallet ?: WalletModel(iconKey = "wallet", colorIndex = it.wallets.size % WalletStyle.colors.size),
                     walletDraftOriginalBalance = event.wallet?.balance ?: 0L
                 )
             }
@@ -467,6 +490,7 @@ class WalletViewModel @Inject constructor(
         type = type,
         creditLimit = if (isCreditCard) creditLimit else 0L,
         statementDay = if (isCreditCard) statementDay else 0,
+        paymentDueDays = if (isCreditCard) paymentDueDays else 0,
     )
 
     private fun logout() {
