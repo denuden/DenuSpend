@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -71,11 +72,17 @@ private fun InstallmentSheetContent(
 ) {
     val outlinedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
     val isNew = draft.docId.isEmpty()
-    // The same numbers the repository saves: a new one starts on the next statement day
+    // A new one's draft startDate holds the month picked with "First charge later" (no wait = the next statement day)
+    val wait = if (isNew) RecurringChargeHelper.waitMonths(CardStatementHelper.toLocalDate(draft.startDate), card.statementDay) else 0
+    fun setWait(months: Int) = onDraftChange(
+        draft.copy(startDate = CardStatementHelper.startOfDay(RecurringChargeHelper.deferredInstallmentDate(card.statementDay, months)), paidBefore = 0)
+    )
+    // The same numbers the repository saves
     val preview = draft.copy(
-        startDate = if (isNew) CardStatementHelper.startOfDay(RecurringChargeHelper.firstInstallmentDate(card.statementDay)) else draft.startDate,
+        startDate = if (isNew) CardStatementHelper.startOfDay(RecurringChargeHelper.deferredInstallmentDate(card.statementDay, wait)) else draft.startDate,
         amount = RecurringChargeHelper.monthlyAmount(draft.totalAmount, draft.totalCount),
     )
+    val showFirstCharge = if (isNew) wait > 0 else RecurringChargeHelper.isDeferred(draft, card.statementDay)
     val monthsLeft = RecurringChargeHelper.monthsLeft(preview)
     val monthsDone = draft.totalCount - monthsLeft // paid before adding + charged by the app since
     val canSave = draft.name.isNotBlank() && (!isNew || (draft.totalAmount > 0 && monthsLeft > 0)) // a paid-off one can still be renamed
@@ -136,13 +143,43 @@ private fun InstallmentSheetContent(
                     range = (draft.paidBefore + draft.chargeCount + 1).coerceAtLeast(1)..360
                 )
             }
+            // Already paid means it has started, and a later first charge means it hasn't, so only one of them can be set
             if (isNew) StepperRow(stringResource(R.string.wallet_lbl_already_paid)) {
                 NumberStepper(
                     value = draft.paidBefore,
                     onValueChange = { onDraftChange(draft.copy(paidBefore = it)) },
-                    range = 0..(draft.totalCount - draft.chargeCount - 1).coerceAtLeast(0)
+                    range = if (wait > 0) 0..0 else 0..(draft.totalCount - draft.chargeCount - 1).coerceAtLeast(0)
                 )
             }
+            if (isNew) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(stringResource(R.string.wallet_lbl_first_charge_later), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(if (draft.paidBefore > 0) R.string.wallet_lbl_first_charge_later_locked else R.string.wallet_lbl_first_charge_later_sub),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = wait > 0,
+                    onCheckedChange = { on -> setWait(if (on) 1 else 0) },
+                    enabled = draft.paidBefore == 0
+                )
+            }
+            if (isNew && wait > 0) StepperRow(stringResource(R.string.wallet_lbl_wait_months)) {
+                NumberStepper(value = wait, onValueChange = ::setWait, range = 1..RecurringChargeHelper.MAX_WAIT_MONTHS)
+            }
+            // The exact statement it starts on, so the user can match it to the bank's slip (banks count "after 4 months" differently)
+            if (showFirstCharge) Text(
+                stringResource(
+                    R.string.wallet_lbl_first_charge_on,
+                    CardStatementHelper.formatDay(RecurringChargeHelper.nextDate(preview, card.statementDay), withYear = true)
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 8.dp)
+            )
 
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,

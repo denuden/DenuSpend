@@ -33,6 +33,7 @@ import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
+import java.time.LocalDate
 
 /**
  * One subscription ("Every month · next Nov 30") or installment ("4 of 24 · next Nov 28" with a bar) on the card's list.
@@ -54,6 +55,16 @@ fun RecurringChargeItem(
     }
     val subtitle = when {
         isPaidOff -> stringResource(R.string.wallet_lbl_paid_off, charge.totalCount)
+        // "Buy now, pay later": nothing posted yet, so it says when it starts instead of "1 of 12"
+        RecurringChargeHelper.isDeferred(charge, statementDay) -> {
+            val start = RecurringChargeHelper.nextDate(charge, statementDay)
+            val months = RecurringChargeHelper.monthsLeft(charge)
+            stringResource(
+                R.string.wallet_lbl_installment_starts,
+                CardStatementHelper.formatDay(start, withYear = start.year != LocalDate.now().year),
+                pluralStringResource(R.plurals.wallet_lbl_month_count, months, months)
+            )
+        }
         charge.isInstallment -> stringResource(
             R.string.wallet_lbl_installment_progress,
             charge.paidBefore + charge.chargeCount + 1,

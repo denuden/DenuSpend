@@ -3,6 +3,7 @@ package com.gmail.vondenuelle.denuspend.utils
 import com.gmail.vondenuelle.denuspend.domain.models.wallet.RecurringChargeModel
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 
 /**
  * The schedule math for subscriptions and installments. Nothing here is stored except what the repository saves
@@ -38,6 +39,22 @@ object RecurringChargeHelper {
         val thisMonth = CardStatementHelper.closingDate(YearMonth.from(today), statementDay)
         return if (today.isAfter(thisMonth)) CardStatementHelper.closingDate(YearMonth.from(today).plusMonths(1), statementDay) else thisMonth
     }
+
+    const val MAX_WAIT_MONTHS = 12
+
+    // "Buy now, pay later": the first month waits this many statements after the next one. Nothing extra is stored, only a later startDate.
+    fun deferredInstallmentDate(statementDay: Int, waitMonths: Int, today: LocalDate = LocalDate.now()): LocalDate =
+        CardStatementHelper.closingDate(YearMonth.from(firstInstallmentDate(statementDay, today)).plusMonths(waitMonths.toLong()), statementDay)
+
+    // The wait held in a new installment's draft: its startDate is the month picked (today or earlier = no wait)
+    fun waitMonths(draftStart: LocalDate, statementDay: Int, today: LocalDate = LocalDate.now()): Int =
+        ChronoUnit.MONTHS.between(YearMonth.from(firstInstallmentDate(statementDay, today)), YearMonth.from(draftStart))
+            .toInt().coerceIn(0, MAX_WAIT_MONTHS)
+
+    // A saved installment that hasn't posted yet and doesn't start on the coming statement, so it shows "Starts Mar 13"
+    fun isDeferred(charge: RecurringChargeModel, statementDay: Int, today: LocalDate = LocalDate.now()): Boolean =
+        charge.isInstallment && charge.active && charge.chargeCount == 0 &&
+            nextDate(charge, statementDay).isAfter(firstInstallmentDate(statementDay, today))
 
     // ₱10,000 over 3 months = ₱3,333.33 a month; the last month absorbs the rounding (₱3,333.34)
     fun monthlyAmount(totalAmount: Long, totalCount: Int): Long = if (totalCount > 0) totalAmount / totalCount else 0L

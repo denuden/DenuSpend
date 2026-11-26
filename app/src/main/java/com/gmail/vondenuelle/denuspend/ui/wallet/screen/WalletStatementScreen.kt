@@ -355,6 +355,7 @@ private fun MonthSwitcher(
 private data class SectionData(val title: String, val rows: List<StatementRow>, val isCredit: Boolean = false)
 
 // Groups one cycle's entries like a bank statement. Empty groups are left out.
+// Balance corrections show as one net row (like CardStatementHelper.totals), so lowering then raising owed back shows nothing.
 @Composable
 private fun statementSections(
     transactions: List<TransactionModel>,
@@ -390,11 +391,26 @@ private fun statementSections(
             amount = -t.amount
         )
     }
-    val outs = movements.filter { it.amount < 0 }
+    val (corrections, others) = movements.partition { it.presetKey == WalletMovementModel.PRESET_CORRECTION }
+    val netCorrection = corrections.sumOf { it.amount }
+    // Dated on the latest correction, since that's when the owed amount ended up where it is
+    val correctionRow = corrections.maxByOrNull { it.date }?.takeIf { netCorrection != 0L }?.let { latest ->
+        StatementRow(
+            key = "correction_net",
+            date = CardStatementHelper.toLocalDate(latest.date),
+            title = stringResource(R.string.wallet_movement_preset_correction),
+            subtitle = "",
+            amount = abs(netCorrection),
+            isCredit = netCorrection > 0
+        )
+    }
+
+    val outs = others.filter { it.amount < 0 }
     val subscriptions = outs.filter { it.presetKey == WalletMovementModel.PRESET_SUBSCRIPTION }.map(::movementRow)
     val installments = outs.filter { it.presetKey == WalletMovementModel.PRESET_INSTALLMENT }.map(::movementRow)
-    val otherCharges = outs.filter { it.presetKey != WalletMovementModel.PRESET_SUBSCRIPTION && it.presetKey != WalletMovementModel.PRESET_INSTALLMENT }.map(::movementRow)
-    val payments = movements.filter { it.amount > 0 }.map(::movementRow)
+    val otherCharges = outs.filter { it.presetKey != WalletMovementModel.PRESET_SUBSCRIPTION && it.presetKey != WalletMovementModel.PRESET_INSTALLMENT }.map(::movementRow) +
+        listOfNotNull(correctionRow?.takeIf { !it.isCredit })
+    val payments = others.filter { it.amount > 0 }.map(::movementRow) + listOfNotNull(correctionRow?.takeIf { it.isCredit })
 
     return listOf(
         SectionData(stringResource(R.string.wallet_lbl_section_purchases), purchases),
