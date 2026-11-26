@@ -20,7 +20,7 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
   <img src="docs/media/card-recurring.png" width="30%" alt="Subscriptions and installments" />
 </p>
 
-🎬 [Watch a 1-minute demo](docs/media/demo.mp4): add a wallet, apply an allowance template, log an expense, then explore Budget and Food insights.
+🎬 [Watch a 1:40 demo](docs/media/demo.mp4): log an expense and see Home update, explore 6 months of Budget and Food insights, open a credit card statement, then add an installment that starts 3 months later.
 
 ## Features
 - **Home dashboard.** One glance answers "how much can I still spend today?", with a chip per category, how the month is pacing ("₱277/day to stay on plan"), your total balance across wallets, and what you added last. Every card opens the screen with the details.
