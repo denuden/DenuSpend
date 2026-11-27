@@ -47,7 +47,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -267,7 +266,7 @@ fun InsightsMonthDetail(monthDays: BudgetInsightsModel, modifier: Modifier = Mod
             Text(
                 if (monthDays.allowance > 0) {
                     buildAnnotatedString {
-                        append(stringResource(R.string.insights_month_spent_of, peso(monthDays.spent), peso(monthDays.allowance), monthDays.category))
+                        append(boldAmounts(stringResource(R.string.insights_month_spent_of, peso(monthDays.spent), peso(monthDays.allowance), monthDays.category)))
                         withStyle(SpanStyle(color = statusColor, fontWeight = FontWeight.Bold)) {
                             append(
                                 if (left >= 0) stringResource(R.string.budget_lbl_left, peso(left))
@@ -276,13 +275,15 @@ fun InsightsMonthDetail(monthDays: BudgetInsightsModel, modifier: Modifier = Mod
                         }
                     }
                 } else {
-                    AnnotatedString(stringResource(R.string.insights_month_spent, peso(monthDays.spent)))
+                    boldAmounts(stringResource(R.string.insights_month_spent, peso(monthDays.spent)))
                 },
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                pluralStringResource(R.plurals.budget_transactions_made, monthDays.transactionCount.toInt(), monthDays.transactionCount.toInt()) +
-                    " · " + stringResource(R.string.insights_month_avg_day, peso(monthDays.avgPerDay)),
+                boldAmounts(
+                    pluralStringResource(R.plurals.budget_transactions_made, monthDays.transactionCount.toInt(), monthDays.transactionCount.toInt()) +
+                    " · " + stringResource(R.string.insights_month_avg_day, peso(monthDays.avgPerDay))
+                ),
                 style = MaterialTheme.typography.bodyMedium
             )
             if (monthDays.allowance > 0 || monthDays.unplannedDays > 0) {

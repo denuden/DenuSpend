@@ -79,12 +79,14 @@ fun InsightsCompareCard(
         // With nothing tracked before, the subtitle already says so, so no second line saying the same thing
         if (insights.previousDayCount > 0) {
             Text(
-                when {
-                    percent == null -> stringResource(R.string.insights_compare_no_data, insights.category)
-                    percent == 0 -> stringResource(R.string.insights_compare_same, insights.category)
-                    current > previous -> stringResource(R.string.insights_compare_more, peso(current - previous), insights.category)
-                    else -> stringResource(R.string.insights_compare_less, peso(previous - current), insights.category)
-                },
+                boldAmounts(
+                    when {
+                        percent == null -> stringResource(R.string.insights_compare_no_data, insights.category)
+                        percent == 0 -> stringResource(R.string.insights_compare_same, insights.category)
+                        current > previous -> stringResource(R.string.insights_compare_more, peso(current - previous), insights.category)
+                        else -> stringResource(R.string.insights_compare_less, peso(previous - current), insights.category)
+                    }
+                ),
                 style = MaterialTheme.typography.bodyMedium
             )
         }

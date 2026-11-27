@@ -118,7 +118,7 @@ fun InsightsWeekdayCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        stringResource(R.string.insights_weekday_detail_total, peso(detail.spent), peso(detail.avgPerDay)),
+                        boldAmounts(stringResource(R.string.insights_weekday_detail_total, peso(detail.spent), peso(detail.avgPerDay))),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     if (showOverspent) {

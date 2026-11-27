@@ -46,7 +46,7 @@ fun InsightsDaySheetContent(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold
         )
-        Text(stringResource(R.string.insights_day_spent, peso(day.spent)), style = MaterialTheme.typography.bodyMedium)
+        Text(boldAmounts(stringResource(R.string.insights_day_spent, peso(day.spent))), style = MaterialTheme.typography.bodyMedium)
         if (day.allowance > 0) {
             AllowanceLine(spent = day.spent, allowance = day.allowance, category = category)
         } else {
