@@ -48,8 +48,8 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
 - **Money is stored as whole cents** (`Long`), never floating point.
 - **Security rules are owner-only.** Every document carries its `userId`, and each user can only read and write their own data.
 
-## About
-Built by me from the ground up: the app structure, coding patterns, and the Firestore schema for the Add and Budget modules. Later features and polish were made together with Claude (Anthropic's AI) as a coding partner.
+## How it was built
+Built by me from the ground up starting in 2024: the app structure, coding patterns, and the Firestore schema for the Add and Budget modules. From 2026, later features and polish were made together with Claude Code as a coding partner: I designed each feature and reviewed and tested every change.
 
 ## License
 Copyright (c) 2026 Von Denuelle L. Tandoc (denuden). All rights reserved.
