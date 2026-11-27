@@ -48,7 +48,6 @@ import com.gmail.vondenuelle.denuspend.ui.auth.AuthScreenState
 import com.gmail.vondenuelle.denuspend.ui.auth.AuthViewModel
 import com.gmail.vondenuelle.denuspend.ui.auth.components.AuthGlowButton
 import com.gmail.vondenuelle.denuspend.ui.auth.components.AuthHeader
-import com.gmail.vondenuelle.denuspend.ui.auth.components.SocialSignInButtons
 import com.gmail.vondenuelle.denuspend.ui.common.components.AppTextField
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.LoadingDialog
@@ -193,8 +192,9 @@ fun LoginScreenContent(
             )
 
             // =============== OTHER SIGN INS
-            Spacer(modifier = Modifier.height(24.dp))
-            SocialSignInButtons()
+            // Hidden until Google, Facebook and phone sign-in are built; uncomment both lines to show them again
+            // Spacer(modifier = Modifier.height(24.dp))
+            // SocialSignInButtons()
 
             Spacer(modifier = Modifier.height(16.dp))
             Row(
