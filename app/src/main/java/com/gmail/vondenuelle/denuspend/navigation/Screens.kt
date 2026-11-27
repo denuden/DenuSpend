@@ -136,7 +136,14 @@ sealed class AddScreens : NavigationScreens {
 @Serializable
 sealed class BudgetScreens : NavigationScreens {
     @Serializable
-    data class BudgetInsightsScreenNavigation(val category : String) : BudgetScreens()
+    // Opens on the dashboard's filter, so a tapped row shows the same number. filter = BudgetChartFilter name ("" = This Month),
+    // customStart/customEnd = the picker's UTC-midnight millis for a custom range (-1 = none)
+    data class BudgetInsightsScreenNavigation(
+        val category : String,
+        val filter : String = "",
+        val customStart : Long = -1L,
+        val customEnd : Long = -1L,
+    ) : BudgetScreens()
 }
 
 @Serializable

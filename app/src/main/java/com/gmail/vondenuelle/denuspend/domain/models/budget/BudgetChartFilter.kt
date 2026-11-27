@@ -14,4 +14,8 @@ enum class BudgetChartFilter(@StringRes val label: Int) {
     LAST_6_MONTHS(R.string.budget_filter_last_6_months),
     THIS_YEAR(R.string.budget_filter_this_year),
     CUSTOM(R.string.budget_filter_custom), //range picked in a date range dialog
+    ;
+
+    // Whole months from the 1st, read from the monthly docs on both the dashboard and Insights
+    val isWholeMonths: Boolean get() = this == LAST_3_MONTHS || this == LAST_6_MONTHS || this == THIS_YEAR
 }

@@ -30,8 +30,8 @@ interface WalletService {
 
     // Credit cards: subscriptions and installments (recurring_charges)
     fun getRecurringCharges(): Flow<List<RecurringChargeModel>>
-    // Budget's "Bills & subscriptions": the auto charges posted to any card between start and end
-    fun getBillCharges(start: Timestamp, end: Timestamp): Flow<List<WalletMovementModel>>
+    // Budget's money in / out and "Bills & subscriptions": every real money movement between start and end (not transfers)
+    fun getMoneyMovements(start: Timestamp, end: Timestamp): Flow<List<WalletMovementModel>>
     suspend fun saveRecurringCharge(charge: RecurringChargeModel)
     suspend fun deleteRecurringCharge(docId: String)
     // Auto-charge on app open: posts every due date and returns (card name, charge name) for each charge it posted

@@ -72,6 +72,10 @@ fun BudgetInsightsScreen(
     onNavigate: (NavigationScreens, NavOptions?) -> Unit,
     onPopBackStack: () -> Unit,
     category : String,
+    // The dashboard's range when Insights was opened (used on the first load only)
+    startFilter : String = "",
+    startCustomStart : Long? = null,
+    startCustomEnd : Long? = null,
     viewModel: BudgetViewModel = hiltViewModel()
 ) {
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
@@ -112,7 +116,7 @@ fun BudgetInsightsScreen(
     ComposableLifecycle { _, event ->
         when (event) {
             Lifecycle.Event.ON_START -> {
-                viewModel.onEvent(BudgetScreenEvents.OnGetBudgetInsights(category))
+                viewModel.onEvent(BudgetScreenEvents.OnGetBudgetInsights(category, startFilter, startCustomStart, startCustomEnd))
                 if (selectedDate != null) viewModel.resumeInsightDayListener()
             }
             Lifecycle.Event.ON_STOP -> {
@@ -279,6 +283,7 @@ fun BudgetInsightsScreenContent(
                         // The list is below the chart, so bring the chart back into view
                         scope.launch { scrollState.animateScrollTo(chartTop) }
                     },
+                    showBadDays = insights.hasDayCounts,
                     modifier = Modifier.padding(top = 12.dp)
                 )
             }

@@ -2,7 +2,6 @@ package com.gmail.vondenuelle.denuspend.data.remote.services.budget
 
 import com.gmail.vondenuelle.denuspend.data.remote.error.NoUserException
 import com.gmail.vondenuelle.denuspend.data.remote.models.budget.request.GetBudgetSummaryRequest
-import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.MonthlyHistoryModel
 import com.gmail.vondenuelle.denuspend.domain.models.transaction.DailyHistoryModel
 import com.google.firebase.auth.FirebaseAuth
@@ -28,48 +27,7 @@ class FirebaseBudgetServiceImpl @Inject constructor(
     }
 
 
-    override suspend fun getBudgetSummary(
-        request: GetBudgetSummaryRequest
-    ): Flow<BudgetTotalSummaryModel> = callbackFlow {
-
-        val currentUser = firebaseAuth.currentUser
-            ?: throw NoUserException("User not logged in")
-        // One doc per day (daily_history) instead of one per transaction, so a range costs at most one read per day
-        val query = firebaseFireStore
-            .collection(DAILY_HISTORY)
-            .whereEqualTo(USER_ID, currentUser.uid)
-            .whereGreaterThanOrEqualTo(DATE, request.startDate)
-            .whereLessThanOrEqualTo(DATE, request.endDate)
-
-        val listener = query.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                close(error)
-                return@addSnapshotListener
-            }
-
-            val days = snapshot?.documents
-                ?.mapNotNull { it.toObject(DailyHistoryModel::class.java) }
-                ?: emptyList()
-
-            // Add up each day's per-category maps. Days saved before these maps existed add nothing.
-            val totals = sumByCategory(days.map { it.expenseByCategory })
-            val allowances = sumByCategory(days.map { it.allowanceByCategory })
-
-            val summary = BudgetTotalSummaryModel(
-                totals = totals,
-                counts = sumByCategory(days.map { it.countByCategory }).mapValues { it.value.toInt() },
-                totalExpense = totals.values.sum(),
-                allowances = allowances,
-                totalAllowance = allowances.values.sum()
-            )
-
-            trySend(summary)
-        }
-
-        awaitClose { listener.remove() }
-    }
-
-    // Same query as getBudgetSummary (so the same index), but returns each day instead of the sum
+    // The daily docs of a range (needs the userId + date index). Budget adds them up on the device.
     override fun getDailyHistoryInRange(
         request: GetBudgetSummaryRequest
     ): Flow<List<DailyHistoryModel>> = callbackFlow {
@@ -139,9 +97,4 @@ class FirebaseBudgetServiceImpl @Inject constructor(
 
         awaitClose { listener.remove() }
     }
-
-    private fun sumByCategory(maps: List<Map<String, Long>>): Map<String, Long> =
-        maps.flatMap { it.entries }
-            .groupBy({ it.key }, { it.value })
-            .mapValues { (_, values) -> values.sum() }
 }

@@ -18,10 +18,17 @@ import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.ui.add.components.CategoryDropdownButtonModel
 import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils
+import kotlin.math.roundToInt
 
 // Helpers shared by the Insights sections (one file per section, all used only by BudgetInsightsScreen)
 
 fun peso(cents: Long) = "₱${CurrencyUtils.formatCents(cents)}"
+
+// Rounded, not cut off: +1.8% shows as ▲2%. [previous] must be above 0.
+fun percentChange(current: Long, previous: Long): Int = ((current - previous) * 100.0 / previous).roundToInt()
+
+// Share of [whole], rounded: 27.7% shows as 28%
+fun percentOf(part: Long, whole: Long): Int = if (whole > 0) (part * 100.0 / whole).roundToInt() else 0
 
 // ▲ red when spending went up, ▼ green when it went down. Also used by Month by month.
 @Composable

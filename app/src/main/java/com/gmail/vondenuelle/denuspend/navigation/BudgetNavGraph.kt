@@ -22,7 +22,10 @@ fun NavGraphBuilder.addBudgetNavGraph(
                 onPopBackStack = {
                     navController.popBackStack()
                 },
-                category = category
+                category = category,
+                startFilter = args.filter,
+                startCustomStart = args.customStart.takeIf { it >= 0 },
+                startCustomEnd = args.customEnd.takeIf { it >= 0 },
             )
         }
     }

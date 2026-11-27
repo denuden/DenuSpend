@@ -21,7 +21,11 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Source
+import kotlinx.coroutines.withTimeoutOrNull
 import com.google.firebase.firestore.toObject
+import com.gmail.vondenuelle.denuspend.domain.models.budget.DayMark
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -73,6 +77,12 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         const val WEEKDAY_EXPENSE_BY_CATEGORY = "weekdayExpenseByCategory"
         // On the daily doc: true once the day's adds also go to monthly_history. Days without it are skipped on edit/delete.
         const val IN_MONTHLY = "inMonthly"
+        // 1.7.0: spent per wallet on the daily and monthly docs. walletTotals marks a daily doc whose expenseByWallet is complete
+        // (a new day, or the backfill), so edits/deletes never take an older, uncounted expense off and go negative.
+        const val EXPENSE_BY_WALLET = "expenseByWallet"
+        const val WALLET_TOTALS = "walletTotals"
+        // 1.7.0, monthly doc only: category -> "dd" -> DayMark
+        const val DAY_STATUS_BY_CATEGORY = "dayStatusByCategory"
 
 
         val utcFormatter = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
@@ -143,6 +153,18 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             TOTAL_EXPENSE to FieldValue.increment(transactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }),
             IN_MONTHLY to true
         )
+        // Today's doc as it was before this save, for the day marks and per-wallet totals.
+        // Usually from the cache (the Add tab listens to it), so it costs no read. null = couldn't read it (offline, not cached).
+        val dayBefore = readDay(dailyDocRef)
+        // A day that already had expenses before 1.7.0 waits for the backfill, so its wallet totals never start half-counted
+        val walletTotalsOn = dayBefore != null && (!dayBefore.exists() || dayBefore.getBoolean(WALLET_TOTALS) == true)
+        val walletDeltas = transactions.filter { it.amount < 0 && it.walletId.isNotEmpty() }
+            .groupBy { it.walletId }
+            .mapValues { (_, list) -> list.sumOf { abs(it.amount) } }
+        if (walletTotalsOn) {
+            dailyFields[WALLET_TOTALS] = true
+            if (walletDeltas.isNotEmpty()) dailyFields[EXPENSE_BY_WALLET] = walletDeltas.mapValues { FieldValue.increment(it.value) }
+        }
         // Per-category totals as nested maps (set + merge reads the keys literally). Empty maps are left out,
         // because merging an empty map would replace the existing one.
         val categoryFields = mutableMapOf<String, Any>()
@@ -165,6 +187,17 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             monthlyFields[WEEKDAY_EXPENSE_BY_CATEGORY] = expensesByCategory.mapValues { (_, list) ->
                 mapOf(weekdayKey(today) to FieldValue.increment(list.sumOf { abs(it.amount) }))
             }
+        }
+        if (walletTotalsOn && walletDeltas.isNotEmpty()) {
+            monthlyFields[EXPENSE_BY_WALLET] = walletDeltas.mapValues { FieldValue.increment(it.value) }
+        }
+        if (dayBefore != null) {
+            val marks = dayMarks(
+                day = dayBefore.takeIf { it.exists() },
+                expenseDelta = expensesByCategory.mapValues { (_, list) -> list.sumOf { abs(it.amount) } },
+                allowanceDelta = allowancesByCategory.mapValues { (_, list) -> list.sumOf { it.amount } },
+            )
+            monthlyFields.putAll(marksField(marks, today))
         }
         batch.set(monthlyDocRef, monthlyFields, SetOptions.merge())
 
@@ -245,17 +278,22 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         val dailyFields = mutableMapOf<String, Any>(totalField to FieldValue.increment(delta))
         // The same category changes go to the daily doc and, if the day is counted there, to the month
         val categoryFields = mutableMapOf<String, Any>()
+        // The same changes as plain numbers, for the day marks
+        val categoryDeltas = mutableMapOf<String, Long>()
         val day = dailyDocRef.get().await()
         if (hasCategoryTotals(day)) {
             val categoryField = if (request.amount > 0) ALLOWANCE_BY_CATEGORY else EXPENSE_BY_CATEGORY
             if (request.category == request.oldCategory) {
                 categoryFields[categoryField] = mapOf(request.category to FieldValue.increment(delta))
+                categoryDeltas[request.category] = delta
             } else {
                 // Category changed: take the old amount off the old category and put the new one on the new category
                 categoryFields[categoryField] = mapOf(
                     request.oldCategory to FieldValue.increment(-abs(request.oldAmount)),
                     request.category to FieldValue.increment(abs(request.amount))
                 )
+                categoryDeltas[request.oldCategory] = -abs(request.oldAmount)
+                categoryDeltas[request.category] = abs(request.amount)
                 if (request.amount < 0) {
                     categoryFields[COUNT_BY_CATEGORY] = mapOf(
                         request.oldCategory to FieldValue.increment(-1),
@@ -265,6 +303,17 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             }
         }
         dailyFields.putAll(categoryFields)
+        // Per-wallet totals: same wallet moves by the difference, a changed wallet moves the amount from the old one to the new one
+        val walletDeltas = mutableMapOf<String, Long>()
+        if (request.amount < 0 && day.getBoolean(WALLET_TOTALS) == true) {
+            if (newWalletId.isNotEmpty() && newWalletId == request.oldWalletId) {
+                walletDeltas[newWalletId] = delta
+            } else {
+                if (request.oldWalletId.isNotEmpty()) walletDeltas[request.oldWalletId] = -abs(request.oldAmount)
+                if (newWalletId.isNotEmpty()) walletDeltas[newWalletId] = abs(request.amount)
+            }
+        }
+        if (walletDeltas.isNotEmpty()) dailyFields[EXPENSE_BY_WALLET] = walletDeltas.mapValues { FieldValue.increment(it.value) }
 
         val batch = firebaseFireStore.batch()
         batch.update(transactionRef, fields)
@@ -273,6 +322,9 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         if (isInMonthly(day) && categoryFields.isNotEmpty()) {
             val dayDate = dayFromDailyDocId(request.dailyDocId)
             val monthlyFields = categoryFields.toMutableMap()
+            if (walletDeltas.isNotEmpty()) monthlyFields[EXPENSE_BY_WALLET] = walletDeltas.mapValues { FieldValue.increment(it.value) }
+            val marks = if (request.amount > 0) dayMarks(day, emptyMap(), categoryDeltas) else dayMarks(day, categoryDeltas, emptyMap())
+            monthlyFields.putAll(marksField(marks, dayDate))
             if (request.amount < 0) {
                 val weekday = weekdayKey(dayDate)
                 monthlyFields[WEEKDAY_EXPENSE_BY_CATEGORY] = if (request.category == request.oldCategory) {
@@ -320,6 +372,11 @@ class FirebaseTransactionServiceImpl @Inject constructor(
             }
         }
         dailyFields.putAll(categoryFields)
+        // Take it off its wallet's total too, if the day's wallet totals are complete
+        val walletDelta = if (transaction.amount < 0 && transaction.walletId.isNotEmpty() && day.getBoolean(WALLET_TOTALS) == true) {
+            mapOf(transaction.walletId to FieldValue.increment(-abs(transaction.amount)))
+        } else null
+        walletDelta?.let { dailyFields[EXPENSE_BY_WALLET] = it }
 
         // The daily doc is kept even if this was the day's last transaction (it shows as ₱0).
         val batch = firebaseFireStore.batch()
@@ -329,6 +386,10 @@ class FirebaseTransactionServiceImpl @Inject constructor(
         if (isInMonthly(day) && categoryFields.isNotEmpty()) {
             val dayDate = dayFromDailyDocId(dailyDocId)
             val monthlyFields = categoryFields.toMutableMap()
+            walletDelta?.let { monthlyFields[EXPENSE_BY_WALLET] = it }
+            val removed = mapOf(transaction.category to -abs(transaction.amount))
+            val marks = if (transaction.amount > 0) dayMarks(day, emptyMap(), removed) else dayMarks(day, removed, emptyMap())
+            monthlyFields.putAll(marksField(marks, dayDate))
             if (transaction.amount < 0) {
                 monthlyFields[WEEKDAY_EXPENSE_BY_CATEGORY] = mapOf(
                     transaction.category to mapOf(weekdayKey(dayDate) to FieldValue.increment(-abs(transaction.amount)))
@@ -361,6 +422,39 @@ class FirebaseTransactionServiceImpl @Inject constructor(
     private fun monthlyDocRef(userId: String, day: LocalDate): DocumentReference =
         firebaseFireStore.collection(MONTHLY_HISTORY)
             .document("${userId}_${day.format(DateTimeFormatter.ofPattern("yyyyMM"))}")
+
+    // Cache first (free, and works offline), then the server for at most 2s, so a cold offline add never looks stuck.
+    // null when neither has it, so the caller can skip the extras. Only Firestore errors are caught, so a cancel still cancels.
+    private suspend fun readDay(ref: DocumentReference): DocumentSnapshot? =
+        try {
+            ref.get(Source.CACHE).await()
+        } catch (e: FirebaseFirestoreException) {
+            try {
+                withTimeoutOrNull(2_000) { ref.get().await() }
+            } catch (e: FirebaseFirestoreException) {
+                null
+            }
+        }
+
+    // The day's mark for each category this save touches: the doc's numbers plus this save's changes
+    private fun dayMarks(day: DocumentSnapshot?, expenseDelta: Map<String, Long>, allowanceDelta: Map<String, Long>): Map<String, String> {
+        val expense = day?.longMap(EXPENSE_BY_CATEGORY).orEmpty()
+        val allowance = day?.longMap(ALLOWANCE_BY_CATEGORY).orEmpty()
+        return (expenseDelta.keys + allowanceDelta.keys).associateWith { category ->
+            DayMark.of(
+                spent = (expense[category] ?: 0L) + (expenseDelta[category] ?: 0L),
+                allowance = (allowance[category] ?: 0L) + (allowanceDelta[category] ?: 0L),
+            )
+        }
+    }
+
+    // Nested map for set + merge, so only these categories' "dd" keys change
+    private fun marksField(marks: Map<String, String>, day: LocalDate): Map<String, Any> =
+        if (marks.isEmpty()) emptyMap()
+        else mapOf(DAY_STATUS_BY_CATEGORY to marks.mapValues { (_, mark) -> mapOf(day.format(DateTimeFormatter.ofPattern("dd")) to mark) })
+
+    private fun DocumentSnapshot.longMap(field: String): Map<String, Long> =
+        (get(field) as? Map<*, *>)?.entries?.associate { it.key.toString() to ((it.value as? Number)?.toLong() ?: 0L) }.orEmpty()
 
     // Daily doc ids are "{uid}_yyyyMMdd", so the last 8 characters are the day
     private fun dayFromDailyDocId(dailyDocId: String): LocalDate =

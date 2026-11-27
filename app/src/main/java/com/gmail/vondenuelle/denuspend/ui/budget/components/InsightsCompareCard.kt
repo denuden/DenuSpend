@@ -45,8 +45,8 @@ fun InsightsCompareCard(
         stringResource(R.string.insights_compare_sub_untracked)
     }
 
-    // Under 1% either way counts as the same
-    val percent = if (previous > 0) ((current - previous) * 100 / previous).toInt() else null
+    // Rounds to 0% (under 0.5% either way) = the same
+    val percent = if (previous > 0) percentChange(current, previous) else null
 
     InsightsCard(modifier = modifier) {
         Row(verticalAlignment = Alignment.Top) {
@@ -76,15 +76,18 @@ fun InsightsCompareCard(
             fraction = previous.toFloat() / maxAvg,
             barColor = MaterialTheme.colorScheme.outline,
         )
-        Text(
-            when {
-                percent == null -> stringResource(R.string.insights_compare_no_data, insights.category)
-                percent == 0 -> stringResource(R.string.insights_compare_same, insights.category)
-                current > previous -> stringResource(R.string.insights_compare_more, peso(current - previous), insights.category)
-                else -> stringResource(R.string.insights_compare_less, peso(previous - current), insights.category)
-            },
-            style = MaterialTheme.typography.bodyMedium
-        )
+        // With nothing tracked before, the subtitle already says so, so no second line saying the same thing
+        if (insights.previousDayCount > 0) {
+            Text(
+                when {
+                    percent == null -> stringResource(R.string.insights_compare_no_data, insights.category)
+                    percent == 0 -> stringResource(R.string.insights_compare_same, insights.category)
+                    current > previous -> stringResource(R.string.insights_compare_more, peso(current - previous), insights.category)
+                    else -> stringResource(R.string.insights_compare_less, peso(previous - current), insights.category)
+                },
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
 }
 

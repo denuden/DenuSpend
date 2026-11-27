@@ -46,7 +46,9 @@ fun InsightsSummaryCard(
         insights.spent > 0 -> 1f
         else -> 0f
     }
-    val overspent = if (insights.isLongRange) insights.overspentMonths else insights.overspentDays
+    // Over or unplanned days. Months only when the range has no day marks (old months that weren't backfilled).
+    val byMonths = !insights.hasDayCounts
+    val overspent = if (byMonths) insights.overspentMonths else insights.badDays
 
     Card(
         shape = MaterialTheme.shapes.extraLarge,
@@ -99,12 +101,13 @@ fun InsightsSummaryCard(
                     modifier = Modifier.weight(1f).fillMaxHeight()
                 )
                 StatTile(
-                    // Without any allowance every spending day would count as over, so it isn't counted
-                    value = if (insights.allowance > 0) overspent.toString() else stringResource(R.string.insights_lbl_none),
+                    // Spending with no allowance counts as unplanned, so this counts even without any allowance.
+                    // Months can't tell "over" from "unplanned", so without an allowance there's nothing to count.
+                    value = if (!byMonths || insights.allowance > 0) overspent.toString() else stringResource(R.string.insights_lbl_none),
                     label = stringResource(
-                        if (insights.isLongRange) R.string.insights_stat_overspent_months else R.string.insights_stat_overspent_days
+                        if (byMonths) R.string.insights_stat_overspent_months else R.string.insights_stat_overspent_days
                     ),
-                    valueColor = if (insights.allowance > 0 && overspent > 0) MaterialTheme.colorScheme.error else Color.Unspecified,
+                    valueColor = if (overspent > 0 && (!byMonths || insights.allowance > 0)) MaterialTheme.colorScheme.error else Color.Unspecified,
                     modifier = Modifier.weight(1f).fillMaxHeight()
                 )
             }

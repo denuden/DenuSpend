@@ -13,6 +13,11 @@
     <!-- Darker green for text, so it stays readable on light backgrounds -->
     <color name="verified_green_text">#2E7D32</color>
 
+    <!-- UNPLANNED: spending with no allowance (Budget). Amber, apart from red "over". Light mode only until 1.8.0. -->
+    <color name="unplanned">#E39B00</color>
+    <color name="unplanned_container">#FFE9C2</color>
+    <color name="unplanned_text">#8A5A00</color>
+
     <!-- NOT VERIFIED (Error) -->
     <color name="not_verified_red">#950606</color>
     <color name="not_verified_red_container">#FBEAEA</color>

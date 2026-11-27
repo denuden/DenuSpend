@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -36,6 +37,8 @@ fun InsightsMonthsCard(
     openMonth: YearMonth?,
     onMonthClick: (YearMonth) -> Unit,
     modifier: Modifier = Modifier,
+    // The range has day marks, so each month can say how many days went wrong
+    showBadDays: Boolean = false,
 ) {
     InsightsCard(modifier = modifier) {
         Column {
@@ -52,7 +55,8 @@ fun InsightsMonthsCard(
                 val previous = newestFirst.getOrNull(i + 1)
                 MonthRow(
                     month = month,
-                    percent = previous?.avgPerDay?.takeIf { it > 0 }?.let { ((month.avgPerDay - it) * 100 / it).toInt() },
+                    percent = previous?.avgPerDay?.takeIf { it > 0 }?.let { percentChange(month.avgPerDay, it) },
+                    showBadDays = showBadDays,
                     isOpen = month.month == openMonth,
                     onClick = { onMonthClick(month.month) }
                 )
@@ -63,7 +67,7 @@ fun InsightsMonthsCard(
 }
 
 @Composable
-private fun MonthRow(month: InsightMonth, percent: Int?, isOpen: Boolean, onClick: () -> Unit) {
+private fun MonthRow(month: InsightMonth, percent: Int?, showBadDays: Boolean, isOpen: Boolean, onClick: () -> Unit) {
     val dateFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
     val left = month.allowance - month.spent
     Row(
@@ -105,6 +109,14 @@ private fun MonthRow(month: InsightMonth, percent: Int?, isOpen: Boolean, onClic
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            // A month can stay under its allowance overall and still have bad days
+            if (showBadDays && month.badDays > 0) {
+                Text(
+                    pluralStringResource(R.plurals.insights_months_bad_days, month.badDays, month.badDays),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
         Text(
             stringResource(R.string.insights_per_day, peso(month.avgPerDay)),

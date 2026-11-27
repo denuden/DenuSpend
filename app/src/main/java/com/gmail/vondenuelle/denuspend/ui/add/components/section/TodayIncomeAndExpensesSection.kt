@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.R
+import com.gmail.vondenuelle.denuspend.ui.common.components.InformationTooltip
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.getDateNow
 import kotlin.math.roundToInt
@@ -95,6 +96,13 @@ fun TodayIncomeAndExpensesSection(
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = if (isOverspent) MaterialTheme.colorScheme.error else colorResource(R.color.verified_green_text)
+                )
+            }
+            // Allowance is a made-up daily limit, not money, so the same explainer as Home, Wallet and Budget
+            Box(modifier = Modifier.align(Alignment.Top)) {
+                InformationTooltip(
+                    richTooltipSubheadText = stringResource(R.string.lbl_wallet_vs_allowance_title),
+                    richTooltipText = stringResource(R.string.lbl_wallet_vs_allowance_text)
                 )
             }
         }

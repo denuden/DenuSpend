@@ -370,15 +370,16 @@ class FirebaseWalletServiceImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    // Needs a composite index: wallet_movements (userId ASC, presetKey ASC, date ASC). The first run logs a link that creates it.
-    // Reads only the posted charges, so a deleted charge or schedule and a closed card still add up right.
-    override fun getBillCharges(start: Timestamp, end: Timestamp): Flow<List<WalletMovementModel>> = callbackFlow {
+    // Needs a composite index: wallet_movements (userId ASC, presetKey ASC, date ASC), the one the bills-only query used before 1.7.0.
+    // Reads the posted entries themselves, so a deleted charge or schedule and a closed card still add up right.
+    // Transfers, card payments, corrections and "withdrawn" aren't in MONEY_PRESETS, because they move money between your own wallets.
+    override fun getMoneyMovements(start: Timestamp, end: Timestamp): Flow<List<WalletMovementModel>> = callbackFlow {
         val currentUser = firebaseAuth.currentUser
             ?: throw NoUserException("User not logged in")
 
         val listener = firebaseFireStore.collection(WALLET_MOVEMENTS)
             .whereEqualTo(USER_ID, currentUser.uid)
-            .whereIn(PRESET_KEY, listOf(WalletMovementModel.PRESET_SUBSCRIPTION, WalletMovementModel.PRESET_INSTALLMENT))
+            .whereIn(PRESET_KEY, WalletMovementModel.MONEY_PRESETS)
             .whereGreaterThanOrEqualTo(DATE, start)
             .whereLessThanOrEqualTo(DATE, end)
             .addSnapshotListener { snapshot, error ->

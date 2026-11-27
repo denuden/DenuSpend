@@ -6,7 +6,6 @@ import com.gmail.vondenuelle.denuspend.data.remote.services.wallet.WalletService
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseBudget
 import com.gmail.vondenuelle.denuspend.di.qualifiers.FirebaseWallet
 import com.gmail.vondenuelle.denuspend.di.qualifiers.IoDispatcher
-import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetBillsModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.CUSTOM
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.LAST_15_DAYS
@@ -18,9 +17,12 @@ import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.LA
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.THIS_MONTH
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter.THIS_YEAR
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetInsightsModel
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetMoneyModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.MonthlyHistoryModel
-import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetBills
+import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetMoney
+import com.gmail.vondenuelle.denuspend.domain.models.budget.summaryFromDays
+import com.gmail.vondenuelle.denuspend.domain.models.budget.summaryFromMonths
 import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetInsights
 import com.gmail.vondenuelle.denuspend.domain.models.budget.buildBudgetInsightsFromMonths
 import com.gmail.vondenuelle.denuspend.domain.models.budget.toLocalDate
@@ -50,31 +52,51 @@ class BudgetRepository @Inject constructor(
     @FirebaseWallet private val walletService: WalletService,
     @IoDispatcher private val dispatcher: CoroutineDispatcher
 ) {
-    /** [customStartMillis]/[customEndMillis] are only used for CUSTOM. They are the date range picker's UTC-midnight millis. */
-    suspend fun getBudgetSummary(
+    /**
+     * The dashboard's totals, built on the device. Last 3/6 Months and This Year read the monthly docs (3–12 reads, whole months),
+     * the rest the daily docs (1 read per day with entries). Insights reads the same docs for the same filter, so both screens match.
+     * [customStartMillis]/[customEndMillis] are only used for CUSTOM. They are the date range picker's UTC-midnight millis.
+     */
+    fun getBudgetSummary(
         filter: BudgetChartFilter,
         customStartMillis: Long? = null,
         customEndMillis: Long? = null,
-    ) : Flow<BudgetTotalSummaryModel> {
+    ) : Flow<BudgetTotalSummaryModel> = flow {
         val (firstDay, lastDay) = rangeFor(filter, customStartMillis, customEndMillis)
-        return budgetService.getBudgetSummary(requestFor(firstDay, lastDay))
-            .flowOn(dispatcher)
-    }
+        val setupDay = walletService.getTrackingStart()?.toLocalDate()
+        val request = requestFor(firstDay, lastDay)
+        // Days before tracking started don't count toward "N of M days"
+        fun countedDays(oldestDoc: LocalDate?, byMonth: Boolean): Int {
+            val start = maxOf(firstDay, trackedFrom(setupDay, oldestDoc, lastDay, byMonth))
+            return (ChronoUnit.DAYS.between(start, lastDay).toInt() + 1).coerceAtLeast(0)
+        }
+        val summary = if (filter.isWholeMonths) {
+            budgetService.getMonthlyHistoryInRange(request).map { months ->
+                summaryFromMonths(months, countedDays(months.minOfOrNull { it.month.toLocalDate() }, byMonth = true))
+            }
+        } else {
+            budgetService.getDailyHistoryInRange(request).map { days ->
+                summaryFromDays(days, countedDays(days.minOfOrNull { it.date.toLocalDate() }, byMonth = false))
+            }
+        }
+        emitAll(summary.map { it.copy(startDate = firstDay, endDate = lastDay) })
+    }.flowOn(dispatcher)
 
-    // "Bills & subscriptions": the range's card charges, named with the wallets and schedules (the same listeners the Wallet tab runs)
-    fun getBudgetBills(
+    // Real money in and out from the wallet history, plus "Bills & subscriptions", for the same range as the summary.
+    // One movements listener plus the wallets and schedules listeners the Wallet tab already runs.
+    fun getBudgetMoney(
         filter: BudgetChartFilter,
         customStartMillis: Long? = null,
         customEndMillis: Long? = null,
-    ): Flow<BudgetBillsModel> {
+    ): Flow<BudgetMoneyModel> {
         val (firstDay, lastDay) = rangeFor(filter, customStartMillis, customEndMillis)
         val request = requestFor(firstDay, lastDay)
         val includesToday = !lastDay.isBefore(LocalDate.now())
         return combine(
-            walletService.getBillCharges(request.startDate, request.endDate),
+            walletService.getMoneyMovements(request.startDate, request.endDate),
             walletService.getWallets(),
             walletService.getRecurringCharges(),
-        ) { charges, wallets, schedules -> buildBudgetBills(charges, wallets, schedules, includesToday) }
+        ) { movements, wallets, schedules -> buildBudgetMoney(movements, wallets, schedules, includesToday) }
             .flowOn(dispatcher)
     }
 
@@ -85,8 +107,8 @@ class BudgetRepository @Inject constructor(
     }
 
     /**
-     * Insights for one [category]. Up to 31 days it reads the daily docs; longer ranges and This year read the monthly docs and
-     * start on the 1st of the first month (a monthly doc holds the whole month). Either way the previous period
+     * Insights for one [category]. Up to 31 days, and every custom range, it reads the daily docs; Last 3/6 Months and This Year
+     * read the monthly docs (whole months, like the dashboard). Either way the previous period
      * (same number of days or months) comes from the same query, so it's one listener.
      * Neither starts before tracking did, so empty days before the first entry don't lower the averages (see [trackedFrom]).
      */
@@ -100,8 +122,9 @@ class BudgetRepository @Inject constructor(
         val dayCount = ChronoUnit.DAYS.between(firstDay, lastDay).toInt() + 1
         val setupDay = walletService.getTrackingStart()?.toLocalDate()
 
-        // The filter picks days or months once, here: This year is always months (one bar in January), Custom goes by its length
-        val byDay = filter != THIS_YEAR && dayCount <= BudgetInsightsModel.MAX_DAILY_RANGE
+        // The filter picks days or months once, here. Last 3/6 Months and This Year are whole months (This Year has one bar in January).
+        // Custom always reads its exact days: a monthly doc holds whole months, which counted days outside a mid-month custom range.
+        val byDay = filter == CUSTOM || (!filter.isWholeMonths && dayCount <= BudgetInsightsModel.MAX_DAILY_RANGE)
         val insights = if (byDay) {
             val previousStart = firstDay.minusDays(dayCount.toLong())
             budgetService.getDailyHistoryInRange(requestFor(previousStart, lastDay)).map { docs ->
@@ -144,8 +167,10 @@ class BudgetRepository @Inject constructor(
         category: String,
         month: YearMonth,
         lastDay: LocalDate,
+        // A custom range can start mid-month, so its first month opens on the range's first day
+        firstDay: LocalDate = month.atDay(1),
     ): Flow<BudgetInsightsModel> {
-        val first = month.atDay(1)
+        val first = maxOf(month.atDay(1), firstDay)
         val last = minOf(month.atEndOfMonth(), lastDay)
         return budgetService.getDailyHistoryInRange(requestFor(first, last))
             .map { docs -> buildBudgetInsights(category, first, last, docs, emptyList()) }
@@ -168,8 +193,9 @@ class BudgetRepository @Inject constructor(
             LAST_7_DAYS -> today.minusDays(6)
             LAST_15_DAYS -> today.minusDays(14)
             LAST_30_DAYS -> today.minusDays(29)
-            LAST_3_MONTHS -> today.minusMonths(3)
-            LAST_6_MONTHS -> today.minusMonths(6)
+            // This month and the ones before it, as whole months, so the dashboard and Insights cover the same days
+            LAST_3_MONTHS -> today.minusMonths(2).withDayOfMonth(1)
+            LAST_6_MONTHS -> today.minusMonths(5).withDayOfMonth(1)
             THIS_YEAR -> today.withDayOfYear(1)
             CUSTOM -> customStart
         }

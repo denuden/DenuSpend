@@ -88,38 +88,28 @@ fun BudgetItem(
                     color = if (isOver) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    pluralStringResource(R.plurals.budget_transactions_made, transactionCount, transactionCount),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(end = 8.dp)
-                )
-                // Same wording as the header: "of ₱720.80 · ₱7,334.00 over" (red) or "of ₱600.00 · ₱150.00 left" (green)
-                val statusColor = if (isOver) MaterialTheme.colorScheme.error else colorResource(R.color.verified_green_text)
-                val status = when {
-                    allowance == 0L -> null
-                    isOver -> stringResource(R.string.budget_lbl_over, "₱${CurrencyUtils.formatCents(amount - allowance)}")
-                    else -> stringResource(R.string.budget_lbl_left, "₱${CurrencyUtils.formatCents(allowance - amount)}")
-                }
-                val ofAllowance = stringResource(R.string.budget_lbl_of, "₱${CurrencyUtils.formatCents(allowance)}")
-                val noAllowance = stringResource(R.string.budget_lbl_no_allowance)
-                Text(
-                    buildAnnotatedString {
-                        if (status == null) {
-                            append(noAllowance)
-                        } else {
-                            append("$ofAllowance · ")
-                            withStyle(SpanStyle(color = statusColor, fontWeight = FontWeight.SemiBold)) { append(status) }
-                        }
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
+            // One sentence that can wrap to a second line, so a long amount never gets squeezed into a right-hand column:
+            // "32 transactions · ₱520.00 under its ₱6,700.00 allowance", or "· No allowance set · unplanned" in amber
+            val statusColor = when {
+                allowance == 0L -> colorResource(R.color.unplanned_text)
+                isOver -> MaterialTheme.colorScheme.error
+                else -> colorResource(R.color.verified_green_text)
             }
+            val count = pluralStringResource(R.plurals.budget_transactions_made, transactionCount, transactionCount)
+            val status = when {
+                allowance == 0L -> stringResource(R.string.budget_row_unplanned)
+                isOver -> stringResource(R.string.budget_row_over, "₱${CurrencyUtils.formatCents(amount - allowance)}", "₱${CurrencyUtils.formatCents(allowance)}")
+                else -> stringResource(R.string.budget_row_under, "₱${CurrencyUtils.formatCents(allowance - amount)}", "₱${CurrencyUtils.formatCents(allowance)}")
+            }
+            Text(
+                buildAnnotatedString {
+                    append("$count · ")
+                    withStyle(SpanStyle(color = statusColor, fontWeight = FontWeight.SemiBold)) { append(status) }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
+            )
             if (allowance > 0) {
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(

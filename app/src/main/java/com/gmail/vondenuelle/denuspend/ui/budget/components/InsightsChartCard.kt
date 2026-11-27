@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -64,6 +66,8 @@ data class ChartBar(
     val spent: Long,
     val allowance: Long,
     val isOver: Boolean,
+    // Spending with no allowance (amber), apart from going over one (red)
+    val isUnplanned: Boolean = false,
 )
 
 // Days as bars: "Fri 14" up to 7 days, otherwise the day number every 2 or 5 days
@@ -75,17 +79,24 @@ fun dayBars(days: List<InsightDay>): List<ChartBar> {
         else -> 5
     }
     return days.mapIndexed { i, day ->
+        // The last day always gets a label, so a regular one right before it is skipped ("26" and "27" touched)
+        val tooCloseToLast = days.lastIndex - i in 1 until labelEvery / 2 + 1
         val label = when {
             days.size <= 7 -> day.date.format(formatter)
-            i % labelEvery == 0 || i == days.lastIndex -> day.date.dayOfMonth.toString()
+            i == days.lastIndex -> day.date.dayOfMonth.toString()
+            i % labelEvery == 0 && !tooCloseToLast -> day.date.dayOfMonth.toString()
             else -> null
         }
-        ChartBar(label, day.spent, day.allowance, day.isOver)
+        ChartBar(label, day.spent, day.allowance, day.isOver, day.isUnplanned)
     }
 }
 
 fun monthBars(months: List<InsightMonth>): List<ChartBar> = months.map { month ->
-    ChartBar(month.month.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()), month.spent, month.allowance, month.isOver)
+    ChartBar(
+        month.month.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()), month.spent, month.allowance,
+        isOver = month.allowance > 0 && month.isOver,
+        isUnplanned = month.allowance == 0L && month.spent > 0,
+    )
 }
 
 /**
@@ -125,7 +136,7 @@ fun InsightsChartCard(
         } else {
             InsightsBarChart(bars = bars, selectedIndex = selectedIndex, onBarClick = onBarClick, allowanceAsSteps = allowanceAsSteps)
         }
-        ChartLegend(category = category, showAllowance = bars.any { it.allowance > 0 })
+        ChartLegend(category = category, showAllowance = bars.any { it.allowance > 0 }, showUnplanned = bars.any { it.isUnplanned })
         footer()
     }
 }
@@ -143,6 +154,7 @@ private fun InsightsBarChart(
     val labelStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
     val barColor = MaterialTheme.colorScheme.primary
     val overColor = MaterialTheme.colorScheme.error
+    val unplannedColor = colorResource(R.color.unplanned)
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     val allowanceColor = MaterialTheme.colorScheme.onSurfaceVariant
     val currentOnBarClick by rememberUpdatedState(onBarClick)
@@ -187,7 +199,11 @@ private fun InsightsBarChart(
             val alpha = if (selectedIndex != null && i != selectedIndex) 0.45f else 1f
             if (bar.spent > 0) {
                 drawRoundRect(
-                    color = if (bar.isOver) overColor else barColor,
+                    color = when {
+                        bar.isOver -> overColor
+                        bar.isUnplanned -> unplannedColor
+                        else -> barColor
+                    },
                     topLeft = Offset(x, top),
                     size = Size(barWidth, bottom - top),
                     cornerRadius = CornerRadius(minOf(4.dp.toPx(), barWidth / 3)),
@@ -269,11 +285,15 @@ fun InsightsMonthDetail(monthDays: BudgetInsightsModel, modifier: Modifier = Mod
                     " · " + stringResource(R.string.insights_month_avg_day, peso(monthDays.avgPerDay)),
                 style = MaterialTheme.typography.bodyMedium
             )
-            if (monthDays.allowance > 0) {
+            if (monthDays.allowance > 0 || monthDays.unplannedDays > 0) {
                 Text(
-                    stringResource(R.string.insights_month_over_days, monthDays.category, monthDays.overspentDays, monthDays.dayCount),
+                    if (monthDays.unplannedDays > 0) {
+                        stringResource(R.string.insights_month_bad_days, monthDays.overDays, monthDays.unplannedDays, monthDays.dayCount)
+                    } else {
+                        stringResource(R.string.insights_month_over_days, monthDays.category, monthDays.overDays, monthDays.dayCount)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (monthDays.overspentDays > 0) MaterialTheme.colorScheme.error else Color.Unspecified
+                    color = if (monthDays.badDays > 0) MaterialTheme.colorScheme.error else Color.Unspecified
                 )
             }
         }
@@ -304,11 +324,18 @@ private fun niceStep(raw: Double): Double {
     } * power
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChartLegend(category: String, showAllowance: Boolean) {
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun ChartLegend(category: String, showAllowance: Boolean, showUnplanned: Boolean) {
+    // Wraps to a second line when the category name is long
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically
+    ) {
         LegendItem(color = MaterialTheme.colorScheme.primary, label = stringResource(R.string.insights_legend_spent))
         LegendItem(color = MaterialTheme.colorScheme.error, label = stringResource(R.string.insights_legend_over))
+        if (showUnplanned) LegendItem(color = colorResource(R.color.unplanned), label = stringResource(R.string.insights_legend_unplanned))
         if (showAllowance) {
             val dashColor = MaterialTheme.colorScheme.onSurfaceVariant
             Row(verticalAlignment = Alignment.CenterVertically) {
