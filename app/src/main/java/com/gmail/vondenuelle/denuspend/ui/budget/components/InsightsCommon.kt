@@ -13,6 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gmail.vondenuelle.denuspend.R
@@ -44,8 +47,19 @@ fun DeltaChip(percent: Int, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = content,
+            // One line always: wrapping split "▲" and "100%" into an uncentered column
+            maxLines = 1,
+            softWrap = false,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
         )
+    }
+}
+
+// Sentence cards: every peso amount in [text] gets SemiBold so the eye lands on the money (%, days and names stay regular)
+fun boldAmounts(text: String): AnnotatedString = buildAnnotatedString {
+    append(text)
+    Regex("₱[\\d,]+(\\.\\d+)?").findAll(text).forEach {
+        addStyle(SpanStyle(fontWeight = FontWeight.SemiBold), it.range.first, it.range.last + 1)
     }
 }
 

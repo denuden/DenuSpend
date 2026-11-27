@@ -25,7 +25,7 @@
 ## Where the money went (1.7.0)
 - **Goal:** answer "how much did I really spend in <filter>, and where did I go wrong?" first, then the breakdowns. Design: https://claude.ai/artifact/1UCujcwsg1mo6DgE1qGwSQ. Light mode only; dark mode is planned for 1.8.0.
 - **Order** (`BudgetScreen`, one file per card in `ui/budget/components/`):
-  1. `MoneyOutCard`: everyday spending + card bills + other money out, the filter chip, `AllowanceLine` and the ⓘ "Wallets vs allowance".
+  1. `MoneyOutCard`: "Money out" + the filter chip on top, the total with the ⓘ "Wallets vs allowance" next to it, and the date range under it. One divider under the total, then everyday spending (+ `AllowanceLine`), card bills and other money out as the parts of the total (1.7.1: the divider used to sit under Everyday, which made Everyday read as the total).
   2. `MoneyInCard`: dark like Home's balance card; the biggest entry, then "₱X more went out than came in". Only shown once wallets exist.
   3. `ChartSection`: a full pie (`Pie.Style.Fill`) with a name + % legend. The tapped slice (or the total) shows in a line under it, never inside the pie.
   4. `HowItWentCard`: up to 4 rule-based sentences (spent vs allowance, biggest category and whether it had an allowance, the category with the most bad days or "all N days stayed within", card bills). No AI, 0 extra reads.

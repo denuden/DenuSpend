@@ -51,68 +51,73 @@ fun MoneyOutCard(
         colors = CardDefaults.cardColors().copy(containerColor = MaterialTheme.colorScheme.primaryContainer),
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 20.dp)
-        ) {
-            Row(verticalAlignment = Alignment.Top) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.budget_lbl_money_out) + rangeText(summary.startDate, summary.endDate),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Text(
-                        peso(total),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
+        Column(modifier = Modifier.padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 20.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    stringResource(R.string.budget_lbl_money_out),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.weight(1f)
+                )
                 BudgetFilterChip(filterLabel = filterLabel, onChangeFilter = onChangeFilter)
             }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    peso(total),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                // Allowance is a made-up daily limit, not money, so the same explainer as Home and Wallet (why this total ≠ allowance)
+                Box {
+                    InformationTooltip(
+                        richTooltipSubheadText = stringResource(R.string.lbl_wallet_vs_allowance_title),
+                        richTooltipText = stringResource(R.string.lbl_wallet_vs_allowance_text)
+                    )
+                }
+            }
+            rangeText(summary.startDate, summary.endDate)?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            // The divider sits above all three rows, so they read as the parts of the total (not Everyday as the total)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(top = 16.dp, bottom = 12.dp, end = 8.dp))
 
             // Everyday spending, with how it did against the allowance right under it
             Column(modifier = Modifier.padding(end = 8.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.budget_lbl_everyday), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    Text(peso(summary.totalExpense), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AllowanceLine(
-                        spent = summary.totalExpense,
-                        allowance = summary.totalAllowance,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    // Allowance is a made-up daily limit, not money, so the same explainer as Home and Wallet
-                    Box {
-                        InformationTooltip(
-                            richTooltipSubheadText = stringResource(R.string.lbl_wallet_vs_allowance_title),
-                            richTooltipText = stringResource(R.string.lbl_wallet_vs_allowance_text)
-                        )
-                    }
-                }
+                MoneyRow(label = stringResource(R.string.budget_lbl_everyday), amount = summary.totalExpense)
+                AllowanceLine(
+                    spent = summary.totalExpense,
+                    allowance = summary.totalAllowance,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
             if (bills > 0 || money.otherOut > 0) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 14.dp, end = 8.dp)
+                ) {
+                    if (bills > 0) MoneyRow(label = stringResource(R.string.budget_lbl_card_bills), amount = bills)
+                    if (money.otherOut > 0) MoneyRow(label = stringResource(R.string.budget_lbl_other_out), amount = money.otherOut)
+                }
             }
-            if (bills > 0) MoneyRow(label = stringResource(R.string.budget_lbl_card_bills), amount = bills)
-            if (money.otherOut > 0) MoneyRow(label = stringResource(R.string.budget_lbl_other_out), amount = money.otherOut)
         }
     }
 }
 
 @Composable
 private fun MoneyRow(label: String, amount: Long) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 8.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Text(peso(amount), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
     }
 }
 
-// " · Nov 1 – 27", with the year only when it isn't this year
-private fun rangeText(start: LocalDate?, end: LocalDate?): String {
-    if (start == null || end == null) return ""
+// "Nov 1 – 27", with the year only when it isn't this year
+private fun rangeText(start: LocalDate?, end: LocalDate?): String? {
+    if (start == null || end == null) return null
     val locale = Locale.getDefault()
     val withYear = start.year != LocalDate.now().year || end.year != LocalDate.now().year
     val startText = start.format(DateTimeFormatter.ofPattern(if (withYear && start.year != end.year) "MMM d, yyyy" else "MMM d", locale))
@@ -121,7 +126,7 @@ private fun rangeText(start: LocalDate?, end: LocalDate?): String {
         start.month == end.month -> "d"
         else -> "MMM d"
     }
-    return if (start == end) " · $startText" else " · $startText – ${end.format(DateTimeFormatter.ofPattern(endPattern, locale))}"
+    return if (start == end) startText else "$startText – ${end.format(DateTimeFormatter.ofPattern(endPattern, locale))}"
 }
 
 @Preview

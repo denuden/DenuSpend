@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -125,7 +125,7 @@ private fun MonthRow(month: InsightMonth, percent: Int?, showBadDays: Boolean, i
             modifier = Modifier.padding(horizontal = 8.dp)
         )
         // The oldest month has nothing before it in the range
-        Box(modifier = Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
+        Box(modifier = Modifier.widthIn(min = 64.dp), contentAlignment = Alignment.CenterEnd) {
             if (percent != null) DeltaChip(percent)
         }
     }
