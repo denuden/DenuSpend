@@ -83,6 +83,8 @@ fun WalletEditorSheet(
         showDialog = showCloseDialog && draft != null,
         walletName = draft?.name.orEmpty(),
         recurringCount = recurringCount,
+        isCreditCard = draft?.isCreditCard == true,
+        owed = draft?.owed ?: 0L,
         onDismiss = { showCloseDialog = false },
         onConfirm = {
             showCloseDialog = false

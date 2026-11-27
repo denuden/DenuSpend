@@ -64,6 +64,7 @@
     <string name="add_lbl_category">Category: %1$s</string>
     <string name="add_dialog_delete_title">Delete transaction?</string>
     <string name="add_dialog_delete_text">This removes \"%1$s\" and updates that day\'s totals. This can\'t be undone.</string>
+    <string name="add_dialog_delete_text_wallet">This removes \"%1$s\" and updates that day\'s totals. If the wallet or card it was paid from is still open, %2$s goes back to it. This can\'t be undone.</string>
     <string name="add_snackbar_transaction_updated">Transaction Updated</string>
     <string name="add_snackbar_transaction_deleted">Transaction Deleted</string>
     <string name="add_snackbar_allowance_added">Allowance Added</string>
@@ -347,8 +348,12 @@
     <string name="wallet_snackbar_closed">%1$s was closed</string>
     <!-- closing (deleting) a wallet -->
     <string name="wallet_btn_close_wallet">Close wallet</string>
+    <string name="wallet_btn_close_card">Close card</string>
     <string name="wallet_dialog_close_title">Close this wallet?</string>
     <string name="wallet_dialog_close_text">%1$s and its balance will be removed. Expenses paid from it stay in your history. They just won\'t be linked to a wallet anymore. This can\'t be undone.</string>
+    <string name="wallet_dialog_close_card_title">Close this card?</string>
+    <string name="wallet_dialog_close_card_text">%1$s will be removed. Charges made with it stay in your history. They just won\'t be linked to a card anymore. This can\'t be undone.</string>
+    <string name="wallet_dialog_close_card_owed_text">%1$s will be removed, along with the %2$s still owed on it. Charges made with it stay in your history. They just won\'t be linked to a card anymore. This can\'t be undone.</string>
     <plurals name="wallet_dialog_close_recurring">
         <item quantity="one">\n\nIts 1 subscription or installment stops too. What it already charged stays.</item>
         <item quantity="other">\n\nIts %1$d subscriptions and installments stop too. What they already charged stays.</item>
@@ -394,6 +399,9 @@
     <string name="wallet_dialog_delete_movement_in">%1$s will be taken back out of %2$s.</string>
     <string name="wallet_dialog_delete_movement_out">%1$s will be put back into %2$s.</string>
     <string name="wallet_dialog_delete_movement_transfer">%1$s goes back from %2$s to %3$s. Both sides of the transfer are deleted.</string>
+    <string name="wallet_dialog_delete_card_payment">%1$s goes back to %2$s, and owed on %3$s goes up by %1$s. Both sides of the payment are deleted.</string>
+    <string name="wallet_dialog_delete_card_credit">Owed on %2$s goes up by %1$s.</string>
+    <string name="wallet_dialog_delete_card_charge">Owed on %2$s goes down by %1$s.</string>
     <string name="wallet_btn_delete">Delete</string>
     <!-- presets: shortcuts that fill the title, the user can always type their own -->
     <string name="wallet_movement_preset_salary">Salary</string>
@@ -460,6 +468,7 @@
     <string name="wallet_lbl_statement_name">%1$s statement</string>
     <string name="wallet_lbl_statement_period">%1$s – %2$s</string>
     <string name="wallet_lbl_statement_closes_today">closes today</string>
+    <string name="wallet_lbl_statement_closes_tomorrow">closes tomorrow</string>
     <plurals name="wallet_lbl_statement_closes_in">
         <item quantity="one">closes in %1$d day</item>
         <item quantity="other">closes in %1$d days</item>
@@ -624,6 +633,8 @@
     <string name="error_password_short">Password must be at least 8 characters</string>
     <string name="error_name_required">Please enter your name</string>
     <string name="error_user_not_existing">User does not exist</string>
+    <string name="error_wrong_login">Wrong email or password</string>
+    <string name="error_no_internet">No internet connection. Check your connection and try again.</string>
     <string name="error_invalid_inputs">Input fields are empty or invalid. Please make sure your inputs are correct</string>
     <string name="error_no_user_signed_in">No user is signed in</string>
 

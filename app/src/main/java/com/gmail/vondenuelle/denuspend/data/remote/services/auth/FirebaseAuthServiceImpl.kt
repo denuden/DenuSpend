@@ -2,6 +2,7 @@ package com.gmail.vondenuelle.denuspend.data.remote.services.auth
 
 import android.content.Context
 import android.util.Log
+import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotLogoutException
 import com.gmail.vondenuelle.denuspend.data.remote.error.CannotSendEmailVerification
 import com.gmail.vondenuelle.denuspend.data.remote.error.InvalidCredentialsException
@@ -13,10 +14,12 @@ import com.gmail.vondenuelle.denuspend.data.remote.models.auth.request.RegisterR
 import com.gmail.vondenuelle.denuspend.domain.models.UserModel
 import com.gmail.vondenuelle.denuspend.utils.orDefault
 import com.google.firebase.FirebaseException
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
@@ -49,7 +52,15 @@ class FirebaseAuthServiceImpl @Inject constructor(
         } catch (e: FirebaseAuthException) {
             // Firebase-specific errors
             Log.e("Firebase", e.toString())
+            // Wrong password, no such account or a disabled one: Firebase's own text is technical ("The supplied auth credential is incorrect…")
+            if (e is FirebaseAuthInvalidCredentialsException || e is FirebaseAuthInvalidUserException) {
+                throw InvalidCredentialsException(context.getString(R.string.error_wrong_login))
+            }
             throw InvalidCredentialsException(e.message ?: "Invalid credentials")
+        } catch (e: FirebaseNetworkException) {
+            // Offline: Firebase's own text is technical ("A network error (such as timeout, interrupted connection…")
+            Log.e("Firebase", e.toString())
+            throw Exception(context.getString(R.string.error_no_internet))
         } catch (e: Exception) {
             Log.e("Firebase", e.toString())
 

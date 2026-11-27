@@ -226,6 +226,7 @@ fun WalletStatementScreenContent(
                         Text(formatBalance(cycleTotals.charges + owedWhenAdded), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                         Text(
                             if (daysLeft <= 0) stringResource(R.string.wallet_lbl_statement_closes_today)
+                            else if (daysLeft == 1) stringResource(R.string.wallet_lbl_statement_closes_tomorrow)
                             else pluralStringResource(R.plurals.wallet_lbl_statement_closes_in, daysLeft, daysLeft),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

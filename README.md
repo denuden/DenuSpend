@@ -20,7 +20,7 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
   <img src="docs/media/card-recurring.png" width="30%" alt="Subscriptions and installments" />
 </p>
 
-🎬 [Watch a 1-minute demo](docs/media/demo.mp4): add a wallet, apply an allowance template, log an expense, then explore Budget and Food insights.
+🎬 [Watch a 1:40 demo](docs/media/demo.mp4): log an expense and see Home update, explore 6 months of Budget and Food insights, open a credit card statement, then add an installment that starts 3 months later.
 
 ## Features
 - **Home dashboard.** One glance answers "how much can I still spend today?", with a chip per category, how the month is pacing ("₱277/day to stay on plan"), your total balance across wallets, and what you added last. Every card opens the screen with the details.
@@ -48,8 +48,8 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
 - **Money is stored as whole cents** (`Long`), never floating point.
 - **Security rules are owner-only.** Every document carries its `userId`, and each user can only read and write their own data.
 
-## About
-Built by me from the ground up: the app structure, coding patterns, and the Firestore schema for the Add and Budget modules. Later features and polish were made together with Claude (Anthropic's AI) as a coding partner.
+## How it was built
+Built by me from the ground up starting in 2024: the app structure, coding patterns, and the Firestore schema for the Add and Budget modules. From 2026, later features and polish were made together with Claude Code as a coding partner: I designed each feature and reviewed and tested every change.
 
 ## License
 Copyright (c) 2026 Von Denuelle L. Tandoc (denuden). All rights reserved.
