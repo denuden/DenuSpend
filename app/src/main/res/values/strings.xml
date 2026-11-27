@@ -202,21 +202,15 @@
     <string name="profile_cd_view_photo">View photo</string>
 
 <!--    BUDGET SCREEN-->
-    <string name="budget_lbl_spent">Spent</string>
     <string name="budget_lbl_breakdown">Breakdown</string>
     <string name="budget_lbl_no_spending">No spending or allowance: %1$s</string>
     <string name="budget_lbl_of_allowance">of %1$s allowance</string>
     <string name="budget_lbl_of_category_allowance">of %1$s %2$s allowance</string>
-    <string name="budget_lbl_left">%1$s left</string>
+    <string name="budget_lbl_left">%1$s under</string>
     <string name="budget_lbl_over">%1$s over</string>
-    <string name="budget_lbl_of">of %1$s</string>
-    <string name="budget_lbl_no_allowance">No allowance set</string>
     <string name="budget_lbl_no_allowance_in_range">No allowance added in this period</string>
     <string name="budget_empty_title">No expenses for this period</string>
     <string name="budget_empty_text">Expenses you add will show up here.</string>
-    <string name="budget_lbl_amount">Amount</string>
-    <string name="budget_chip_total">Total: 100%</string>
-    <string name="budget_chip_category_percent">%1$s: %2$s%%</string>
     <string name="budget_filter_this_month">This Month</string>
     <string name="budget_filter_last_3_days">Last 3 Days</string>
     <string name="budget_filter_last_7_days">Last 7 Days</string>
@@ -249,6 +243,52 @@
         <item quantity="one">%1$d card</item>
         <item quantity="other">%1$d cards</item>
     </plurals>
+    <!-- 1.7.0: money out / in -->
+    <string name="budget_lbl_money_out">Money out</string>
+    <string name="budget_lbl_everyday">Everyday spending</string>
+    <string name="budget_lbl_card_bills">Card bills</string>
+    <string name="budget_lbl_other_out">Other money out</string>
+    <string name="budget_lbl_money_in">Money in</string>
+    <string name="budget_lbl_money_in_none">Nothing came in</string>
+    <string name="budget_lbl_money_in_biggest">Biggest: %1$s · %2$s</string>
+    <string name="budget_lbl_more_out">%1$s more went out than came in.</string>
+    <string name="budget_lbl_more_in">%1$s more came in than went out.</string>
+    <string name="budget_lbl_in_out_same">About as much came in as went out.</string>
+    <!-- 1.7.0: pie -->
+    <string name="budget_lbl_spending_by_category">Spending by category</string>
+    <string name="budget_lbl_pie_hint">Tap a slice or a name to see its amount.</string>
+    <string name="budget_lbl_pie_category">%1$s · %2$d%%</string>
+    <!-- 1.7.0: how it went (each line is picked by a simple rule from the numbers) -->
+    <string name="budget_lbl_how_it_went">How it went</string>
+    <string name="budget_how_over">You spent %1$s on everyday things, %2$s more than the %3$s allowance you set.</string>
+    <string name="budget_how_under">You spent %1$s on everyday things, %2$s under the %3$s allowance you set.</string>
+    <string name="budget_how_no_allowance">You spent %1$s on everyday things, with no allowance set in this range.</string>
+    <string name="budget_how_top">%1$s took the most: %2$s (%3$d%%).</string>
+    <string name="budget_how_top_unplanned">%1$s took the most: %2$s (%3$d%%), and none of it had an allowance.</string>
+    <string name="budget_how_bad_days">%1$s went over, or had no allowance, on %2$d of %3$d days.</string>
+    <string name="budget_how_all_good">Every category stayed within its allowance on all %1$d days.</string>
+    <string name="budget_how_bills">Card bills added %1$s on top: %2$s.</string>
+    <string name="budget_how_list_and">%1$s and %2$s</string>
+    <!-- 1.7.0: where it went wrong -->
+    <string name="budget_lbl_where_wrong">Where it went wrong</string>
+    <string name="budget_lbl_where_wrong_hint">Only categories that went over or had unplanned spending. Tap one to see its days.</string>
+    <string name="budget_chip_unplanned">%1$s unplanned</string>
+    <string name="budget_chip_over">%1$s over</string>
+    <string name="budget_chip_over_days">%1$s over · %2$s</string>
+    <string name="budget_chip_over_on">Over on %1$s</string>
+    <plurals name="budget_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <!-- 1.7.0: breakdown rows -->
+    <string name="budget_row_under">%1$s under its %2$s allowance</string>
+    <string name="budget_row_over">%1$s over its %2$s allowance</string>
+    <string name="budget_row_unplanned">No allowance set · unplanned</string>
+    <!-- 1.7.0: by wallet -->
+    <string name="budget_lbl_by_wallet">By wallet</string>
+    <string name="budget_lbl_by_wallet_sub">Where the money came out of: expenses, bills and other money out</string>
+    <string name="budget_lbl_by_wallet_card">Charged to this card</string>
+    <string name="budget_lbl_by_wallet_wallet">Paid from this wallet</string>
 
 <!--    BUDGET INSIGHTS SCREEN-->
     <plurals name="insights_lbl_range_days">
@@ -258,7 +298,7 @@
     <string name="insights_lbl_spent_on">Spent on %1$s</string>
     <string name="insights_stat_avg_day">Avg per day</string>
     <string name="insights_stat_avg_transaction">Avg per transaction</string>
-    <string name="insights_stat_overspent_days">Overspent days</string>
+    <string name="insights_stat_overspent_days">Over / unplanned days</string>
     <string name="insights_stat_overspent_months">Overspent months</string>
     <string name="insights_lbl_none">—</string>
     <!-- compared to before -->
@@ -280,15 +320,20 @@
     <string name="insights_over_months">You went over your %1$s allowance in %2$d of %3$d months: %4$s.</string>
     <string name="insights_no_over_days">You stayed within your %1$s allowance every day in this range.</string>
     <string name="insights_no_over_months">You stayed within your %1$s allowance every month in this range.</string>
-    <string name="insights_no_allowance">No %1$s allowance in this range, so overspending isn\'t counted.</string>
+    <string name="insights_no_allowance">No %1$s allowance in this range, so all of this spending was unplanned.</string>
+    <string name="insights_unplanned_days">You spent on %1$s with no allowance set on %2$d of %3$d days.</string>
+    <string name="insights_over_and_unplanned">You went over your %1$s allowance on %2$s, and spent with no %1$s allowance on %3$d more, out of %4$d days.</string>
     <string name="insights_biggest_day">Biggest day: %1$s at %2$s.</string>
     <string name="insights_heaviest_month">%1$s is your heaviest month, %2$d%% above your usual daily average.</string>
+    <string name="insights_weekday_times">%1$ss cost you about %2$d× what your other days do. You spend about %3$s on a %1$s, vs %4$s on other days.</string>
+    <string name="insights_heaviest_month_times">%1$s is your heaviest month, about %2$d× your usual daily average.</string>
     <string name="insights_share">%1$s is %2$d%% of all your spending in this range.</string>
     <!-- day chart + day sheet -->
     <string name="insights_chart_per_day">Spending per day</string>
     <string name="insights_chart_per_day_sub">Tap a day to see its transactions</string>
     <string name="insights_legend_spent">Spent</string>
     <string name="insights_legend_over">Over</string>
+    <string name="insights_legend_unplanned">Unplanned</string>
     <string name="insights_legend_allowance">%1$s allowance</string>
     <string name="insights_day_spent">%1$s spent</string>
     <string name="insights_day_no_allowance">No %1$s allowance this day</string>
@@ -298,10 +343,16 @@
     <string name="insights_chart_per_month_sub">Tap a month to see its days</string>
     <string name="insights_chart_month_days">%1$s · per day</string>
     <string name="insights_back_to_months">Back to months</string>
-    <string name="insights_month_spent_of">%1$s spent of %2$s %3$s allowance · </string>
+    <!-- Quoted, so the trailing space before the bold status stays (Android trims an unquoted trailing space) -->
+    <string name="insights_month_spent_of">"%1$s spent of %2$s %3$s allowance · "</string>
     <string name="insights_month_spent">%1$s spent</string>
     <string name="insights_month_avg_day">%1$s average a day</string>
     <string name="insights_month_over_days">Went over your %1$s allowance on %2$d of %3$d days</string>
+    <string name="insights_month_bad_days">Over on %1$d and unplanned on %2$d of %3$d days</string>
+    <plurals name="insights_months_bad_days">
+        <item quantity="one">%d day over or unplanned</item>
+        <item quantity="other">%d days over or unplanned</item>
+    </plurals>
     <string name="insights_months_title">Month by month</string>
     <string name="insights_months_sub">Average spent per day, and how it changed from the month before. Tap a month to open its days.</string>
     <string name="insights_months_total">%1$s total</string>
@@ -312,7 +363,7 @@
     <string name="insights_weekday_hint">Tap a weekday for details</string>
     <string name="insights_weekday_detail_count">%1$ss · %2$d in this range</string>
     <string name="insights_weekday_detail_total">%1$s total · %2$s average</string>
-    <string name="insights_weekday_detail_over">Went over your %1$s allowance on %2$d of %3$d %4$ss</string>
+    <string name="insights_weekday_detail_over">Went over, or had no %1$s allowance, on %2$d of %3$d %4$ss</string>
     <string name="insights_empty_title">No %1$s spending in this range</string>
     <string name="insights_empty_text">Try a longer range, or add an expense in the Add tab. Charts and insights show up once there\'s spending.</string>
 

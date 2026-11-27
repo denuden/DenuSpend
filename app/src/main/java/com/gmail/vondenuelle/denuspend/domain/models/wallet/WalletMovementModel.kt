@@ -34,5 +34,14 @@ data class WalletMovementModel(
         // Card charges the app posts on its own (subscriptions / installments). The Statement screen groups by them.
         const val PRESET_SUBSCRIPTION = "subscription"
         const val PRESET_INSTALLMENT = "installment"
+
+        // Budget's money in / out: the preset keys that are real money coming in or going out ("" = a typed title).
+        // Same keys as WalletMovementPresets (stored, never renamed). Left out on purpose: transfer, card_payment, correction
+        // and withdrawn (bank → cash), which only move money between your own wallets. Max 30 for whereIn.
+        val MONEY_PRESETS = listOf(
+            "", PRESET_SUBSCRIPTION, PRESET_INSTALLMENT,
+            "salary", "gift", "refund", "sold", "cashback",
+            "emergency", "lent", "lost", "annual_fee", "interest", "late_fee",
+        )
     }
 }

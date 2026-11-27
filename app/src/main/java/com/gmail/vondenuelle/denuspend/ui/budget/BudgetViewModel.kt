@@ -7,7 +7,7 @@ import com.gmail.vondenuelle.denuspend.data.repositories.BudgetRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.ProfileRepository
 import com.gmail.vondenuelle.denuspend.data.repositories.TransactionRepository
 import com.gmail.vondenuelle.denuspend.data.remote.models.transaction.request.TransactionsForDayRequest
-import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetBillsModel
+import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetMoneyModel
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.navigation.BudgetScreens
 import com.gmail.vondenuelle.denuspend.navigation.WalletScreens
@@ -87,10 +87,20 @@ class BudgetViewModel @Inject constructor(
     fun onEvent(event : BudgetScreenEvents) {
         when(event){
             is BudgetScreenEvents.OnNavigateToBudgetTransactionScreen -> {
-                sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetInsightsScreenNavigation(event.category)))
+                // Same range as the dashboard, so the tapped row's number is the one Insights opens with
+                val current = _stateFlow.value
+                sendEvent(OneTimeEvents.OnNavigate(BudgetScreens.BudgetInsightsScreenNavigation(
+                    category = event.category,
+                    filter = current.filter.name,
+                    customStart = current.customStartMillis ?: -1L,
+                    customEnd = current.customEndMillis ?: -1L,
+                )))
             }
             is BudgetScreenEvents.OnOpenBillCard -> {
                 sendEvent(OneTimeEvents.OnNavigate(WalletScreens.WalletRecurringNavigation(event.walletId)))
+            }
+            is BudgetScreenEvents.OnOpenWallet -> {
+                sendEvent(OneTimeEvents.OnNavigate(WalletScreens.WalletDetailsNavigation(event.walletId)))
             }
             is BudgetScreenEvents.OnChangeFilter -> {
                 // Custom waits for the user to pick a range in the dialog first
@@ -122,6 +132,18 @@ class BudgetViewModel @Inject constructor(
             is BudgetScreenEvents.OnGetBudgetInsights -> {
                 // Same category already live (e.g. ON_START after a rotation): nothing to restart
                 if (!(insightsJob?.isActive == true && _stateFlow.value.insightsCategory == event.category)) {
+                    // First load only: start on the dashboard's range. A filter changed inside Insights survives ON_START.
+                    val startFilter = BudgetChartFilter.entries.find { it.name == event.filter }
+                    if (_stateFlow.value.insightsCategory.isEmpty() && startFilter != null) {
+                        val isCustom = startFilter == BudgetChartFilter.CUSTOM && event.customStartMillis != null
+                        _stateFlow.update {
+                            it.copy(
+                                filter = if (startFilter == BudgetChartFilter.CUSTOM && !isCustom) BudgetChartFilter.THIS_MONTH else startFilter,
+                                customStartMillis = if (isCustom) event.customStartMillis else null,
+                                customEndMillis = if (isCustom) event.customEndMillis else null,
+                            )
+                        }
+                    }
                     _stateFlow.update { it.copy(insightsCategory = event.category) }
                     stopInsightsListener()
                     getBudgetInsights()
@@ -170,16 +192,16 @@ class BudgetViewModel @Inject constructor(
         }
     }
 
-    // Its own listener that fails quietly: on an error (e.g. a missing index) the card just stays hidden, no dialog,
+    // Its own listener that fails quietly: on an error (e.g. a missing index) the money cards and bills just stay hidden, no dialog,
     // and the summary keeps working
     private fun getBudgetBills() {
         val current = _stateFlow.value
         billsJob = viewModelScope.launch {
-            budgetRepository.getBudgetBills(current.filter, current.customStartMillis, current.customEndMillis).asResult()
+            budgetRepository.getBudgetMoney(current.filter, current.customStartMillis, current.customEndMillis).asResult()
                 .onEach { res ->
                     when (res) {
-                        is ResultState.Error -> _stateFlow.update { it.copy(budgetBills = BudgetBillsModel()) }
-                        is ResultState.Success -> _stateFlow.update { it.copy(budgetBills = res.data) }
+                        is ResultState.Error -> _stateFlow.update { it.copy(budgetMoney = BudgetMoneyModel()) }
+                        is ResultState.Success -> _stateFlow.update { it.copy(budgetMoney = res.data) }
                         else -> Unit
                     }
                 }.collect()
@@ -206,7 +228,7 @@ class BudgetViewModel @Inject constructor(
         val current = _stateFlow.value
         val month = current.insightsMonth ?: return
         insightsMonthJob = viewModelScope.launch {
-            budgetRepository.getBudgetInsightsMonthDays(current.insightsCategory, month, current.budgetInsights.endDate)
+            budgetRepository.getBudgetInsightsMonthDays(current.insightsCategory, month, current.budgetInsights.endDate, current.budgetInsights.startDate)
                 .asResult()
                 .onEach { res ->
                     when (res) {

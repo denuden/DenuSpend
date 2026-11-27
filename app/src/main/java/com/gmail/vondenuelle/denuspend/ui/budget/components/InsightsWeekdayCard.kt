@@ -36,7 +36,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 // Average spending per weekday (Mon–Sun), the most expensive one highlighted. Tap a row for its details.
-// Overspent days per weekday are only shown on short ranges, because long ranges only have monthly totals.
+// Over / unplanned days per weekday need each day: short ranges have them, long ranges once their months have day marks.
 @Composable
 fun InsightsWeekdayCard(
     insights: BudgetInsightsModel,
@@ -47,7 +47,8 @@ fun InsightsWeekdayCard(
     val index = categoryIndex(insights.category)
     val maxAvg = insights.weekdays.maxOfOrNull { it.avgPerDay }?.coerceAtLeast(1L) ?: 1L
     val top = insights.weekdays.filter { it.dayCount > 0 }.maxByOrNull { it.avgPerDay }
-    val showOverspent = !insights.isLongRange && insights.allowance > 0
+    // Needs each day's mark: daily ranges always have them, monthly ones once the months have day marks
+    val showOverspent = insights.hasDayCounts
 
     InsightsCard(modifier = modifier) {
         Column {
@@ -122,9 +123,9 @@ fun InsightsWeekdayCard(
                     )
                     if (showOverspent) {
                         Text(
-                            stringResource(R.string.insights_weekday_detail_over, insights.category, detail.overspentDays, detail.dayCount, dayName),
+                            stringResource(R.string.insights_weekday_detail_over, insights.category, detail.badDays, detail.dayCount, dayName),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (detail.overspentDays > 0) MaterialTheme.colorScheme.error else Color.Unspecified
+                            color = if (detail.badDays > 0) MaterialTheme.colorScheme.error else Color.Unspecified
                         )
                     }
                 }

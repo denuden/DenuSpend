@@ -18,4 +18,7 @@ data class DailyHistoryModel(
     val allowanceByCategory : Map<String, Long> = emptyMap(),
     val countByCategory : Map<String, Long> = emptyMap(),
     val inMonthly : Boolean = false, // read only by edit/delete in the service; here so toObject() stops warning about it
+    // 1.7.0: spent per wallet id (expenses only). Only kept up to date once walletTotals is true (new days, or the backfill).
+    val expenseByWallet : Map<String, Long> = emptyMap(),
+    val walletTotals : Boolean = false,
     )

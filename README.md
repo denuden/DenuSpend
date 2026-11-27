@@ -10,13 +10,16 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
   <img src="docs/media/add-expense.png" width="30%" alt="Add expense" />
 </p>
 <p align="center">
-  <img src="docs/media/budget.png" width="30%" alt="Budget breakdown over 6 months" />
+  <img src="docs/media/budget.png" width="30%" alt="Budget: money out, money in and spending by category" />
+  <img src="docs/media/budget-went-wrong.png" width="30%" alt="How it went and where it went wrong" />
   <img src="docs/media/budget-insights.png" width="30%" alt="Category insights" />
-  <img src="docs/media/wallet.png" width="30%" alt="Wallets and credit cards" />
 </p>
 <p align="center">
+  <img src="docs/media/wallet.png" width="30%" alt="Wallets and credit cards" />
   <img src="docs/media/card-details.png" width="30%" alt="Credit card statements" />
   <img src="docs/media/card-statement.png" width="30%" alt="A statement, like the bank's" />
+</p>
+<p align="center">
   <img src="docs/media/card-recurring.png" width="30%" alt="Subscriptions and installments" />
 </p>
 
@@ -30,7 +33,8 @@ An Android app that tracks your spending habits and keeps a history of it. No mo
 - **Wallets.** Track real money across cash, bank, e-wallet and cards. Each expense says which wallet paid, and the balance updates automatically (edits and deletes refund correctly). Log money in, money out and transfers between wallets, each with its own history.
 - **Credit cards.** Owed amount, limit and what's still available. Statements follow your card's statement day like the bank's: the open cycle, the last closed statement with "Paid so far" and "Still unpaid", and a payment due date that warns you when it's close or overdue.
 - **Subscriptions and installments.** Add Netflix or a 24-month laptop plan once, and each charge posts itself on the right day and lands on the right statement. Installments still to come are held against your limit, like banks do, and an installment can start a few months later (buy now, pay later).
-- **Budget insights.** Spending vs. allowance for any range (last 7 days, this month, last 6 months, a custom range…), a category donut chart, a per-category breakdown, and a comparison with the period before.
+- **Where your money went.** Budget opens with the answer for any range: everything that really left your wallets (spending, card bills and other money out) next to what came in, a few plain sentences on how it went, and a "Where it went wrong" list. Going over an allowance shows in red, and spending on a day with no allowance is marked "unplanned" in amber.
+- **Budget insights.** Spending vs. allowance for any range (last 7 days, this month, last 6 months, a custom range…), a spending pie, a per-category and per-wallet breakdown, and a comparison with the period before. Tap a category to see its days, weekdays and months.
 - **History.** Every day grouped by month, with each day's transactions in a sheet. Edit or delete anything.
 - **Account.** Email sign-in with verification and password reset, profile photo and name, change email or password, and full account deletion (removes all your data).
 

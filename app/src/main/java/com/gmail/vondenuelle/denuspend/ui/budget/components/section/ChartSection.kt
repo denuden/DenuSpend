@@ -3,7 +3,14 @@ package com.gmail.vondenuelle.denuspend.ui.budget.components.section
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import com.gmail.vondenuelle.denuspend.ui.budget.components.percentOf
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +27,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -44,7 +50,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.gmail.vondenuelle.denuspend.R
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetChartFilter
 import com.gmail.vondenuelle.denuspend.domain.models.budget.BudgetTotalSummaryModel
@@ -55,15 +60,16 @@ import com.gmail.vondenuelle.denuspend.utils.CurrencyUtils.longToAmountDouble
 import ir.ehsannarmani.compose_charts.PieChart
 import ir.ehsannarmani.compose_charts.models.Pie
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+/**
+ * "Spending by category": a full pie with a legend (name + %) beside it, and one line under it for the tapped slice
+ * (or the total when nothing is tapped). Text never sits inside the pie, so long amounts always fit.
+ */
 @Composable
 fun ChartSection(
     modifier: Modifier = Modifier,
-    filterLabel : String, //the filter name, or the picked dates for a custom range
     budgetData : BudgetTotalSummaryModel,
-    onChangeFilter : (BudgetChartFilter) -> Unit
 ) {
-    // Only the selected category is state; the chip and amount below are computed from it.
+    // Only the selected category is state; the line below is computed from it.
     // No remember key on purpose: PieChart keeps its first onPieClick (pointerInput(Unit)), so this state must never be replaced.
     var selectedLabel by remember { mutableStateOf<String?>(null) }
 
@@ -72,6 +78,7 @@ fun ChartSection(
             Triple(index, label, budgetData.totals[label] ?: 0L)
         }
             .filter { it.third > 0 }
+            .sortedByDescending { it.third }
             .map { (index, label, amount) ->
                 Pie(
                     label = label,
@@ -82,72 +89,38 @@ fun ChartSection(
                 )
             }
     }
+    val total = budgetData.totalExpense
+    val selected = data.find { it.selected } //null when nothing is picked or that category left the range
 
-    val totalAmount = longToAmountDouble(budgetData.totalExpense)
-    val selectedPie = data.find { it.selected } //null when nothing is picked or that category left the range
-
-    val chipText = if (selectedPie != null) {
-        val percentage = if (totalAmount == 0.0) 0.0 else selectedPie.data / totalAmount * 100
-        stringResource(R.string.budget_chip_category_percent, selectedPie.label.orEmpty(), "%.2f".format(percentage))
-    } else {
-        stringResource(R.string.budget_chip_total)
-    }
-    val expenseText = CurrencyUtils.formatPesoFromDouble(selectedPie?.data ?: totalAmount)
-
-    Column(modifier = modifier) {
-        // Header: total spent, with the filter that changes it right next to it
-        Card(
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = CardDefaults.cardColors().copy(containerColor = MaterialTheme.colorScheme.primaryContainer),
-            modifier = Modifier.fillMaxWidth()
+    Card(
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors().copy(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(modifier = Modifier.padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 20.dp)) {
-                Row(verticalAlignment = Alignment.Top) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            stringResource(R.string.budget_lbl_spent),
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                        Text(
-                            "₱${CurrencyUtils.formatCents(budgetData.totalExpense)}",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-
-                    BudgetFilterChip(filterLabel = filterLabel, onChangeFilter = onChangeFilter)
-                }
-                // Full card width (not squeezed next to the filter chip), so it stays on one line
-                AllowanceLine(
-                    spent = budgetData.totalExpense,
-                    allowance = budgetData.totalAllowance,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+            Text(
+                stringResource(R.string.budget_lbl_spending_by_category),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (total == 0L) {
+                EmptyChart(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp))
+                return@Column
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (budgetData.totalExpense == 0L) {
-            EmptyChart(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
-        } else {
-            Box(
-                contentAlignment = Alignment.Center
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 PieChart(
-                    spaceDegree = 3f,
+                    spaceDegree = 2f,
                     selectedPaddingDegree = 4f,
-                    style = Pie.Style.Stroke(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(280.dp),
+                    style = Pie.Style.Fill,
+                    modifier = Modifier.size(140.dp),
                     data = data,
                     onPieClick = {
                         selectedLabel = if (selectedLabel == it.label) null else it.label
                     },
-                    selectedScale = 1.2f,
+                    selectedScale = 1.08f,
                     scaleAnimEnterSpec = spring<Float>(
                         dampingRatio = Spring.DampingRatioMediumBouncy,
                         stiffness = Spring.StiffnessLow
@@ -157,41 +130,77 @@ fun ChartSection(
                     scaleAnimExitSpec = tween(300),
                     spaceDegreeAnimExitSpec = tween(300),
                 )
-
+                Spacer(modifier = Modifier.width(16.dp))
+                // Legend: the same order as the slices, biggest first. Tapping a name picks its slice too.
                 Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(chipText, fontSize = 12.sp) })
-                    Text(
-                        text = expenseText,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(top = 4.dp)
-                    )
-
-                    Text(
-                        stringResource(R.string.budget_lbl_amount),
-                        style = MaterialTheme.typography.labelLargeEmphasized,
-                        fontWeight = FontWeight.Light,
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .align(Alignment.CenterHorizontally)
-                    )
-    //                Text(
-    //                    "₱${CurrencyUtils.formatCents(budget)}",
-    //                    style = MaterialTheme.typography.labelLargeEmphasized,
-    //                    fontWeight = FontWeight.Light,
-    //                    modifier = Modifier
-    //                        .padding(top = 4.dp)
-    //                        .align(Alignment.CenterHorizontally)
-    //                )
+                    data.forEach { pie ->
+                        val label = pie.label.orEmpty()
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.small)
+                                .clickable { selectedLabel = if (selectedLabel == label) null else label }
+                                .padding(vertical = 4.dp, horizontal = 4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(pie.color, CircleShape)
+                            )
+                            Text(
+                                label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (pie.selected) FontWeight.Bold else FontWeight.Normal,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 8.dp)
+                            )
+                            Text(
+                                "${percentOf(budgetData.totals[label] ?: 0L, total)}%",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
+            // The tapped slice, or the total when nothing is tapped
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    val selectedAmount = selected?.let { budgetData.totals[it.label] ?: 0L }
+                    Text(
+                        if (selected != null) {
+                            stringResource(R.string.budget_lbl_pie_category, selected.label.orEmpty(), percentOf(selectedAmount ?: 0L, total))
+                        } else {
+                            stringResource(R.string.budget_lbl_everyday)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "₱${CurrencyUtils.formatCents(selectedAmount ?: total)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Text(
+                stringResource(R.string.budget_lbl_pie_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -322,9 +331,11 @@ private fun ChartSectionPreview() {
         Surface() {
             ChartSection(
                 modifier = Modifier,
-                filterLabel = "This Month",
-                budgetData = BudgetTotalSummaryModel()
-            ) {}
+                budgetData = BudgetTotalSummaryModel(
+                    totals = mapOf("Food" to 618000L, "Household" to 786500L, "Personal" to 431000L),
+                    totalExpense = 1835500L,
+                )
+            )
         }
     }
 }

@@ -45,6 +45,11 @@ import com.gmail.vondenuelle.denuspend.ui.budget.BudgetScreenState
 import com.gmail.vondenuelle.denuspend.ui.budget.BudgetViewModel
 import com.gmail.vondenuelle.denuspend.ui.budget.components.BudgetBillsCard
 import com.gmail.vondenuelle.denuspend.ui.budget.components.BudgetItem
+import com.gmail.vondenuelle.denuspend.ui.budget.components.BudgetWalletsCard
+import com.gmail.vondenuelle.denuspend.ui.budget.components.HowItWentCard
+import com.gmail.vondenuelle.denuspend.ui.budget.components.MoneyInCard
+import com.gmail.vondenuelle.denuspend.ui.budget.components.MoneyOutCard
+import com.gmail.vondenuelle.denuspend.ui.budget.components.WhereItWentWrongCard
 import com.gmail.vondenuelle.denuspend.ui.budget.components.section.ChartSection
 import com.gmail.vondenuelle.denuspend.ui.common.dialog.ErrorDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
@@ -159,12 +164,36 @@ fun BudgetScreenContent(
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
         }
-        ChartSection(
+        // 1.7.0 order: the answer first (money out / in, how it went, where it went wrong), then the breakdowns
+        val money = state.budgetMoney
+        MoneyOutCard(
+            summary = summary,
+            money = money,
             filterLabel = filterLabel,
+            onChangeFilter = { onEvent(BudgetScreenEvents.OnChangeFilter(it)) },
+        )
+        // Only once wallets exist (they're where money in is logged)
+        if (money.wallets.isNotEmpty()) {
+            MoneyInCard(
+                money = money,
+                moneyOut = summary.totalExpense + money.bills.total + money.otherOut,
+                modifier = Modifier.padding(top = 12.dp)
+            )
+        }
+        // The same numbers as a picture, for people who'd rather see than read
+        ChartSection(
             budgetData = summary,
-            onChangeFilter = {
-                onEvent(BudgetScreenEvents.OnChangeFilter(it))
-            }
+            modifier = Modifier.padding(top = 12.dp)
+        )
+        HowItWentCard(
+            summary = summary,
+            bills = money.bills,
+            modifier = Modifier.padding(top = 12.dp)
+        )
+        WhereItWentWrongCard(
+            summary = summary,
+            onCategoryClick = { onEvent(BudgetScreenEvents.OnNavigateToBudgetTransactionScreen(it)) },
+            modifier = Modifier.padding(top = 12.dp)
         )
 
         if (activeSorted.isNotEmpty()) {
@@ -212,7 +241,7 @@ fun BudgetScreenContent(
         }
 
         // Only for someone with a card (or charges from a card that was closed since)
-        val bills = state.budgetBills
+        val bills = money.bills
         if (bills.hasCards || bills.rows.isNotEmpty()) {
             Spacer(modifier = Modifier.height(24.dp))
             BudgetBillsCard(
@@ -223,6 +252,12 @@ fun BudgetScreenContent(
                 onOpenCard = { onEvent(BudgetScreenEvents.OnOpenBillCard(it)) },
             )
         }
+        BudgetWalletsCard(
+            summary = summary,
+            money = money,
+            onWalletClick = { onEvent(BudgetScreenEvents.OnOpenWallet(it)) },
+            modifier = Modifier.padding(top = 24.dp)
+        )
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
