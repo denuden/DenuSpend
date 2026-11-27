@@ -37,6 +37,7 @@ import com.gmail.vondenuelle.denuspend.ui.common.dialog.ModalBottomSheetDialog
 import com.gmail.vondenuelle.denuspend.ui.theme.DenuSpendTheme
 import com.gmail.vondenuelle.denuspend.utils.CardStatementHelper
 import com.gmail.vondenuelle.denuspend.utils.RecurringChargeHelper
+import java.time.LocalDate
 
 /**
  * Add / edit an installment. The app does the math: the total (interest included), the months and how many are already paid
@@ -195,7 +196,7 @@ private fun InstallmentSheetContent(
                             stringResource(R.string.wallet_lbl_next_last),
                             stringResource(
                                 R.string.wallet_lbl_next_last_value,
-                                CardStatementHelper.formatDay(RecurringChargeHelper.nextDate(preview, card.statementDay)),
+                                RecurringChargeHelper.nextDate(preview, card.statementDay).let { CardStatementHelper.formatDay(it, withYear = it.year != LocalDate.now().year) },
                                 CardStatementHelper.formatDay(RecurringChargeHelper.lastInstallmentDate(preview, card.statementDay), withYear = true)
                             )
                         )

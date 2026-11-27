@@ -16,6 +16,8 @@ fun DeleteMovementDialog(
     movement: WalletMovementModel?, // null = hidden
     walletName: String,
     otherWalletName: String?, // transfers only (null = closed)
+    isCreditCard: Boolean = false, // this wallet is a card
+    isOtherCreditCard: Boolean = false, // the transfer's other side is a card (a card payment seen from the bank)
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
@@ -24,6 +26,11 @@ fun DeleteMovementDialog(
     // A transfer whose other wallet was closed only moves this wallet, so it reads like a plain in/out entry
     val isOpenTransfer = movement.isTransfer && otherWalletName != null
     val text = when {
+        // On a card the balance is what's owed, so "put back into Visa" would read backwards
+        isOpenTransfer && isCreditCard -> stringResource(R.string.wallet_dialog_delete_card_payment, amount, otherWalletName.orEmpty(), walletName)
+        isOpenTransfer && isOtherCreditCard -> stringResource(R.string.wallet_dialog_delete_card_payment, amount, walletName, otherWalletName.orEmpty())
+        isCreditCard && movement.amount > 0 -> stringResource(R.string.wallet_dialog_delete_card_credit, amount, walletName)
+        isCreditCard -> stringResource(R.string.wallet_dialog_delete_card_charge, amount, walletName)
         // Money goes back to the wallet it came out of
         isOpenTransfer && movement.amount < 0 -> stringResource(R.string.wallet_dialog_delete_movement_transfer, amount, otherWalletName.orEmpty(), walletName)
         isOpenTransfer -> stringResource(R.string.wallet_dialog_delete_movement_transfer, amount, walletName, otherWalletName.orEmpty())

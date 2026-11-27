@@ -91,6 +91,7 @@ import com.gmail.vondenuelle.denuspend.utils.OneTimeEvents
 import com.gmail.vondenuelle.denuspend.utils.SnackBarController
 import com.gmail.vondenuelle.denuspend.utils.formatFirebaseDate
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.util.Date
 
 @Composable
@@ -190,6 +191,8 @@ fun WalletDetailsScreen(
         showDialog = showCloseDialog && wallet != null,
         walletName = wallet?.name.orEmpty(),
         recurringCount = activeRecurringCount,
+        isCreditCard = wallet?.isCreditCard == true,
+        owed = wallet?.owed ?: 0L,
         onDismiss = { showCloseDialog = false },
         onConfirm = {
             showCloseDialog = false
@@ -214,6 +217,8 @@ fun WalletDetailsScreen(
         movement = deletingMovement,
         walletName = wallet?.name.orEmpty(),
         otherWalletName = deletingMovement?.let { m -> state.wallets.find { it.docId == m.otherWalletId }?.name },
+        isCreditCard = wallet?.isCreditCard == true,
+        isOtherCreditCard = deletingMovement?.let { m -> state.wallets.find { it.docId == m.otherWalletId }?.isCreditCard } == true,
         onDismiss = { deletingMovementId = null },
         onConfirm = {
             deletingMovementId = null
@@ -485,7 +490,8 @@ private fun RecurringChargesRow(
             R.string.wallet_lbl_recurring_row_count,
             active.size,
             // LocalDate is Comparable<ChronoLocalDate>, so the earliest is picked by its day number
-            CardStatementHelper.formatDay(active.map { RecurringChargeHelper.nextDate(it, statementDay) }.minBy { it.toEpochDay() })
+            active.map { RecurringChargeHelper.nextDate(it, statementDay) }.minBy { it.toEpochDay() }
+                .let { CardStatementHelper.formatDay(it, withYear = it.year != LocalDate.now().year) }
         )
     }
     Surface(
