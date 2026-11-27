@@ -74,7 +74,7 @@ fun HowItWentCard(
                         Icon(line.icon, contentDescription = null, tint = line.tint, modifier = Modifier.size(16.dp))
                     }
                     Text(
-                        line.text,
+                        boldAmounts(line.text),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
                             .weight(1f)

@@ -12,12 +12,10 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.AddCircleOutline
-import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,7 +82,8 @@ private val bottomTabs = listOf(
     BottomTab(MainScreens.HomeNavigation, R.string.main_tab_home, Icons.Filled.Home, Icons.Outlined.Home),
     BottomTab(MainScreens.WalletNavigation, R.string.main_tab_wallet, Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet),
     BottomTab(MainScreens.AddNavigation, R.string.main_tab_add, Icons.Filled.AddCircle, Icons.Outlined.AddCircleOutline),
-    BottomTab(null, R.string.main_tab_goals, Icons.Filled.Flag, Icons.Outlined.Flag),
+    // Goals is hidden until it's built; put this line back to show it disabled again
+    // BottomTab(null, R.string.main_tab_goals, Icons.Filled.Flag, Icons.Outlined.Flag),
     BottomTab(MainScreens.BudgetNavigation, R.string.main_tab_budget, Icons.Filled.Savings, Icons.Outlined.Savings),
 )
 

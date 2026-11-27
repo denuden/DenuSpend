@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import com.gmail.vondenuelle.denuspend.ui.budget.components.percentOf
+import com.gmail.vondenuelle.denuspend.ui.budget.components.boldAmounts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -285,9 +286,12 @@ fun AllowanceLine(spent: Long, allowance: Long, modifier: Modifier = Modifier, c
         buildAnnotatedString {
             val allowanceText = "₱${CurrencyUtils.formatCents(allowance)}"
             // Insights passes its category ("of ₱600 Food allowance"), the dashboard's total line doesn't
+            // The allowance amount is SemiBold too, so it doesn't read as faint next to the bold status
             append(
-                if (category.isEmpty()) stringResource(R.string.budget_lbl_of_allowance, allowanceText)
-                else stringResource(R.string.budget_lbl_of_category_allowance, allowanceText, category)
+                boldAmounts(
+                    if (category.isEmpty()) stringResource(R.string.budget_lbl_of_allowance, allowanceText)
+                    else stringResource(R.string.budget_lbl_of_category_allowance, allowanceText, category)
+                )
             )
             append(" · ")
             withStyle(SpanStyle(color = statusColor, fontWeight = FontWeight.Bold)) { append(status) }

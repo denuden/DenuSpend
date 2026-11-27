@@ -65,7 +65,7 @@ fun InsightsSentencesCard(
                     )
                 }
                 Text(
-                    line.text,
+                    boldAmounts(line.text),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
                         .weight(1f)
