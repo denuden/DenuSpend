@@ -88,7 +88,7 @@ private fun SubscriptionSheetContent(
     val isNew = draft.docId.isEmpty()
     val today = LocalDate.now()
     val start = CardStatementHelper.toLocalDate(draft.startDate)
-    // A new one skips every date before today. A saved one keeps its own count (its schedule can't be edited).
+    // A new one skips the dates before the open statement (so a date earlier this cycle shows, and is charged on Save). A saved one keeps its own count (its schedule can't be edited).
     val next = if (isNew) RecurringChargeHelper.dateAt(draft, RecurringChargeHelper.datesBefore(draft, today, card.statementDay), card.statementDay)
     else RecurringChargeHelper.nextDate(draft, card.statementDay)
     val canSave = draft.name.isNotBlank() && (!isNew || draft.amount > 0)

@@ -94,7 +94,7 @@ class WalletRepository @Inject constructor(
     }
 
     /**
-     * Builds the schedule fields before saving a new one. A subscription skips every date before today (it's never back-charged).
+     * Builds the schedule fields before saving a new one. A subscription skips the dates before the open statement started; the ones from then through today are charged right after saving.
      * A new installment starts on the card's next statement day, or that many months later when "First charge later" is on
      * (the draft's startDate holds the month picked). Its monthly amount comes from the total.
      */

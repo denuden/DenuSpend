@@ -637,6 +637,7 @@
     <string name="wallet_title_delete_recurring">Delete %1$s?</string>
     <string name="wallet_text_delete_recurring">It won\'t be charged again. Charges it already added stay on the card\'s statements.</string>
     <string name="wallet_snackbar_recurring_saved">Saved %1$s</string>
+    <string name="wallet_snackbar_recurring_saved_charged">Saved %1$s · charged now: %2$s</string>
     <string name="wallet_snackbar_recurring_deleted">Deleted %1$s</string>
     <string name="wallet_cd_decrease">Less</string>
     <string name="wallet_cd_increase">More</string>

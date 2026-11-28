@@ -25,10 +25,12 @@ object RecurringChargeHelper {
         }
     }
 
-    // How many dates fall before today: a subscription that started in the past is never back-charged, it continues from today
+    // How many dates a new subscription skips: only those before the open statement started. Dates from then through today
+    // are charged right away (like the bank already did), while older ones were on a closed statement and are never back-charged.
     fun datesBefore(charge: RecurringChargeModel, today: LocalDate, statementDay: Int): Int {
+        val openCycleStart = CardStatementHelper.cycle(statementDay, 0, today).start
         var k = 0
-        while (dateAt(charge, k, statementDay).isBefore(today)) k++
+        while (dateAt(charge, k, statementDay).isBefore(openCycleStart)) k++
         return k
     }
 
