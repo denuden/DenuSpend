@@ -25,6 +25,7 @@ import com.gmail.vondenuelle.denuspend.utils.network.ResultState
 import com.gmail.vondenuelle.denuspend.utils.network.asResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -302,8 +303,18 @@ class WalletViewModel @Inject constructor(
                 viewModelScope.launch {
                     try {
                         walletRepository.saveRecurringCharge(draft, event.card.statementDay)
+                        // Post what's due now (e.g. a start date earlier this statement) instead of waiting for the next app open.
+                        // Same transaction as on open, so it can't double charge; offline or a failure just leaves it for the next open.
+                        val charged = try {
+                            walletRepository.chargeDueRecurring()
+                        } catch (e: Exception) {
+                            if (e is CancellationException) throw e
+                            emptyList()
+                        }
                         _stateFlow.update { it.copy(isLoading = false, recurringDraft = null) }
-                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = context.getString(R.string.wallet_snackbar_recurring_saved, draft.name.trim()))))
+                        val message = if (charged.isEmpty()) context.getString(R.string.wallet_snackbar_recurring_saved, draft.name.trim())
+                        else context.getString(R.string.wallet_snackbar_recurring_saved_charged, draft.name.trim(), charged.joinToString(", ") { it.second })
+                        sendEvent(OneTimeEvents.ShowSnackbar(SnackbarEvent(message = message)))
                     } catch (e: Exception) {
                         _stateFlow.update { it.copy(isLoading = false) }
                         onError(e)
